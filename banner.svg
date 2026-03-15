@@ -1,0 +1,178 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" width="1200" height="400">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1a2e"/>
+      <stop offset="40%" style="stop-color:#16213e"/>
+      <stop offset="100%" style="stop-color:#0f3460"/>
+    </linearGradient>
+    <linearGradient id="shield" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#e94560"/>
+      <stop offset="100%" style="stop-color:#ff6b6b"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#e94560"/>
+      <stop offset="100%" style="stop-color:#ff6b6b"/>
+    </linearGradient>
+    <linearGradient id="fortiAccent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#ff4444"/>
+      <stop offset="100%" style="stop-color:#ff8a65"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="titleGlow">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
+    </pattern>
+    <!-- Network topology pattern -->
+    <pattern id="netgrid" width="80" height="80" patternUnits="userSpaceOnUse">
+      <circle cx="40" cy="40" r="1.5" fill="rgba(233,69,96,0.08)"/>
+      <circle cx="0" cy="0" r="1.5" fill="rgba(233,69,96,0.08)"/>
+      <circle cx="80" cy="0" r="1.5" fill="rgba(233,69,96,0.08)"/>
+      <circle cx="0" cy="80" r="1.5" fill="rgba(233,69,96,0.08)"/>
+      <circle cx="80" cy="80" r="1.5" fill="rgba(233,69,96,0.08)"/>
+      <line x1="0" y1="0" x2="40" y2="40" stroke="rgba(233,69,96,0.04)" stroke-width="0.5"/>
+      <line x1="80" y1="0" x2="40" y2="40" stroke="rgba(233,69,96,0.04)" stroke-width="0.5"/>
+      <line x1="0" y1="80" x2="40" y2="40" stroke="rgba(233,69,96,0.04)" stroke-width="0.5"/>
+      <line x1="80" y1="80" x2="40" y2="40" stroke="rgba(233,69,96,0.04)" stroke-width="0.5"/>
+    </pattern>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="400" fill="url(#bg)" rx="12"/>
+  <rect width="1200" height="400" fill="url(#grid)" rx="12"/>
+  <rect width="1200" height="400" fill="url(#netgrid)" rx="12"/>
+
+  <!-- Network topology lines (left side) -->
+  <g opacity="0.12" stroke="#e94560" stroke-width="1.2">
+    <line x1="60" y1="80" x2="60" y2="320"/>
+    <line x1="60" y1="110" x2="130" y2="110"/>
+    <line x1="60" y1="170" x2="140" y2="170"/>
+    <line x1="60" y1="230" x2="120" y2="230"/>
+    <line x1="60" y1="290" x2="110" y2="290"/>
+    <!-- Right side: API endpoints -->
+    <line x1="1140" y1="80" x2="1140" y2="320"/>
+    <line x1="1070" y1="120" x2="1140" y2="120"/>
+    <line x1="1060" y1="180" x2="1140" y2="180"/>
+    <line x1="1080" y1="240" x2="1140" y2="240"/>
+    <line x1="1090" y1="300" x2="1140" y2="300"/>
+  </g>
+
+  <!-- Network dots -->
+  <g fill="rgba(233,69,96,0.3)">
+    <circle cx="60" cy="110" r="3"/><circle cx="130" cy="110" r="2.5"/>
+    <circle cx="60" cy="170" r="3"/><circle cx="140" cy="170" r="2.5"/>
+    <circle cx="60" cy="230" r="3"/><circle cx="120" cy="230" r="2.5"/>
+    <circle cx="60" cy="290" r="3"/><circle cx="110" cy="290" r="2.5"/>
+    <circle cx="1140" cy="120" r="3"/><circle cx="1070" cy="120" r="2.5"/>
+    <circle cx="1140" cy="180" r="3"/><circle cx="1060" cy="180" r="2.5"/>
+    <circle cx="1140" cy="240" r="3"/><circle cx="1080" cy="240" r="2.5"/>
+    <circle cx="1140" cy="300" r="3"/><circle cx="1090" cy="300" r="2.5"/>
+  </g>
+
+  <!-- FortiOS API endpoints (decorative, left) -->
+  <g fill="rgba(233,69,96,0.18)" font-family="'Consolas','Courier New',monospace" font-size="10">
+    <text x="75" y="113">/api/v2/cmdb/</text>
+    <text x="75" y="173">firewall/policy</text>
+    <text x="75" y="233">vpn.ssl/settings</text>
+    <text x="75" y="293">system/admin</text>
+  </g>
+
+  <!-- Shield + Firewall icon -->
+  <g transform="translate(115, 95) scale(1.5)" filter="url(#glow)">
+    <!-- Outer shield -->
+    <path d="M50 5 L95 28 L95 72 C95 105 50 128 50 128 C50 128 5 105 5 72 L5 28 Z"
+          fill="url(#shield)" opacity="0.15" stroke="url(#shield)" stroke-width="1.5"/>
+    <!-- Inner shield -->
+    <path d="M50 18 L82 35 L82 65 C82 90 50 108 50 108 C50 108 18 90 18 65 L18 35 Z"
+          fill="none" stroke="url(#shield)" stroke-width="1" opacity="0.5"/>
+    <!-- Firewall brick wall icon -->
+    <rect x="32" y="42" width="36" height="5" rx="1" fill="#fff" opacity="0.9"/>
+    <rect x="35" y="49" width="14" height="5" rx="1" fill="#fff" opacity="0.8"/>
+    <rect x="51" y="49" width="14" height="5" rx="1" fill="#fff" opacity="0.8"/>
+    <rect x="32" y="56" width="36" height="5" rx="1" fill="#fff" opacity="0.9"/>
+    <rect x="35" y="63" width="14" height="5" rx="1" fill="#fff" opacity="0.8"/>
+    <rect x="51" y="63" width="14" height="5" rx="1" fill="#fff" opacity="0.8"/>
+    <!-- Lock overlay -->
+    <g transform="translate(62, 30) scale(0.6)">
+      <rect x="2" y="10" width="16" height="14" rx="2" fill="#e94560" stroke="#fff" stroke-width="1.5"/>
+      <path d="M6 10 V6 C6 2.7 8.7 0 12 0 C15.3 0 18 2.7 18 6 V10" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+      <circle cx="10" cy="17" r="2" fill="#fff"/>
+    </g>
+  </g>
+
+  <!-- Main title -->
+  <text x="600" y="135" fill="#ffffff" font-family="'Segoe UI',system-ui,sans-serif" font-size="52"
+        font-weight="800" text-anchor="middle" letter-spacing="-1" filter="url(#titleGlow)">Fortinet FortiGate</text>
+  <text x="600" y="180" fill="#ffffff" font-family="'Segoe UI',system-ui,sans-serif" font-size="52"
+        font-weight="800" text-anchor="middle" letter-spacing="-1" filter="url(#titleGlow)">Security Scanner</text>
+
+  <!-- Subtitle -->
+  <text x="600" y="215" fill="rgba(224,231,255,0.9)" font-family="'Segoe UI',system-ui,sans-serif"
+        font-size="20" font-weight="600" text-anchor="middle">Comprehensive FortiOS REST API Security Posture Assessment</text>
+
+  <!-- Tagline -->
+  <text x="600" y="248" fill="rgba(180,200,255,0.65)" font-family="'Segoe UI',system-ui,sans-serif"
+        font-size="15" text-anchor="middle">90+ security rules | 12 check categories | 20 FortiOS CVEs | Live API scanning</text>
+
+  <!-- Feature badges row 1 -->
+  <g transform="translate(600, 290)" text-anchor="middle">
+    <g transform="translate(-400, 0)">
+      <rect x="-55" y="-14" width="110" height="28" rx="14" fill="rgba(255,255,255,0.10)" stroke="rgba(255,255,255,0.22)" stroke-width="1"/>
+      <text y="5" fill="#fff" font-family="'Segoe UI',system-ui,sans-serif" font-size="12" font-weight="600">Admin Access</text>
+    </g>
+    <g transform="translate(-250, 0)">
+      <rect x="-60" y="-14" width="120" height="28" rx="14" fill="rgba(255,255,255,0.10)" stroke="rgba(255,255,255,0.22)" stroke-width="1"/>
+      <text y="5" fill="#fff" font-family="'Segoe UI',system-ui,sans-serif" font-size="12" font-weight="600">Firewall Policies</text>
+    </g>
+    <g transform="translate(-90, 0)">
+      <rect x="-50" y="-14" width="100" height="28" rx="14" fill="rgba(255,255,255,0.10)" stroke="rgba(255,255,255,0.22)" stroke-width="1"/>
+      <text y="5" fill="#fff" font-family="'Segoe UI',system-ui,sans-serif" font-size="12" font-weight="600">SSL/IPsec VPN</text>
+    </g>
+    <g transform="translate(60, 0)">
+      <rect x="-55" y="-14" width="110" height="28" rx="14" fill="rgba(255,255,255,0.10)" stroke="rgba(255,255,255,0.22)" stroke-width="1"/>
+      <text y="5" fill="#fff" font-family="'Segoe UI',system-ui,sans-serif" font-size="12" font-weight="600">IPS/AV/DLP</text>
+    </g>
+    <g transform="translate(210, 0)">
+      <rect x="-50" y="-14" width="100" height="28" rx="14" fill="rgba(255,255,255,0.10)" stroke="rgba(255,255,255,0.22)" stroke-width="1"/>
+      <text y="5" fill="#fff" font-family="'Segoe UI',system-ui,sans-serif" font-size="12" font-weight="600">ZTNA / SASE</text>
+    </g>
+    <g transform="translate(350, 0)">
+      <rect x="-50" y="-14" width="100" height="28" rx="14" fill="rgba(255,255,255,0.10)" stroke="rgba(255,255,255,0.22)" stroke-width="1"/>
+      <text y="5" fill="#fff" font-family="'Segoe UI',system-ui,sans-serif" font-size="12" font-weight="600">Known CVEs</text>
+    </g>
+  </g>
+
+  <!-- Technology badges row 2 -->
+  <g transform="translate(600, 330)" text-anchor="middle">
+    <g transform="translate(-250, 0)">
+      <rect x="-40" y="-12" width="80" height="24" rx="12" fill="rgba(233,69,96,0.25)" stroke="rgba(233,69,96,0.5)" stroke-width="1"/>
+      <text y="4" fill="#e94560" font-family="monospace" font-size="12" font-weight="700">FortiOS</text>
+    </g>
+    <g transform="translate(-130, 0)">
+      <rect x="-40" y="-12" width="80" height="24" rx="12" fill="rgba(233,69,96,0.25)" stroke="rgba(233,69,96,0.5)" stroke-width="1"/>
+      <text y="4" fill="#e94560" font-family="monospace" font-size="12" font-weight="700">REST API</text>
+    </g>
+    <g transform="translate(-10, 0)">
+      <rect x="-40" y="-12" width="80" height="24" rx="12" fill="rgba(233,69,96,0.25)" stroke="rgba(233,69,96,0.5)" stroke-width="1"/>
+      <text y="4" fill="#e94560" font-family="monospace" font-size="12" font-weight="700">FortiGate</text>
+    </g>
+    <g transform="translate(110, 0)">
+      <rect x="-35" y="-12" width="70" height="24" rx="12" fill="rgba(233,69,96,0.25)" stroke="rgba(233,69,96,0.5)" stroke-width="1"/>
+      <text y="4" fill="#e94560" font-family="monospace" font-size="12" font-weight="700">NGFW</text>
+    </g>
+    <g transform="translate(220, 0)">
+      <rect x="-40" y="-12" width="80" height="24" rx="12" fill="rgba(233,69,96,0.25)" stroke="rgba(233,69,96,0.5)" stroke-width="1"/>
+      <text y="4" fill="#e94560" font-family="monospace" font-size="12" font-weight="700">Python 3</text>
+    </g>
+  </g>
+
+  <!-- Bottom bar -->
+  <rect x="0" y="360" width="1200" height="40" rx="0" fill="rgba(0,0,0,0.25)"/>
+  <text x="600" y="385" fill="rgba(255,255,255,0.5)" font-family="'Segoe UI',system-ui,sans-serif"
+        font-size="13" text-anchor="middle">Python 3.10+ | Live FortiOS REST API Scanner | Console + JSON + HTML Reports | CI/CD Ready</text>
+</svg>
