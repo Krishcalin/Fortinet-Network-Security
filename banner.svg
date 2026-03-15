@@ -117,7 +117,7 @@
 
   <!-- Tagline -->
   <text x="600" y="248" fill="rgba(180,200,255,0.65)" font-family="'Segoe UI',system-ui,sans-serif"
-        font-size="15" text-anchor="middle">90+ security rules | 12 check categories | 20 FortiOS CVEs | Live API scanning</text>
+        font-size="15" text-anchor="middle">153 security rules | 19 check categories | 20 FortiOS CVEs | Live API scanning</text>
 
   <!-- Feature badges row 1 -->
   <g transform="translate(600, 290)" text-anchor="middle">

@@ -9,10 +9,10 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.0.0-blue?style=flat-square" alt="Version"/>
+  <img src="https://img.shields.io/badge/version-2.0.0-blue?style=flat-square" alt="Version"/>
   <img src="https://img.shields.io/badge/python-3.10%2B-blue?style=flat-square&logo=python&logoColor=white" alt="Python"/>
   <img src="https://img.shields.io/badge/FortiOS-6.x%20%7C%207.x-red?style=flat-square" alt="FortiOS"/>
-  <img src="https://img.shields.io/badge/rules-90%2B-orange?style=flat-square" alt="Rules"/>
+  <img src="https://img.shields.io/badge/rules-153-orange?style=flat-square" alt="Rules"/>
   <img src="https://img.shields.io/badge/CVEs-20-critical?style=flat-square" alt="CVEs"/>
   <img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="License"/>
 </p>
@@ -64,7 +64,7 @@
 
 The **Fortinet FortiGate Security Scanner** is a Python-based live-API security assessment tool that connects to FortiGate Next-Generation Firewall (NGFW) appliances via the FortiOS REST API and evaluates their security posture against industry best practices and known vulnerabilities.
 
-It performs **90+ security checks** across **12 categories**, including firewall policy hygiene, admin access hardening, VPN configuration, security profile enforcement, logging, high availability, certificate management, ZTNA readiness, and **20 known FortiOS CVEs** with automatic firmware version matching.
+It performs **153 security checks** across **12 categories**, including firewall policy hygiene, admin access hardening, VPN configuration, security profile enforcement, logging, high availability, certificate management, ZTNA readiness, and **20 known FortiOS CVEs** with automatic firmware version matching.
 
 ### Key Capabilities
 
@@ -81,7 +81,7 @@ It performs **90+ security checks** across **12 categories**, including firewall
 
 | Feature | Description |
 |---------|-------------|
-| **12 Check Categories** | Admin access, firewall policies, SSL VPN, IPsec VPN, security profiles, logging, HA, certificates, network hardening, FortiGuard, ZTNA, CVEs |
+| **19 Check Categories** | Admin access, system settings, firewall policies, SSL VPN, IPsec VPN, security profiles (AV, IPS, WebFilter, AppControl, DLP, DNS, SSL inspection), logging, HA, certificates, network hardening (DoS, SNMP, routing, NTP), FortiGuard, ZTNA/SD-WAN, CVEs |
 | **20 Known CVEs** | CVE-2024-55591, CVE-2024-21762, CVE-2023-27997, CVE-2022-42475, and more |
 | **Train-Based CVE Matching** | Automatically matches firmware version against affected version ranges per release train |
 | **Dark Theme HTML Reports** | Interactive reports with severity filtering, expandable details, and search |
@@ -230,16 +230,22 @@ python fortinet_scanner.py 10.1.1.1
 
 ### 2. Firewall Policies (FORTIOS-POLICY)
 
-**6 rules** — Evaluates firewall policy hygiene and security posture.
+**12 rules** — Evaluates firewall policy hygiene, segmentation, and security posture.
 
 | Rule ID | Severity | Description |
 |---------|----------|-------------|
-| FORTIOS-POLICY-001 | CRITICAL | Any-to-any allow rule detected |
-| FORTIOS-POLICY-002 | HIGH | Policy with "ALL" services (overly broad) |
-| FORTIOS-POLICY-003 | MEDIUM | Disabled firewall policy (hygiene) |
-| FORTIOS-POLICY-004 | HIGH | Allow policy without logging |
-| FORTIOS-POLICY-005 | HIGH | Allow policy without UTM/security profiles |
-| FORTIOS-POLICY-006 | MEDIUM | Policy without schedule (permanent rule) |
+| FORTIOS-POLICY-001 | LOW | Disabled firewall policy (hygiene) |
+| FORTIOS-POLICY-002 | CRITICAL | Any-to-any allow rule detected |
+| FORTIOS-POLICY-003 | HIGH | Allow policy with 'all' source |
+| FORTIOS-POLICY-004 | HIGH | Allow policy with ALL services (overly broad) |
+| FORTIOS-POLICY-005 | HIGH | Allow policy without logging |
+| FORTIOS-POLICY-006 | CRITICAL | Allow policy without UTM/security profiles |
+| FORTIOS-POLICY-007 | LOW | Unnamed firewall policy |
+| FORTIOS-POLICY-008 | MEDIUM | Deny policy without logging |
+| FORTIOS-POLICY-009 | HIGH | Allow policy with 'all' destination |
+| FORTIOS-POLICY-010 | MEDIUM | Allow policy without SSL inspection |
+| FORTIOS-POLICY-011 | MEDIUM | Broad allow policy with permanent schedule |
+| FORTIOS-POLICY-012 | LOW | High ratio of disabled policies |
 
 ### 3. SSL VPN (FORTIOS-SSLVPN)
 
@@ -313,28 +319,52 @@ python fortinet_scanner.py 10.1.1.1
 
 ### 9. Network Hardening (FORTIOS-NET)
 
-**1 rule** — Checks network-level security configuration.
+**16 rules** — Comprehensive network security: DoS protection, routing authentication, SNMP hardening, NTP, and anti-spoofing.
 
 | Rule ID | Severity | Description |
 |---------|----------|-------------|
 | FORTIOS-NET-001 | MEDIUM | No DoS policy configured |
+| FORTIOS-NET-002 | MEDIUM | DoS SYN flood threshold too high |
+| FORTIOS-NET-003 | MEDIUM | DoS UDP flood threshold too high |
+| FORTIOS-NET-004 | LOW | DoS ICMP flood threshold too high |
+| FORTIOS-NET-005 | HIGH | DHCP relay on WAN interface |
+| FORTIOS-NET-006 | LOW | DNS server override disabled on WAN |
+| FORTIOS-NET-007 | HIGH | Source IP check (RPF/anti-spoofing) disabled |
+| FORTIOS-NET-008 | HIGH | TCP sessions without SYN allowed |
+| FORTIOS-NET-009 | MEDIUM | IPv6 enabled but no IPv6 firewall policies |
+| FORTIOS-NET-010 | LOW | LLDP reception enabled globally |
+| FORTIOS-NET-011 | HIGH | BGP neighbour without MD5 authentication |
+| FORTIOS-NET-012 | HIGH | OSPF interface without authentication |
+| FORTIOS-NET-013 | CRITICAL | SNMP default community string (public/private) |
+| FORTIOS-NET-014 | HIGH | SNMPv1 enabled (cleartext, no auth) |
+| FORTIOS-NET-015 | HIGH | SNMPv3 user without authentication |
+| FORTIOS-NET-016 | MEDIUM | NTP authentication not enabled |
 
 ### 10. FortiGuard Updates (FORTIOS-UPDATE)
 
-**2 rules** — Validates FortiGuard licensing and update status.
+**7 rules** — Validates FortiGuard licensing, signature freshness, and update status.
 
 | Rule ID | Severity | Description |
 |---------|----------|-------------|
-| FORTIOS-UPDATE-001 | HIGH | FortiGuard license expired or not connected |
-| FORTIOS-UPDATE-002 | MEDIUM | AV/IPS signatures outdated |
+| FORTIOS-UPDATE-001 | HIGH | FortiGuard service expired or disabled |
+| FORTIOS-UPDATE-002 | HIGH | FortiGuard not connected |
+| FORTIOS-UPDATE-003 | MEDIUM | FortiGuard licence expiring within 30 days |
+| FORTIOS-UPDATE-004 | HIGH | AV/IPS signatures outdated (>7 days) |
+| FORTIOS-UPDATE-005 | MEDIUM | FortiGuard service not updated (>30 days) |
+| FORTIOS-UPDATE-006 | HIGH | Automatic updates disabled |
+| FORTIOS-UPDATE-007 | CRITICAL | FortiOS running on end-of-life branch |
 
-### 11. ZTNA / SASE (FORTIOS-ZTNA)
+### 11. ZTNA / SASE / SD-WAN (FORTIOS-ZTNA)
 
-**1 rule** — Evaluates Zero Trust Network Access readiness.
+**5 rules** — Evaluates Zero Trust Network Access readiness and SD-WAN configuration.
 
 | Rule ID | Severity | Description |
 |---------|----------|-------------|
-| FORTIOS-ZTNA-001 | INFO | ZTNA access proxies not configured |
+| FORTIOS-ZTNA-001 | MEDIUM | ZTNA access proxies not configured |
+| FORTIOS-ZTNA-002 | MEDIUM | ZTNA access proxy with no API gateway rules |
+| FORTIOS-ZTNA-003 | HIGH | ZTNA proxy without client certificate requirement |
+| FORTIOS-ZTNA-004 | HIGH | SD-WAN enabled without health checks |
+| FORTIOS-ZTNA-005 | MEDIUM | SD-WAN without service/SLA rules |
 
 ### 12. Known CVEs (FORTIOS-CVE)
 

@@ -6,7 +6,7 @@ Fortinet FortiGate Security Scanner — a live-API security posture assessment t
 
 - **Language**: Python 3.10+ (requires `requests`)
 - **Scanner file**: `fortinet_scanner.py` (single self-contained file)
-- **Version**: 1.0.0
+- **Version**: 2.0.0
 - **License**: MIT
 
 ## Architecture
@@ -29,21 +29,22 @@ Fortinet FortiGate Security Scanner — a live-API security posture assessment t
 | SSL | Self-signed certs accepted by default; `--verify-ssl` to enforce |
 | Token env var | `FORTIOS_API_TOKEN` |
 
-## Check Categories (12 groups, ~70 config checks + 20 CVEs)
+## Check Categories (12 groups, 133 config checks + 20 CVEs = 153 rules)
 
 | Category | Prefix | Check Method | Count |
 |----------|--------|-------------|-------|
 | Admin Access | FORTIOS-ADMIN | `_check_admin_access` | 12 |
-| Firewall Policies | FORTIOS-POLICY | `_check_firewall_policies` | 6 |
-| SSL VPN | FORTIOS-SSLVPN | `_check_ssl_vpn` | 5 |
-| IPsec VPN | FORTIOS-IPSEC | `_check_ipsec_vpn` | 6 |
-| Security Profiles | FORTIOS-PROFILE | `_check_security_profiles` | 6 |
-| Logging & Monitoring | FORTIOS-LOG | `_check_logging` | 4 |
-| High Availability | FORTIOS-HA | `_check_ha` | 4 |
-| Certificates | FORTIOS-CERT | `_check_certificates` | 3 |
-| Network Hardening | FORTIOS-NET | `_check_network` | 1 |
-| FortiGuard Updates | FORTIOS-UPDATE | `_check_fortiguard` | 2 |
-| ZTNA / SASE | FORTIOS-ZTNA | `_check_ztna` | 1 |
+| System Settings | FORTIOS-SYS | `_check_system_settings` | 12 |
+| Firewall Policies | FORTIOS-POLICY | `_check_firewall_policies` | 12 |
+| SSL VPN | FORTIOS-SSLVPN | `_check_ssl_vpn` | 10 |
+| IPsec VPN | FORTIOS-IPSEC | `_check_ipsec_vpn` | 12 |
+| Security Profiles | FORTIOS-PROFILE/AV/IPS/WF/APP/DLP/DNS | `_check_security_profiles` | 19 |
+| Logging & Monitoring | FORTIOS-LOG | `_check_logging` | 13 |
+| High Availability | FORTIOS-HA | `_check_ha` | 8 |
+| Certificates | FORTIOS-CERT | `_check_certificates` | 8 |
+| Network Hardening | FORTIOS-NET | `_check_network` | 16 |
+| FortiGuard Updates | FORTIOS-UPDATE | `_check_fortiguard` | 7 |
+| ZTNA / SASE / SD-WAN | FORTIOS-ZTNA | `_check_ztna` | 5 |
 | Known CVEs | FORTIOS-CVE | `_check_cves` | 20 |
 
 ## API Endpoints Used
@@ -54,15 +55,16 @@ Fortinet FortiGate Security Scanner — a live-API security posture assessment t
 | Admin access | `/api/v2/cmdb/system/admin`, `/api/v2/cmdb/system/api-user` |
 | System settings | `/api/v2/cmdb/system/global`, `/api/v2/cmdb/system/settings` |
 | Interfaces | `/api/v2/cmdb/system/interface` |
-| Firewall policies | `/api/v2/cmdb/firewall/policy` |
-| SSL VPN | `/api/v2/cmdb/vpn.ssl/settings` |
+| Firewall policies | `/api/v2/cmdb/firewall/policy`, `/api/v2/cmdb/firewall/policy6` |
+| SSL VPN | `/api/v2/cmdb/vpn.ssl/settings`, `/api/v2/cmdb/vpn.ssl.web/portal`, `/api/v2/cmdb/user/group` |
 | IPsec VPN | `/api/v2/cmdb/vpn.ipsec/phase1-interface`, `/api/v2/cmdb/vpn.ipsec/phase2-interface` |
-| Security profiles | `/api/v2/cmdb/antivirus/profile`, `/api/v2/cmdb/ips/sensor`, `/api/v2/cmdb/webfilter/profile`, `/api/v2/cmdb/application/list`, `/api/v2/cmdb/dlp/sensor` |
-| Logging | `/api/v2/cmdb/log.fortianalyzer/setting`, `/api/v2/cmdb/log.syslogd/setting` |
-| HA | `/api/v2/cmdb/system/ha` |
-| Certificates | `/api/v2/cmdb/vpn.certificate/local` |
-| ZTNA | `/api/v2/cmdb/firewall/access-proxy` |
-| FortiGuard | `/api/v2/monitor/license/status` |
+| Security profiles | `/api/v2/cmdb/antivirus/profile`, `/api/v2/cmdb/ips/sensor`, `/api/v2/cmdb/webfilter/profile`, `/api/v2/cmdb/application/list`, `/api/v2/cmdb/dlp/sensor`, `/api/v2/cmdb/dnsfilter/profile`, `/api/v2/cmdb/firewall/ssl-ssh-profile` |
+| Logging | `/api/v2/cmdb/log.fortianalyzer/setting`, `/api/v2/cmdb/log.syslogd/setting`, `/api/v2/cmdb/log/setting`, `/api/v2/cmdb/log/eventfilter` |
+| HA | `/api/v2/cmdb/system/ha`, `/api/v2/monitor/system/ha-peer` |
+| Certificates | `/api/v2/cmdb/vpn.certificate/local`, `/api/v2/monitor/system/certificate` |
+| Network | `/api/v2/cmdb/firewall/DoS-policy`, `/api/v2/cmdb/router/bgp`, `/api/v2/cmdb/router/ospf`, `/api/v2/cmdb/system.snmp/community`, `/api/v2/cmdb/system.snmp/user`, `/api/v2/cmdb/system/ntp` |
+| ZTNA / SD-WAN | `/api/v2/cmdb/firewall/access-proxy`, `/api/v2/cmdb/system/sdwan` |
+| FortiGuard | `/api/v2/monitor/license/status`, `/api/v2/monitor/system/fortiguard-service-status`, `/api/v2/cmdb/system/autoupdate/schedule` |
 
 ## CVE Version Matching
 
