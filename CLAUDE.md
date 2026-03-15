@@ -6,7 +6,7 @@ Fortinet FortiGate Security Scanner — a live-API security posture assessment t
 
 - **Language**: Python 3.10+ (requires `requests`)
 - **Scanner file**: `fortinet_scanner.py` (single self-contained file)
-- **Version**: 2.0.0
+- **Version**: 3.0.0
 - **License**: MIT
 
 ## Architecture
@@ -14,7 +14,7 @@ Fortinet FortiGate Security Scanner — a live-API security posture assessment t
 1. **`FORTIOS_CVES` list** — 20 known FortiOS CVEs with train-based version matching.
 2. **`Finding` class** — `rule_id, name, category, severity, description, recommendation, cwe, cve` (uses `__slots__`).
 3. **`_ReportMixin`** — shared reporting: `SEVERITY_ORDER`, `print_report`, `save_json`, `save_html`, `summary`, `filter_severity`.
-4. **`FortinetScanner(_ReportMixin)`** — live API scanner with 13 check methods.
+4. **`FortinetScanner(_ReportMixin)`** — live API scanner with 16 check methods.
 5. **CLI**: `argparse` with `host`, `--token`, `--verify-ssl`, `--timeout`, `--json`, `--html`, `--severity`, `--verbose`, `--version`.
 6. **Exit code**: `1` if CRITICAL or HIGH findings, `0` otherwise.
 
@@ -29,22 +29,25 @@ Fortinet FortiGate Security Scanner — a live-API security posture assessment t
 | SSL | Self-signed certs accepted by default; `--verify-ssl` to enforce |
 | Token env var | `FORTIOS_API_TOKEN` |
 
-## Check Categories (12 groups, 133 config checks + 20 CVEs = 153 rules)
+## Check Categories (15 groups, 176 config checks + 20 CVEs = 196 rules)
 
 | Category | Prefix | Check Method | Count |
 |----------|--------|-------------|-------|
-| Admin Access | FORTIOS-ADMIN | `_check_admin_access` | 12 |
+| Admin Access | FORTIOS-ADMIN | `_check_admin_access` | 22 |
 | System Settings | FORTIOS-SYS | `_check_system_settings` | 12 |
-| Firewall Policies | FORTIOS-POLICY | `_check_firewall_policies` | 12 |
-| SSL VPN | FORTIOS-SSLVPN | `_check_ssl_vpn` | 10 |
+| Firewall Policies | FORTIOS-POLICY | `_check_firewall_policies` | 14 |
+| SSL VPN | FORTIOS-SSLVPN | `_check_ssl_vpn` | 14 |
 | IPsec VPN | FORTIOS-IPSEC | `_check_ipsec_vpn` | 12 |
-| Security Profiles | FORTIOS-PROFILE/AV/IPS/WF/APP/DLP/DNS | `_check_security_profiles` | 19 |
-| Logging & Monitoring | FORTIOS-LOG | `_check_logging` | 13 |
+| Security Profiles | FORTIOS-PROFILE/AV/IPS/WF/APP/DLP/DNS | `_check_security_profiles` | 11 |
+| Logging & Monitoring | FORTIOS-LOG | `_check_logging` | 16 |
 | High Availability | FORTIOS-HA | `_check_ha` | 8 |
-| Certificates | FORTIOS-CERT | `_check_certificates` | 8 |
+| Certificates | FORTIOS-CERT | `_check_certificates` | 10 |
 | Network Hardening | FORTIOS-NET | `_check_network` | 16 |
 | FortiGuard Updates | FORTIOS-UPDATE | `_check_fortiguard` | 7 |
 | ZTNA / SASE / SD-WAN | FORTIOS-ZTNA | `_check_ztna` | 5 |
+| Wireless Security | FORTIOS-WIRELESS | `_check_wireless` | 8 |
+| Backup & DR | FORTIOS-BACKUP | `_check_backup` | 5 |
+| Authentication | FORTIOS-AUTH | `_check_authentication` | 6 |
 | Known CVEs | FORTIOS-CVE | `_check_cves` | 20 |
 
 ## API Endpoints Used
@@ -65,6 +68,9 @@ Fortinet FortiGate Security Scanner — a live-API security posture assessment t
 | Network | `/api/v2/cmdb/firewall/DoS-policy`, `/api/v2/cmdb/router/bgp`, `/api/v2/cmdb/router/ospf`, `/api/v2/cmdb/system.snmp/community`, `/api/v2/cmdb/system.snmp/user`, `/api/v2/cmdb/system/ntp` |
 | ZTNA / SD-WAN | `/api/v2/cmdb/firewall/access-proxy`, `/api/v2/cmdb/system/sdwan` |
 | FortiGuard | `/api/v2/monitor/license/status`, `/api/v2/monitor/system/fortiguard-service-status`, `/api/v2/cmdb/system/autoupdate/schedule` |
+| Wireless | `/api/v2/cmdb/wireless-controller/wtp-profile`, `/api/v2/cmdb/wireless-controller/vap`, `/api/v2/cmdb/wireless-controller/wids-profile` |
+| Backup & DR | `/api/v2/cmdb/system/central-management`, `/api/v2/cmdb/system/global` |
+| Authentication | `/api/v2/cmdb/user/ldap`, `/api/v2/cmdb/user/radius`, `/api/v2/cmdb/user/saml`, `/api/v2/cmdb/user/fsso`, `/api/v2/cmdb/user/local` |
 
 ## CVE Version Matching
 

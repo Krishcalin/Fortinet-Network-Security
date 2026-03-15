@@ -30,7 +30,7 @@ import urllib3
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-VERSION = "2.0.0"
+VERSION = "3.0.0"
 
 # ---------------------------------------------------------------------------
 # requests (required for API mode)
@@ -702,6 +702,9 @@ class FortinetScanner(_ReportMixin):
             ("Network Hardening",    self._check_network),
             ("ZTNA / SASE",          self._check_ztna),
             ("FortiGuard & Updates", self._check_fortiguard),
+            ("Wireless Security",    self._check_wireless),
+            ("Backup & DR",          self._check_backup),
+            ("Authentication",       self._check_authentication),
         ]
 
         for name, func in checks:
@@ -780,20 +783,105 @@ class FortinetScanner(_ReportMixin):
                 cwe="CWE-613",
             ))
 
-        # Weak password policy
-        admin_pwd_policy = glb.get("admin-password-policy", {})
-        if isinstance(admin_pwd_policy, dict):
-            min_len = admin_pwd_policy.get("min-length", 0)
-            if isinstance(min_len, int) and min_len < 12:
-                self._add(Finding(
-                    rule_id="FORTIOS-ADMIN-003", name="Weak admin password policy",
-                    category="Admin Access", severity="HIGH",
-                    file_path=self._sys_info.get("hostname", self.host),
-                    line_num=None, line_content=f"min-length={min_len}",
-                    description=f"Admin password minimum length is {min_len}. Minimum 12 characters recommended.",
-                    recommendation="Set minimum password length to 12+: config system password-policy / set minimum-length 12.",
-                    cwe="CWE-521",
-                ))
+        # ---- Password policy checks ----------------------------------------
+        pwd_policy = self._api_get("system/password-policy")
+        if isinstance(pwd_policy, list) and pwd_policy:
+            pwd_policy = pwd_policy[0] if isinstance(pwd_policy[0], dict) else {}
+        if not isinstance(pwd_policy, dict):
+            pwd_policy = glb.get("admin-password-policy", {})
+        if not isinstance(pwd_policy, dict):
+            pwd_policy = {}
+
+        # Minimum length
+        min_len = pwd_policy.get("minimum-length", pwd_policy.get("min-length", 0))
+        if isinstance(min_len, int) and min_len < 12:
+            self._add(Finding(
+                rule_id="FORTIOS-ADMIN-003", name="Weak admin password policy — minimum length",
+                category="Admin Access", severity="HIGH",
+                file_path=_host, line_num=None,
+                line_content=f"minimum-length={min_len}",
+                description=f"Admin password minimum length is {min_len}. Minimum 12 characters recommended.",
+                recommendation="Set minimum password length to 12+: config system password-policy / set minimum-length 12.",
+                cwe="CWE-521",
+            ))
+
+        # Uppercase requirement
+        upper = pwd_policy.get("min-upper-case-letter", 0)
+        if isinstance(upper, int) and upper < 1:
+            self._add(Finding(
+                rule_id="FORTIOS-ADMIN-013", name="Password policy — no uppercase requirement",
+                category="Admin Access", severity="MEDIUM",
+                file_path=_host, line_num=None,
+                line_content=f"min-upper-case-letter={upper}",
+                description="Password policy does not require uppercase letters, reducing password complexity.",
+                recommendation="Set min-upper-case-letter to 1 or higher.",
+                cwe="CWE-521",
+            ))
+
+        # Lowercase requirement
+        lower = pwd_policy.get("min-lower-case-letter", 0)
+        if isinstance(lower, int) and lower < 1:
+            self._add(Finding(
+                rule_id="FORTIOS-ADMIN-014", name="Password policy — no lowercase requirement",
+                category="Admin Access", severity="MEDIUM",
+                file_path=_host, line_num=None,
+                line_content=f"min-lower-case-letter={lower}",
+                description="Password policy does not require lowercase letters.",
+                recommendation="Set min-lower-case-letter to 1 or higher.",
+                cwe="CWE-521",
+            ))
+
+        # Number requirement
+        num_req = pwd_policy.get("min-number", 0)
+        if isinstance(num_req, int) and num_req < 1:
+            self._add(Finding(
+                rule_id="FORTIOS-ADMIN-015", name="Password policy — no numeric digit requirement",
+                category="Admin Access", severity="MEDIUM",
+                file_path=_host, line_num=None,
+                line_content=f"min-number={num_req}",
+                description="Password policy does not require numeric digits.",
+                recommendation="Set min-number to 1 or higher.",
+                cwe="CWE-521",
+            ))
+
+        # Special character requirement
+        special = pwd_policy.get("min-non-alphanumeric", pwd_policy.get("min-special", 0))
+        if isinstance(special, int) and special < 1:
+            self._add(Finding(
+                rule_id="FORTIOS-ADMIN-016", name="Password policy — no special character requirement",
+                category="Admin Access", severity="MEDIUM",
+                file_path=_host, line_num=None,
+                line_content=f"min-non-alphanumeric={special}",
+                description="Password policy does not require special characters (!@#$%^&*).",
+                recommendation="Set min-non-alphanumeric to 1 or higher.",
+                cwe="CWE-521",
+            ))
+
+        # Password expiry / max age
+        expire_days = pwd_policy.get("expire-day", pwd_policy.get("expire", 0))
+        if isinstance(expire_days, int) and expire_days == 0:
+            self._add(Finding(
+                rule_id="FORTIOS-ADMIN-017", name="Password policy — no password expiry configured",
+                category="Admin Access", severity="MEDIUM",
+                file_path=_host, line_num=None,
+                line_content=f"expire-day={expire_days}",
+                description="Admin passwords never expire. Long-lived passwords increase the risk of credential compromise.",
+                recommendation="Set password expiry to 90 days: set expire-day 90.",
+                cwe="CWE-262",
+            ))
+
+        # Password reuse prevention
+        reuse = pwd_policy.get("reuse-password", "")
+        if str(reuse).lower() == "enable":
+            self._add(Finding(
+                rule_id="FORTIOS-ADMIN-018", name="Password policy — password reuse allowed",
+                category="Admin Access", severity="MEDIUM",
+                file_path=_host, line_num=None,
+                line_content=f"reuse-password={reuse}",
+                description="Password reuse is allowed. Admins can re-use old passwords, negating the benefit of password rotation.",
+                recommendation="Disable password reuse: set reuse-password disable.",
+                cwe="CWE-262",
+            ))
 
         # Check admin accounts
         admins = self._api_get("system/admin")
@@ -856,6 +944,38 @@ class FortinetScanner(_ReportMixin):
                         cwe="CWE-269",
                     ))
 
+        # ---- Admin account advanced checks --------------------------------
+        if isinstance(admins, list):
+            # Count super_admin profiles
+            super_admins = [a for a in admins if a.get("accprofile", "") in ("super_admin", "prof_admin")]
+            if len(super_admins) > 2:
+                self._add(Finding(
+                    rule_id="FORTIOS-ADMIN-019", name="Too many super_admin accounts",
+                    category="Admin Access", severity="HIGH",
+                    file_path=_host, line_num=None,
+                    line_content=f"super_admin accounts={len(super_admins)}",
+                    description=f"{len(super_admins)} admin accounts have super_admin privileges. Excessive privileged accounts increase risk.",
+                    recommendation="Limit super_admin accounts to 2 (primary + break-glass). Use custom profiles for daily operations.",
+                    cwe="CWE-269",
+                ))
+
+            # Check for disabled/inactive admin accounts
+            for admin in admins:
+                aname = admin.get("name", "unknown")
+                admin_status = admin.get("status", "")
+                # Wildcard admin (empty password hash or guest)
+                guest_flag = admin.get("guest-auth", "")
+                if str(guest_flag).lower() == "enable":
+                    self._add(Finding(
+                        rule_id="FORTIOS-ADMIN-020", name="Admin account with guest auth enabled",
+                        category="Admin Access", severity="CRITICAL",
+                        file_path=_host, line_num=None,
+                        line_content=f"admin={aname}, guest-auth=enable",
+                        description=f"Admin account '{aname}' has guest authentication enabled, potentially allowing unauthenticated access.",
+                        recommendation="Disable guest auth on admin accounts: set guest-auth disable.",
+                        cwe="CWE-287",
+                    ))
+
         # Check API users
         api_users = self._api_get("system/api-user")
         if isinstance(api_users, list):
@@ -868,12 +988,42 @@ class FortinetScanner(_ReportMixin):
                     self._add(Finding(
                         rule_id="FORTIOS-ADMIN-008", name="API user without trusted host restriction",
                         category="Admin Access", severity="HIGH",
-                        file_path=self._sys_info.get("hostname", self.host),
-                        line_num=None, line_content=f"api-user={uname}, trusthost=none",
+                        file_path=_host, line_num=None,
+                        line_content=f"api-user={uname}, trusthost=none",
                         description=f"API user '{uname}' has no trusted host restrictions.",
                         recommendation="Configure trusted hosts for API users to restrict API access to known management IPs.",
                         cwe="CWE-284",
                     ))
+
+                # API user with super_admin profile
+                api_profile = api_user.get("accprofile", "")
+                if api_profile in ("super_admin", "prof_admin"):
+                    self._add(Finding(
+                        rule_id="FORTIOS-ADMIN-021", name="API user with super_admin profile",
+                        category="Admin Access", severity="HIGH",
+                        file_path=_host, line_num=None,
+                        line_content=f"api-user={uname}, accprofile={api_profile}",
+                        description=f"API user '{uname}' has super_admin privileges. API tokens should have minimal permissions.",
+                        recommendation="Create a custom read-only admin profile for API users.",
+                        cwe="CWE-269",
+                    ))
+
+                # API token without CORS restriction
+                cors_allow = api_user.get("cors-allow-origin", "")
+                if cors_allow == "*" or cors_allow == "":
+                    schedule = api_user.get("schedule", "")
+                    # Check if API user has comments/description
+                    comments = api_user.get("comments", "")
+                    if not comments:
+                        self._add(Finding(
+                            rule_id="FORTIOS-ADMIN-022", name="API user without documentation",
+                            category="Admin Access", severity="LOW",
+                            file_path=_host, line_num=None,
+                            line_content=f"api-user={uname}, comments=empty",
+                            description=f"API user '{uname}' has no description/comments. Undocumented API tokens make audit and rotation difficult.",
+                            recommendation="Add comments to document the purpose and owner of each API user.",
+                            cwe="CWE-1078",
+                        ))
 
     # ================================================================== #
     #  CHECK: System Settings                                              #
@@ -1313,11 +1463,63 @@ class FortinetScanner(_ReportMixin):
                     cwe="CWE-1078",
                 ))
 
+        # ---- NAT / VIP checks -----------------------------------------------
+        vips = self._api_get("firewall/vip")
+        if isinstance(vips, list):
+            for vip in vips:
+                vip_name = vip.get("name", "unknown")
+                vip_type = vip.get("type", "")
+                extip = vip.get("extip", "")
+                mappedip = vip.get("mappedip", [])
+                # VIP without policy
+                portforward = vip.get("portforward", "")
+                # VIP exposing all ports (no port restriction)
+                if str(portforward).lower() != "enable":
+                    self._add(Finding(
+                        rule_id="FORTIOS-POLICY-013", name="VIP without port forwarding restriction",
+                        category="Firewall Policies", severity="HIGH",
+                        file_path=_host, line_num=None,
+                        line_content=f"vip={vip_name}, portforward={portforward}",
+                        description=f"VIP '{vip_name}' maps all ports from {extip} to the internal server. This exposes all services on the target.",
+                        recommendation="Enable port forwarding and restrict to only required ports: set portforward enable.",
+                        cwe="CWE-284",
+                    ))
+
+        # ---- Egress filtering check ----------------------------------------
+        if isinstance(policies, list):
+            has_egress_filter = False
+            for pol in policies:
+                if pol.get("status", "") == "disable":
+                    continue
+                srcintf = pol.get("srcintf", [])
+                dstintf = pol.get("dstintf", [])
+                src_names_e = [i.get("name", "") for i in srcintf] if isinstance(srcintf, list) else []
+                dst_names_e = [i.get("name", "") for i in dstintf] if isinstance(dstintf, list) else []
+                # Look for LAN→WAN deny rules (egress filtering)
+                action = pol.get("action", "").lower()
+                if action == "deny":
+                    for si in src_names_e:
+                        for di in dst_names_e:
+                            if "lan" in si.lower() or "internal" in si.lower():
+                                if "wan" in di.lower() or "external" in di.lower():
+                                    has_egress_filter = True
+            if not has_egress_filter and active_count > 3:
+                self._add(Finding(
+                    rule_id="FORTIOS-POLICY-014", name="No egress filtering policies detected",
+                    category="Firewall Policies", severity="MEDIUM",
+                    file_path=_host, line_num=None,
+                    line_content="No LAN→WAN deny policies found",
+                    description="No egress filtering (outbound deny) policies detected. Without egress filtering, compromised hosts can freely exfiltrate data.",
+                    recommendation="Implement egress filtering policies to restrict outbound traffic to only necessary services.",
+                    cwe="CWE-284",
+                ))
+
     # ================================================================== #
     #  CHECK: SSL VPN                                                      #
     # ================================================================== #
 
     def _check_ssl_vpn(self) -> None:
+        _host = self._sys_info.get("hostname", self.host)
         settings = self._api_get("vpn.ssl/settings")
         if isinstance(settings, list) and settings:
             settings = settings[0] if isinstance(settings[0], dict) else {}
@@ -1475,6 +1677,66 @@ class FortinetScanner(_ReportMixin):
                 line_content="banned-cipher=(empty)",
                 description="No cipher suites are banned for SSL VPN. Weak ciphers (RC4, DES, NULL) may be negotiated.",
                 recommendation="Ban weak ciphers: set banned-cipher RSA DES-CBC-SHA RC4 NULL.",
+                cwe="CWE-326",
+            ))
+
+        # ---- SSL VPN web mode security checks --------------------------------
+        # Check for web-mode portals (higher risk than tunnel-mode)
+        if isinstance(portals, list):
+            for portal in portals:
+                pname = portal.get("name", "unknown")
+                web_mode = portal.get("web-mode", "")
+                if str(web_mode).lower() == "enable":
+                    # Check for host check (endpoint compliance)
+                    host_check = portal.get("host-check", "")
+                    if str(host_check).lower() != "enable":
+                        self._add(Finding(
+                            rule_id="FORTIOS-SSLVPN-011", name="SSL VPN portal without host check",
+                            category="SSL VPN", severity="HIGH",
+                            file_path=_host, line_num=None,
+                            line_content=f"portal={pname}, host-check={host_check}",
+                            description=f"SSL VPN portal '{pname}' does not enforce host checking. Unmanaged/compromised endpoints can connect.",
+                            recommendation="Enable host-check to verify endpoint compliance (AV, OS version, etc.): set host-check enable.",
+                            cwe="CWE-287",
+                        ))
+
+                    # Check for file download restriction
+                    allow_user_access = portal.get("allow-user-access", "")
+                    if isinstance(allow_user_access, str) and "ftp" in allow_user_access.lower():
+                        self._add(Finding(
+                            rule_id="FORTIOS-SSLVPN-012", name="SSL VPN portal allows FTP access",
+                            category="SSL VPN", severity="MEDIUM",
+                            file_path=_host, line_num=None,
+                            line_content=f"portal={pname}, allow-user-access includes ftp",
+                            description=f"SSL VPN portal '{pname}' allows FTP access, enabling unmonitored file transfers.",
+                            recommendation="Restrict user access to only necessary protocols. Remove FTP if not required.",
+                            cwe="CWE-284",
+                        ))
+
+                # Portal with no IP pool (address conflict risk)
+                tunnel_ip = portal.get("ip-pools", portal.get("tunnel-mode", ""))
+                limit_count = portal.get("limit-user-logins", "")
+                if str(limit_count).lower() != "enable":
+                    self._add(Finding(
+                        rule_id="FORTIOS-SSLVPN-013", name="SSL VPN portal without concurrent login limit",
+                        category="SSL VPN", severity="MEDIUM",
+                        file_path=_host, line_num=None,
+                        line_content=f"portal={pname}, limit-user-logins={limit_count}",
+                        description=f"SSL VPN portal '{pname}' does not limit concurrent logins per user. Credential sharing goes undetected.",
+                        recommendation="Enable concurrent login limits: set limit-user-logins enable.",
+                        cwe="CWE-307",
+                    ))
+
+        # ---- SSL VPN compression check (CRIME/BREACH attack) ---------------
+        compress = settings.get("http-compression", settings.get("deflate-compression-level", ""))
+        if str(compress).lower() == "enable" or (isinstance(compress, int) and compress > 0):
+            self._add(Finding(
+                rule_id="FORTIOS-SSLVPN-014", name="SSL VPN HTTP compression enabled (CRIME/BREACH risk)",
+                category="SSL VPN", severity="MEDIUM",
+                file_path=_host, line_num=None,
+                line_content=f"http-compression={compress}",
+                description="HTTP compression over SSL VPN is enabled. Compression combined with TLS is vulnerable to CRIME/BREACH attacks.",
+                recommendation="Disable HTTP compression for SSL VPN: set http-compression disable.",
                 cwe="CWE-326",
             ))
 
@@ -1947,6 +2209,53 @@ class FortinetScanner(_ReportMixin):
                         cwe="CWE-295",
                     ))
 
+        # ---- Email filter profiles -------------------------------------------
+        emailfilter = self._api_get("emailfilter/profile")
+        if not isinstance(emailfilter, list) or len(emailfilter) == 0:
+            self._add(Finding(
+                rule_id="FORTIOS-PROFILE-009", name="No email filter profiles configured",
+                category="Security Profiles", severity="LOW",
+                file_path=_host, line_num=None,
+                line_content="emailfilter/profile: empty",
+                description="No email filter profiles are configured. Email-borne threats (phishing, malware) are not inspected.",
+                recommendation="Create email filter profiles if SMTP traffic passes through the FortiGate.",
+                cwe="CWE-693",
+            ))
+
+        # ---- File filter profiles -------------------------------------------
+        filefilter = self._api_get("file-filter/profile")
+        if isinstance(filefilter, list):
+            for ff in filefilter:
+                fname = ff.get("name", "unknown")
+                rules = ff.get("rules", [])
+                if isinstance(rules, list) and not rules:
+                    self._add(Finding(
+                        rule_id="FORTIOS-PROFILE-010", name="File filter profile with no rules",
+                        category="Security Profiles", severity="MEDIUM",
+                        file_path=_host, line_num=None,
+                        line_content=f"file-filter={fname}, rules=empty",
+                        description=f"File filter profile '{fname}' has no file type rules. No file types are being blocked.",
+                        recommendation="Add rules to block dangerous file types (exe, bat, scr, dll, vbs, ps1).",
+                        cwe="CWE-434",
+                    ))
+
+        # ---- ICAP profiles (external content inspection) --------------------
+        icap = self._api_get("icap/profile")
+        if isinstance(icap, list) and icap:
+            for ip in icap:
+                ipname = ip.get("name", "unknown")
+                preview = ip.get("preview", "")
+                if str(preview).lower() == "disable":
+                    self._add(Finding(
+                        rule_id="FORTIOS-PROFILE-011", name="ICAP profile without preview mode",
+                        category="Security Profiles", severity="LOW",
+                        file_path=_host, line_num=None,
+                        line_content=f"icap-profile={ipname}, preview=disable",
+                        description=f"ICAP profile '{ipname}' does not use preview mode. All traffic is sent to the ICAP server, increasing latency.",
+                        recommendation="Enable preview mode for ICAP to send only the initial bytes for faster content decisions.",
+                        cwe="CWE-693",
+                    ))
+
     # ================================================================== #
     #  CHECK: Logging & Monitoring                                         #
     # ================================================================== #
@@ -2139,6 +2448,60 @@ class FortinetScanner(_ReportMixin):
                     line_content="eventfilter user=disable",
                     description="User authentication event logging is disabled. Login attempts and authentication failures are not recorded.",
                     recommendation="Enable user event logging: set user enable.",
+                    cwe="CWE-778",
+                ))
+
+        # ---- SNMP trap / alert configuration --------------------------------
+        alert_email = self._api_get("alertemail/setting")
+        if isinstance(alert_email, list) and alert_email:
+            alert_email = alert_email[0] if isinstance(alert_email[0], dict) else {}
+        if isinstance(alert_email, dict):
+            ae_status = alert_email.get("username", alert_email.get("mailto1", ""))
+            if not ae_status:
+                self._add(Finding(
+                    rule_id="FORTIOS-LOG-014", name="Alert email not configured",
+                    category="Logging & Monitoring", severity="MEDIUM",
+                    file_path=_host, line_num=None,
+                    line_content="alertemail mailto1=(empty)",
+                    description="No alert email recipients configured. Critical security events will not trigger email notifications.",
+                    recommendation="Configure alert email recipients: config alertemail setting / set mailto1 <email>.",
+                    cwe="CWE-778",
+                ))
+
+        # ---- Automation / event triggers -----------------------------------
+        automation = self._api_get("system/automation-trigger")
+        if not isinstance(automation, list) or len(automation) == 0:
+            self._add(Finding(
+                rule_id="FORTIOS-LOG-015", name="No automation triggers configured",
+                category="Logging & Monitoring", severity="LOW",
+                file_path=_host, line_num=None,
+                line_content="system/automation-trigger: empty",
+                description="No automation triggers are configured. Automated responses to security events (IPS alerts, admin logins, HA failover) are not set up.",
+                recommendation="Configure automation triggers and actions for critical security events.",
+                cwe="CWE-778",
+            ))
+
+        # ---- Syslog redundancy check (secondary syslog) -------------------
+        syslog2 = self._api_get("log.syslogd2/setting")
+        if isinstance(syslog2, list) and syslog2:
+            syslog2 = syslog2[0] if isinstance(syslog2[0], dict) else {}
+        if isinstance(syslog2, dict):
+            s2_status = syslog2.get("status", "disable")
+        else:
+            s2_status = "disable"
+        # Only flag if primary syslog is enabled but secondary is not
+        syslog_primary = self._api_get("log.syslogd/setting")
+        if isinstance(syslog_primary, list) and syslog_primary:
+            syslog_primary = syslog_primary[0] if isinstance(syslog_primary[0], dict) else {}
+        if isinstance(syslog_primary, dict) and syslog_primary.get("status", "") == "enable":
+            if s2_status != "enable":
+                self._add(Finding(
+                    rule_id="FORTIOS-LOG-016", name="No redundant syslog server configured",
+                    category="Logging & Monitoring", severity="LOW",
+                    file_path=_host, line_num=None,
+                    line_content="syslogd2 status=disable",
+                    description="Only one syslog server is configured. If the primary syslog server is unavailable, logs will be lost.",
+                    recommendation="Configure a secondary syslog server: config log syslogd2 setting / set status enable.",
                     cwe="CWE-778",
                 ))
 
@@ -2390,6 +2753,38 @@ class FortinetScanner(_ReportMixin):
                         ))
                 except (ValueError, TypeError):
                     pass
+
+            # Wildcard certificate
+            cn = cert.get("common-name", cert.get("subject", ""))
+            if isinstance(cn, str) and cn.startswith("*."):
+                self._add(Finding(
+                    rule_id="FORTIOS-CERT-009", name="Wildcard certificate in use",
+                    category="Certificates", severity="LOW",
+                    file_path=_host, line_num=None,
+                    line_content=f"certificate={cname}, CN={cn}",
+                    description=f"Certificate '{cname}' is a wildcard certificate ({cn}). Wildcard certs increase blast radius if compromised.",
+                    recommendation="Use specific certificates per service where possible. Monitor wildcard cert usage closely.",
+                    cwe="CWE-295",
+                ))
+
+        # ---- CRL / OCSP revocation check settings -------------------------
+        crl_settings = self._api_get("vpn.certificate/crl")
+        ocsp_settings = self._api_get("vpn.certificate/ocsp-server")
+        has_revocation = False
+        if isinstance(crl_settings, list) and crl_settings:
+            has_revocation = True
+        if isinstance(ocsp_settings, list) and ocsp_settings:
+            has_revocation = True
+        if not has_revocation:
+            self._add(Finding(
+                rule_id="FORTIOS-CERT-010", name="No certificate revocation checking configured",
+                category="Certificates", severity="HIGH",
+                file_path=_host, line_num=None,
+                line_content="crl=empty, ocsp-server=empty",
+                description="No CRL or OCSP servers are configured. Revoked certificates will still be accepted as valid.",
+                recommendation="Configure CRL distribution points or OCSP servers for certificate revocation checking.",
+                cwe="CWE-299",
+            ))
 
     # ================================================================== #
     #  CHECK: Network Hardening                                            #
@@ -2883,6 +3278,351 @@ class FortinetScanner(_ReportMixin):
                     description=f"FortiOS {ver_str} is on an end-of-life branch that no longer receives security patches.",
                     recommendation="Upgrade to a supported FortiOS branch (7.0, 7.2, or 7.4).",
                     cwe="CWE-1104",
+                ))
+
+    # ------------------------------------------------------------------ #
+    #  Wireless Security                                                   #
+    # ------------------------------------------------------------------ #
+    def _check_wireless(self) -> None:
+        _host = self._sys_info.get("hostname", self.host)
+        wtp_profiles = self._api_get("wireless-controller/wtp-profile")
+        vaps = self._api_get("wireless-controller/vap")
+        wids = self._api_get("wireless-controller/wids-profile")
+
+        if not wtp_profiles and not vaps:
+            self._vprint("  No wireless controller / WTP profiles found — skipping wireless checks.")
+            return
+
+        # WIRELESS-001 — WPA2/WPA3 enforcement
+        for vap in (vaps or []):
+            sec = str(vap.get("security", "")).lower()
+            name = vap.get("name", "unknown")
+            if sec and ("open" in sec or "wep" in sec or "wpa-personal" == sec):
+                self._add(Finding(
+                    rule_id="FORTIOS-WIRELESS-001",
+                    name="Weak wireless security mode",
+                    category="Wireless Security", severity="HIGH",
+                    file_path=_host, line_num=None,
+                    line_content=f"VAP '{name}' security={sec}",
+                    description=f"Wireless SSID '{name}' uses weak security mode '{sec}'. Open/WEP/basic-WPA are trivially broken.",
+                    recommendation="Configure WPA2-Enterprise (802.1X) or WPA3-SAE for all SSIDs.",
+                    cwe="CWE-326",
+                ))
+
+        # WIRELESS-002 — Guest SSID isolation
+        for vap in (vaps or []):
+            name = str(vap.get("name", "")).lower()
+            intra = str(vap.get("intra-vap-privacy", "disable")).lower()
+            if ("guest" in name or "visitor" in name) and intra != "enable":
+                self._add(Finding(
+                    rule_id="FORTIOS-WIRELESS-002",
+                    name="Guest SSID lacks client isolation",
+                    category="Wireless Security", severity="MEDIUM",
+                    file_path=_host, line_num=None,
+                    line_content=f"VAP '{vap.get('name', '')}' intra-vap-privacy=disable",
+                    description=f"Guest SSID '{vap.get('name', '')}' does not isolate wireless clients from each other.",
+                    recommendation="Enable intra-vap-privacy (client isolation) on guest SSIDs to prevent lateral movement.",
+                    cwe="CWE-284",
+                ))
+
+        # WIRELESS-003 — SSID broadcast suppression for internal networks
+        for vap in (vaps or []):
+            broadcast = str(vap.get("broadcast-ssid", "enable")).lower()
+            name = str(vap.get("name", "")).lower()
+            if broadcast == "enable" and ("mgmt" in name or "admin" in name or "internal" in name or "corp" in name):
+                self._add(Finding(
+                    rule_id="FORTIOS-WIRELESS-003",
+                    name="Internal SSID broadcast enabled",
+                    category="Wireless Security", severity="LOW",
+                    file_path=_host, line_num=None,
+                    line_content=f"VAP '{vap.get('name', '')}' broadcast-ssid=enable",
+                    description=f"Internal/management SSID '{vap.get('name', '')}' broadcasts its SSID. This aids discovery by attackers.",
+                    recommendation="Disable SSID broadcast for management and internal wireless networks.",
+                    cwe="CWE-200",
+                ))
+
+        # WIRELESS-004 — Rogue AP detection (WIDS)
+        if not wids:
+            self._add(Finding(
+                rule_id="FORTIOS-WIRELESS-004",
+                name="No WIDS profile configured",
+                category="Wireless Security", severity="MEDIUM",
+                file_path=_host, line_num=None,
+                line_content="No wireless-controller/wids-profile entries",
+                description="No Wireless Intrusion Detection System (WIDS) profile is configured to detect rogue APs.",
+                recommendation="Create and apply a WIDS profile with rogue AP detection, deauthentication flood detection, and ASLEAP attack detection.",
+                cwe="CWE-778",
+            ))
+        else:
+            for wp in wids:
+                name = wp.get("name", "unknown")
+                rogue = str(wp.get("ap-scan", "disable")).lower()
+                if rogue != "enable":
+                    self._add(Finding(
+                        rule_id="FORTIOS-WIRELESS-004",
+                        name="WIDS rogue AP scanning disabled",
+                        category="Wireless Security", severity="MEDIUM",
+                        file_path=_host, line_num=None,
+                        line_content=f"WIDS profile '{name}' ap-scan={rogue}",
+                        description=f"WIDS profile '{name}' does not have rogue AP scanning enabled.",
+                        recommendation="Enable ap-scan in the WIDS profile to detect unauthorized access points.",
+                        cwe="CWE-778",
+                    ))
+
+        # WIRELESS-005 — Maximum client limit per SSID
+        for vap in (vaps or []):
+            max_clients = vap.get("max-clients", 0)
+            name = vap.get("name", "unknown")
+            if isinstance(max_clients, int) and max_clients == 0:
+                self._add(Finding(
+                    rule_id="FORTIOS-WIRELESS-005",
+                    name="No maximum client limit on SSID",
+                    category="Wireless Security", severity="LOW",
+                    file_path=_host, line_num=None,
+                    line_content=f"VAP '{name}' max-clients=0 (unlimited)",
+                    description=f"SSID '{name}' has no maximum client limit, allowing resource exhaustion via mass association.",
+                    recommendation="Set a reasonable max-clients limit per SSID to prevent DoS via excessive client connections.",
+                    cwe="CWE-770",
+                ))
+
+        # WIRELESS-006 — PMF (Protected Management Frames / 802.11w)
+        for vap in (vaps or []):
+            pmf = str(vap.get("pmf", "disable")).lower()
+            name = vap.get("name", "unknown")
+            if pmf == "disable":
+                self._add(Finding(
+                    rule_id="FORTIOS-WIRELESS-006",
+                    name="Protected Management Frames disabled",
+                    category="Wireless Security", severity="MEDIUM",
+                    file_path=_host, line_num=None,
+                    line_content=f"VAP '{name}' pmf=disable",
+                    description=f"SSID '{name}' does not enforce 802.11w Protected Management Frames, leaving it vulnerable to deauthentication attacks.",
+                    recommendation="Enable PMF (802.11w) — set to 'optional' for compatibility or 'required' for maximum protection.",
+                    cwe="CWE-345",
+                ))
+
+        # WIRELESS-007 — DTLS data encryption for CAPWAP
+        for wtp in (wtp_profiles or []):
+            dtls = str(wtp.get("dtls-policy", "")).lower()
+            name = wtp.get("name", "unknown")
+            if dtls and "clear-text" in dtls:
+                self._add(Finding(
+                    rule_id="FORTIOS-WIRELESS-007",
+                    name="CAPWAP tunnel using cleartext",
+                    category="Wireless Security", severity="HIGH",
+                    file_path=_host, line_num=None,
+                    line_content=f"WTP profile '{name}' dtls-policy={dtls}",
+                    description=f"WTP profile '{name}' allows cleartext CAPWAP tunnels. Wireless traffic between AP and controller is unencrypted.",
+                    recommendation="Set dtls-policy to 'dtls-enabled' to encrypt CAPWAP data tunnels between APs and the controller.",
+                    cwe="CWE-319",
+                ))
+
+        # WIRELESS-008 — Fast roaming (802.11r) misconfiguration
+        for vap in (vaps or []):
+            ft = str(vap.get("fast-roaming", "disable")).lower()
+            ft_over_ds = str(vap.get("ft-over-ds", "enable")).lower()
+            name = vap.get("name", "unknown")
+            if ft == "enable" and ft_over_ds == "enable":
+                self._add(Finding(
+                    rule_id="FORTIOS-WIRELESS-008",
+                    name="802.11r FT-over-DS enabled",
+                    category="Wireless Security", severity="LOW",
+                    file_path=_host, line_num=None,
+                    line_content=f"VAP '{name}' ft-over-ds=enable",
+                    description=f"SSID '{name}' has 802.11r Fast Transition over DS enabled, which has known vulnerabilities (CVE-2017-13082).",
+                    recommendation="Disable ft-over-ds and use FT-over-Air instead for fast roaming.",
+                    cwe="CWE-327",
+                ))
+
+    # ------------------------------------------------------------------ #
+    #  Backup & Disaster Recovery                                          #
+    # ------------------------------------------------------------------ #
+    def _check_backup(self) -> None:
+        _host = self._sys_info.get("hostname", self.host)
+        global_settings = self._api_get("system/global")
+        ha_config = self._api_get("system/ha")
+        auto_backup = self._api_get("system.autoupdate/schedule")
+        fortimanager = self._api_get("system/central-management")
+
+        # BACKUP-001 — No central management (FortiManager) for config backup
+        fm_mode = str((fortimanager or {}).get("mode", "normal")).lower()
+        fm_fmg = (fortimanager or {}).get("fmg", "")
+        if fm_mode == "normal" or not fm_fmg:
+            self._add(Finding(
+                rule_id="FORTIOS-BACKUP-001",
+                name="No FortiManager for centralised backup",
+                category="Backup & DR", severity="MEDIUM",
+                file_path=_host, line_num=None,
+                line_content=f"central-management mode={fm_mode}, fmg={fm_fmg or 'not set'}",
+                description="No FortiManager is configured for central configuration management and backup.",
+                recommendation="Register this FortiGate with FortiManager for automated config backups, change tracking, and disaster recovery.",
+                cwe="CWE-693",
+            ))
+
+        # BACKUP-002 — Config revision tracking
+        revision_limit = (global_settings or {}).get("revision-backup-on-logout", "disable")
+        if str(revision_limit).lower() == "disable":
+            self._add(Finding(
+                rule_id="FORTIOS-BACKUP-002",
+                name="Config revision on logout disabled",
+                category="Backup & DR", severity="LOW",
+                file_path=_host, line_num=None,
+                line_content=f"revision-backup-on-logout=disable",
+                description="Automatic configuration revision backup on admin logout is disabled. Config changes may be lost.",
+                recommendation="Enable revision-backup-on-logout under system/global to maintain configuration history.",
+                cwe="CWE-693",
+            ))
+
+        # BACKUP-003 — HA without session pickup (DR capability)
+        ha_mode = str((ha_config or {}).get("mode", "standalone")).lower()
+        session_pickup = str((ha_config or {}).get("session-pickup", "disable")).lower()
+        if ha_mode != "standalone" and session_pickup != "enable":
+            self._add(Finding(
+                rule_id="FORTIOS-BACKUP-003",
+                name="HA session pickup disabled",
+                category="Backup & DR", severity="MEDIUM",
+                file_path=_host, line_num=None,
+                line_content=f"HA mode={ha_mode}, session-pickup={session_pickup}",
+                description="HA cluster does not have session pickup enabled. Active sessions will be dropped during failover.",
+                recommendation="Enable session-pickup in HA configuration to maintain sessions during failover events.",
+                cwe="CWE-693",
+            ))
+
+        # BACKUP-004 — Backup encryption
+        revision_image = str((global_settings or {}).get("revision-image-auto-backup", "disable")).lower()
+        admin_restrict = (global_settings or {}).get("admin-restrict-local", "disable")
+        cfg_save = str((global_settings or {}).get("cfg-save", "automatic")).lower()
+        if cfg_save == "automatic":
+            self._add(Finding(
+                rule_id="FORTIOS-BACKUP-004",
+                name="Automatic config save without review",
+                category="Backup & DR", severity="LOW",
+                file_path=_host, line_num=None,
+                line_content=f"cfg-save=automatic",
+                description="Configuration changes are saved automatically without manual review, increasing risk of unintended changes persisting.",
+                recommendation="Consider setting cfg-save to 'revert' with a timeout to allow rollback of unintended changes.",
+                cwe="CWE-693",
+            ))
+
+        # BACKUP-005 — USB auto-install (potential recovery risk or attack vector)
+        usb_auto = str((global_settings or {}).get("auto-install-config", "enable")).lower()
+        if usb_auto == "enable":
+            self._add(Finding(
+                rule_id="FORTIOS-BACKUP-005",
+                name="USB auto-install config enabled",
+                category="Backup & DR", severity="MEDIUM",
+                file_path=_host, line_num=None,
+                line_content="auto-install-config=enable",
+                description="USB auto-install of configuration is enabled. A malicious USB device could overwrite the running configuration.",
+                recommendation="Disable auto-install-config and auto-install-image under system/global to prevent USB-based config tampering.",
+                cwe="CWE-306",
+            ))
+
+    # ------------------------------------------------------------------ #
+    #  Authentication — LDAP / RADIUS / SAML                               #
+    # ------------------------------------------------------------------ #
+    def _check_authentication(self) -> None:
+        _host = self._sys_info.get("hostname", self.host)
+        ldap_servers = self._api_get("user/ldap")
+        radius_servers = self._api_get("user/radius")
+        saml_sp = self._api_get("user/saml")
+        fsso = self._api_get("user/fsso")
+        local_users = self._api_get("user/local")
+
+        # AUTH-001 — LDAP without TLS/STARTTLS
+        for srv in (ldap_servers or []):
+            name = srv.get("name", "unknown")
+            secure = str(srv.get("secure", "disable")).lower()
+            port = srv.get("port", 389)
+            if secure == "disable" and port != 636:
+                self._add(Finding(
+                    rule_id="FORTIOS-AUTH-001",
+                    name="LDAP server without TLS encryption",
+                    category="Authentication", severity="HIGH",
+                    file_path=_host, line_num=None,
+                    line_content=f"LDAP '{name}' secure={secure}, port={port}",
+                    description=f"LDAP server '{name}' communicates in cleartext. Credentials and directory data are exposed on the network.",
+                    recommendation="Enable LDAPS (port 636) or STARTTLS by setting secure to 'ldaps' or 'starttls'.",
+                    cwe="CWE-319",
+                ))
+
+        # AUTH-002 — RADIUS without secret or short secret
+        for srv in (radius_servers or []):
+            name = srv.get("name", "unknown")
+            secret = srv.get("secret", "")
+            if isinstance(secret, str) and len(secret) < 16:
+                self._add(Finding(
+                    rule_id="FORTIOS-AUTH-002",
+                    name="RADIUS shared secret too short",
+                    category="Authentication", severity="HIGH",
+                    file_path=_host, line_num=None,
+                    line_content=f"RADIUS '{name}' secret length < 16 chars",
+                    description=f"RADIUS server '{name}' shared secret is less than 16 characters, making it vulnerable to brute-force attacks.",
+                    recommendation="Use a RADIUS shared secret of at least 22 characters with mixed character types.",
+                    cwe="CWE-521",
+                ))
+
+        # AUTH-003 — RADIUS timeout too long
+        for srv in (radius_servers or []):
+            name = srv.get("name", "unknown")
+            timeout = srv.get("timeout", 5)
+            if isinstance(timeout, int) and timeout > 30:
+                self._add(Finding(
+                    rule_id="FORTIOS-AUTH-003",
+                    name="RADIUS timeout excessively long",
+                    category="Authentication", severity="LOW",
+                    file_path=_host, line_num=None,
+                    line_content=f"RADIUS '{name}' timeout={timeout}s",
+                    description=f"RADIUS server '{name}' has timeout of {timeout}s. Excessive timeouts can cause authentication delays and DoS.",
+                    recommendation="Set RADIUS timeout to 5-10 seconds and configure a secondary RADIUS server for redundancy.",
+                    cwe="CWE-400",
+                ))
+
+        # AUTH-004 — No SAML/SSO configured
+        if not saml_sp and not fsso:
+            self._add(Finding(
+                rule_id="FORTIOS-AUTH-004",
+                name="No SSO/SAML integration configured",
+                category="Authentication", severity="LOW",
+                file_path=_host, line_num=None,
+                line_content="No user/saml or user/fsso entries",
+                description="Neither SAML IdP nor Fortinet SSO (FSSO) is configured. Users rely solely on local or LDAP/RADIUS authentication.",
+                recommendation="Integrate SAML 2.0 SSO or FSSO for centralised identity management and conditional access.",
+                cwe="CWE-287",
+            ))
+
+        # AUTH-005 — Local user accounts without MFA
+        for user in (local_users or []):
+            name = user.get("name", "unknown")
+            two_factor = str(user.get("two-factor", "disable")).lower()
+            status = str(user.get("status", "enable")).lower()
+            if status == "enable" and two_factor == "disable":
+                self._add(Finding(
+                    rule_id="FORTIOS-AUTH-005",
+                    name="Local user without MFA",
+                    category="Authentication", severity="MEDIUM",
+                    file_path=_host, line_num=None,
+                    line_content=f"User '{name}' two-factor=disable",
+                    description=f"Local user '{name}' does not have two-factor authentication enabled.",
+                    recommendation="Enable two-factor authentication (FortiToken, email, or SMS) for all local user accounts.",
+                    cwe="CWE-308",
+                ))
+
+        # AUTH-006 — LDAP without server identity check
+        for srv in (ldap_servers or []):
+            name = srv.get("name", "unknown")
+            server_id_check = str(srv.get("server-identity-check", "disable")).lower()
+            secure = str(srv.get("secure", "disable")).lower()
+            if secure != "disable" and server_id_check != "enable":
+                self._add(Finding(
+                    rule_id="FORTIOS-AUTH-006",
+                    name="LDAP TLS without server identity check",
+                    category="Authentication", severity="MEDIUM",
+                    file_path=_host, line_num=None,
+                    line_content=f"LDAP '{name}' server-identity-check={server_id_check}",
+                    description=f"LDAP server '{name}' uses TLS but does not verify the server certificate identity, allowing MITM attacks.",
+                    recommendation="Enable server-identity-check on the LDAP server configuration to validate the TLS certificate.",
+                    cwe="CWE-295",
                 ))
 
 
