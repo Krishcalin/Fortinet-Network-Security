@@ -463,6 +463,26 @@ COMPLIANCE_MAP: dict[str, dict[str, list[str]]] = {
     "FORTIOS-PROFILE-003": {"CIS": ["4.2.3"], "PCI-DSS": ["1.2.1"], "NIST": ["SC-7"]},
     # CVE rules map to patch management controls
     "FORTIOS-CVE":         {"PCI-DSS": ["6.2"], "NIST": ["SI-2", "RA-5"], "SOC2": ["CC7.1"], "HIPAA": ["164.308(a)(5)(ii)(B)"]},
+    # MITRE ATT&CK resilience rules
+    "MITRE-T1190":  {"CIS": ["4.2.2"], "PCI-DSS": ["6.5", "11.4"], "NIST": ["SI-4", "SC-7"]},
+    "MITRE-T1566":  {"CIS": ["4.2.1", "4.2.3"], "PCI-DSS": ["5.1", "5.2"], "NIST": ["SI-3", "SI-8"]},
+    "MITRE-T1133":  {"CIS": ["5.1.3"], "PCI-DSS": ["8.3.1"], "NIST": ["AC-17", "IA-2"]},
+    "MITRE-T1059":  {"CIS": ["4.2.4"], "PCI-DSS": ["1.2.1"], "NIST": ["CM-7", "SC-7"]},
+    "MITRE-T1203":  {"CIS": ["4.2.5"], "PCI-DSS": ["6.5", "11.4"], "NIST": ["SI-4", "SC-8"]},
+    "MITRE-T1078":  {"CIS": ["2.1.4"], "PCI-DSS": ["8.3.1"], "NIST": ["IA-2(1)", "AC-6"]},
+    "MITRE-T1071":  {"CIS": ["4.2.6"], "PCI-DSS": ["1.2.1"], "NIST": ["SC-7", "SI-4"]},
+    "MITRE-T1027":  {"CIS": ["4.2.1"], "PCI-DSS": ["5.1"], "NIST": ["SI-3"]},
+    "MITRE-T1562":  {"CIS": ["6.1.1", "6.1.2"], "PCI-DSS": ["10.1", "10.5"], "NIST": ["AU-2", "AU-9"], "HIPAA": ["164.312(b)"]},
+    "MITRE-T1110":  {"CIS": ["3.1.5"], "PCI-DSS": ["8.1.6"], "NIST": ["AC-7", "IA-5"]},
+    "MITRE-T1557":  {"CIS": ["2.1.1"], "PCI-DSS": ["4.1"], "NIST": ["SC-8", "SC-23"]},
+    "MITRE-T1021":  {"CIS": ["4.1.2"], "PCI-DSS": ["1.2.1"], "NIST": ["AC-4", "SC-7"]},
+    "MITRE-T1048":  {"CIS": ["4.2.7"], "PCI-DSS": ["1.3.4"], "NIST": ["SC-7", "AC-4"]},
+    "MITRE-T1041":  {"CIS": ["4.2.6"], "PCI-DSS": ["1.2.1"], "NIST": ["SI-4", "SC-7"]},
+    "MITRE-T1573":  {"CIS": ["4.2.5"], "PCI-DSS": ["4.1"], "NIST": ["SC-8", "SI-4"]},
+    "MITRE-T1090":  {"CIS": ["4.2.4"], "PCI-DSS": ["1.2.1"], "NIST": ["SC-7"]},
+    "MITRE-T1498":  {"CIS": ["9.1.1"], "PCI-DSS": ["11.4"], "NIST": ["SC-5"]},
+    "MITRE-T1486":  {"CIS": ["4.2.1"], "PCI-DSS": ["5.1"], "NIST": ["SI-3", "CP-9"]},
+    "MITRE-T1595":  {"CIS": ["2.1.7"], "PCI-DSS": ["1.2.1"], "NIST": ["AC-17", "SC-7"]},
 }
 
 # ── Remediation CLI commands (FortiOS config) per rule ──────────────────
@@ -961,6 +981,7 @@ class FortinetScanner(_ReportMixin):
             ("Backup & DR",          self._check_backup),
             ("Authentication",       self._check_authentication),
             ("Advanced Hardening",   self._check_advanced_hardening),
+            ("MITRE ATT&CK Resilience", self._check_mitre_attack_resilience),
         ]
 
         for name, func in checks:
@@ -4136,6 +4157,475 @@ class FortinetScanner(_ReportMixin):
                     recommendation="Configure SD-WAN health checks with SLA targets: config system sdwan / config health-check.",
                     cwe="CWE-693",
                 ))
+
+    # ================================================================== #
+    #  CHECK: MITRE ATT&CK Resilience (NEW v4.0.0)                        #
+    # ================================================================== #
+
+    def _check_mitre_attack_resilience(self) -> None:
+        """Test firewall resilience against MITRE ATT&CK Enterprise techniques.
+
+        Maps FortiGate security controls to specific ATT&CK techniques and
+        verifies the firewall is configured to detect/block each attack vector.
+        """
+        _host = self._sys_info.get("hostname", self.host)
+
+        # Cache API data for cross-check analysis
+        policies = self._api_get("firewall/policy") or []
+        if not isinstance(policies, list):
+            policies = []
+        av_profiles = self._api_get("antivirus/profile") or []
+        if not isinstance(av_profiles, list):
+            av_profiles = []
+        ips_sensors = self._api_get("ips/sensor") or []
+        if not isinstance(ips_sensors, list):
+            ips_sensors = []
+        wf_profiles = self._api_get("webfilter/profile") or []
+        if not isinstance(wf_profiles, list):
+            wf_profiles = []
+        app_lists = self._api_get("application/list") or []
+        if not isinstance(app_lists, list):
+            app_lists = []
+        ssl_profiles = self._api_get("firewall/ssl-ssh-profile") or []
+        if not isinstance(ssl_profiles, list):
+            ssl_profiles = []
+        dns_profiles = self._api_get("dnsfilter/profile") or []
+        if not isinstance(dns_profiles, list):
+            dns_profiles = []
+        interfaces = self._api_get("system/interface") or []
+        if not isinstance(interfaces, list):
+            interfaces = []
+        glb = self._api_get("system/global")
+        if isinstance(glb, list) and glb:
+            glb = glb[0] if isinstance(glb[0], dict) else {}
+        if not isinstance(glb, dict):
+            glb = {}
+
+        # Helper: count policies with a given profile type attached
+        def _policies_with_profile(profile_key: str) -> int:
+            count = 0
+            for p in policies:
+                if isinstance(p, dict) and str(p.get("status", "")).lower() != "disable":
+                    val = p.get(profile_key, "")
+                    if val and str(val).strip():
+                        count += 1
+            return count
+
+        enabled_policy_count = sum(
+            1 for p in policies
+            if isinstance(p, dict) and str(p.get("status", "")).lower() != "disable"
+        )
+
+        # ================================================================
+        # TA0001 — INITIAL ACCESS
+        # ================================================================
+
+        # T1190 — Exploit Public-Facing Application
+        # Control: IPS + SSL Inspection + Web Application Firewall
+        ips_on_policies = _policies_with_profile("ips-sensor")
+        if enabled_policy_count > 0 and ips_on_policies < enabled_policy_count * 0.5:
+            self._add(Finding(
+                rule_id="MITRE-T1190-001",
+                name="T1190 Exploit Public-Facing Application — IPS coverage gap",
+                category="MITRE ATT&CK Resilience", severity="HIGH",
+                file_path=_host, line_num=None,
+                line_content=f"ips-sensor attached to {ips_on_policies}/{enabled_policy_count} policies ({int(ips_on_policies/max(enabled_policy_count,1)*100)}%)",
+                description="MITRE T1190: Less than 50% of active firewall policies have IPS sensors attached. Exploits targeting public-facing applications (web servers, VPN portals, mail gateways) will not be detected on unprotected policies.",
+                recommendation="Attach IPS sensors to all policies allowing inbound traffic, especially those for DMZ/public-facing services.",
+                cwe="CWE-693",
+            ))
+
+        # T1566 — Phishing
+        # Control: AV (malware attachments) + Web Filter (phishing URLs) + DNS Filter
+        av_on_policies = _policies_with_profile("av-profile")
+        wf_on_policies = _policies_with_profile("webfilter-profile")
+        if enabled_policy_count > 0 and (av_on_policies < enabled_policy_count * 0.5 or wf_on_policies < enabled_policy_count * 0.5):
+            self._add(Finding(
+                rule_id="MITRE-T1566-001",
+                name="T1566 Phishing — AV/WebFilter coverage gap",
+                category="MITRE ATT&CK Resilience", severity="HIGH",
+                file_path=_host, line_num=None,
+                line_content=f"av={av_on_policies}/{enabled_policy_count}, webfilter={wf_on_policies}/{enabled_policy_count}",
+                description="MITRE T1566: Antivirus and/or Web Filter profiles are not attached to the majority of policies. Phishing emails with malicious attachments or links may pass through without inspection.",
+                recommendation="Attach both AV and Web Filter profiles to all policies that allow user internet traffic.",
+                cwe="CWE-693",
+            ))
+
+        # T1133 — External Remote Services
+        # Control: VPN hardening (checked by SSL VPN / IPsec checks)
+        sslvpn = self._api_get("vpn.ssl/settings")
+        if isinstance(sslvpn, list) and sslvpn:
+            sslvpn = sslvpn[0] if isinstance(sslvpn[0], dict) else {}
+        if isinstance(sslvpn, dict):
+            status = str(sslvpn.get("status", "")).lower()
+            reqcert = str(sslvpn.get("reqclientcert", "")).lower()
+            if status == "enable" and reqcert not in ("enable", "enabled"):
+                self._add(Finding(
+                    rule_id="MITRE-T1133-001",
+                    name="T1133 External Remote Services — SSL VPN without client cert",
+                    category="MITRE ATT&CK Resilience", severity="MEDIUM",
+                    file_path=_host, line_num=None,
+                    line_content=f"sslvpn=enable, reqclientcert={reqcert}",
+                    description="MITRE T1133: SSL VPN is enabled without client certificate requirement. Password-only VPN authentication is vulnerable to credential stuffing, phishing, and brute force attacks.",
+                    recommendation="Enable client certificate verification: config vpn ssl settings / set reqclientcert enable.",
+                    cwe="CWE-308",
+                ))
+
+        # ================================================================
+        # TA0002 — EXECUTION
+        # ================================================================
+
+        # T1059 — Command and Scripting Interpreter
+        # Control: Application Control (block scripting engines, web shells)
+        app_on_policies = _policies_with_profile("application-list")
+        if enabled_policy_count > 0 and app_on_policies < enabled_policy_count * 0.3:
+            self._add(Finding(
+                rule_id="MITRE-T1059-001",
+                name="T1059 Command & Scripting — Application Control coverage gap",
+                category="MITRE ATT&CK Resilience", severity="MEDIUM",
+                file_path=_host, line_num=None,
+                line_content=f"application-list attached to {app_on_policies}/{enabled_policy_count} policies",
+                description="MITRE T1059: Application Control profiles are not widely deployed. Without Application Control, web shells, scripting engines, and malicious application traffic cannot be identified and blocked.",
+                recommendation="Create Application Control profiles that block high-risk categories and attach to all outbound/DMZ policies.",
+                cwe="CWE-693",
+            ))
+
+        # T1203 — Exploitation for Client Execution
+        # Control: SSL Deep Inspection (inspect HTTPS for exploits)
+        ssl_on_policies = _policies_with_profile("ssl-ssh-profile")
+        deep_inspect = False
+        for sslp in ssl_profiles:
+            if isinstance(sslp, dict):
+                https_mode = str(sslp.get("https", {}).get("status", sslp.get("ssl-exempt", ""))).lower() if isinstance(sslp.get("https"), dict) else ""
+                name = sslp.get("name", "")
+                if name and "deep" in name.lower():
+                    deep_inspect = True
+                    break
+        if not deep_inspect and enabled_policy_count > 0:
+            self._add(Finding(
+                rule_id="MITRE-T1203-001",
+                name="T1203 Exploitation for Client Execution — no deep SSL inspection",
+                category="MITRE ATT&CK Resilience", severity="HIGH",
+                file_path=_host, line_num=None,
+                line_content=f"ssl-ssh-profile count={len(ssl_profiles)}, deep_inspection=false",
+                description="MITRE T1203: No SSL deep inspection profile detected. Without HTTPS inspection, exploit kits, drive-by downloads, and malicious payloads in encrypted traffic are invisible to IPS/AV scanning.",
+                recommendation="Create an SSL deep inspection profile and apply to policies for user internet traffic. Install the FortiGate CA cert on endpoints.",
+                cwe="CWE-693",
+            ))
+
+        # ================================================================
+        # TA0003 — PERSISTENCE
+        # ================================================================
+
+        # T1078 — Valid Accounts
+        # Control: Admin MFA + Strong Password + Trusted Hosts
+        admins = self._api_get("system/admin") or []
+        if isinstance(admins, list):
+            no_mfa = [a.get("name", "?") for a in admins if isinstance(a, dict) and str(a.get("two-factor", "")).lower() in ("", "disable", "disabled")]
+            no_trusted = [a.get("name", "?") for a in admins if isinstance(a, dict) and str(a.get("trusthost1", "0.0.0.0")).startswith("0.0.0.0")]
+            if no_mfa:
+                self._add(Finding(
+                    rule_id="MITRE-T1078-001",
+                    name="T1078 Valid Accounts — admin accounts without MFA",
+                    category="MITRE ATT&CK Resilience", severity="HIGH",
+                    file_path=_host, line_num=None,
+                    line_content=f"no_mfa: {', '.join(no_mfa[:5])}{'...' if len(no_mfa)>5 else ''} ({len(no_mfa)} accounts)",
+                    description=f"MITRE T1078: {len(no_mfa)} admin account(s) lack two-factor authentication. Compromised credentials can grant full firewall control without additional verification.",
+                    recommendation="Enable FortiToken or email-based 2FA for all admin accounts.",
+                    cwe="CWE-308",
+                ))
+
+        # ================================================================
+        # TA0005 — DEFENSE EVASION
+        # ================================================================
+
+        # T1071 — Application Layer Protocol (C2 over HTTP/HTTPS/DNS)
+        # Control: SSL Inspection + DNS Filter + Web Filter
+        dns_on_policies = _policies_with_profile("dnsfilter-profile")
+        if enabled_policy_count > 0 and dns_on_policies < enabled_policy_count * 0.3:
+            self._add(Finding(
+                rule_id="MITRE-T1071-001",
+                name="T1071 Application Layer Protocol — DNS filter coverage gap",
+                category="MITRE ATT&CK Resilience", severity="MEDIUM",
+                file_path=_host, line_num=None,
+                line_content=f"dnsfilter-profile attached to {dns_on_policies}/{enabled_policy_count} policies",
+                description="MITRE T1071: DNS filtering is not widely deployed. Adversaries use DNS tunneling, DNS over HTTPS (DoH), and malicious domain resolution for C2 communication and data exfiltration.",
+                recommendation="Attach DNS Filter profiles (with botnet/C2 domain blocking) to all outbound policies.",
+                cwe="CWE-693",
+            ))
+
+        # T1027 — Obfuscated Files or Information
+        # Control: AV with sandbox / FortiGuard analytics
+        sandbox_enabled = False
+        for prof in av_profiles:
+            if isinstance(prof, dict):
+                ft_analytics = str(prof.get("ftgd-analytics", prof.get("feature-set", ""))).lower()
+                outbreak = str(prof.get("outbreak-prevention", "")).lower()
+                if ft_analytics not in ("disable", "") or outbreak not in ("disable", "disabled", ""):
+                    sandbox_enabled = True
+                    break
+        if not sandbox_enabled and len(av_profiles) > 0:
+            self._add(Finding(
+                rule_id="MITRE-T1027-001",
+                name="T1027 Obfuscated Files — no sandbox/outbreak prevention",
+                category="MITRE ATT&CK Resilience", severity="HIGH",
+                file_path=_host, line_num=None,
+                line_content=f"av_profiles={len(av_profiles)}, sandbox=disabled, outbreak=disabled",
+                description="MITRE T1027: No AV profiles have sandbox analysis or outbreak prevention enabled. Obfuscated, packed, or zero-day malware will bypass signature-based detection.",
+                recommendation="Enable FortiGuard analytics (cloud sandbox) and outbreak prevention on AV profiles.",
+                cwe="CWE-693",
+            ))
+
+        # T1562 — Impair Defenses
+        # Control: Verify logging is active and cannot be easily disabled
+        log_faz = self._api_get("log.fortianalyzer/setting")
+        if isinstance(log_faz, list) and log_faz:
+            log_faz = log_faz[0] if isinstance(log_faz[0], dict) else {}
+        log_syslog = self._api_get("log.syslogd/setting")
+        if isinstance(log_syslog, list) and log_syslog:
+            log_syslog = log_syslog[0] if isinstance(log_syslog[0], dict) else {}
+        faz_status = str((log_faz or {}).get("status", "")).lower() if isinstance(log_faz, dict) else ""
+        syslog_status = str((log_syslog or {}).get("status", "")).lower() if isinstance(log_syslog, dict) else ""
+        if faz_status not in ("enable", "enabled") and syslog_status not in ("enable", "enabled"):
+            self._add(Finding(
+                rule_id="MITRE-T1562-001",
+                name="T1562 Impair Defenses — no external log forwarding",
+                category="MITRE ATT&CK Resilience", severity="CRITICAL",
+                file_path=_host, line_num=None,
+                line_content=f"fortianalyzer={faz_status}, syslog={syslog_status}",
+                description="MITRE T1562: No external log forwarding (FortiAnalyzer or Syslog) is configured. An attacker who compromises the firewall can delete local logs, destroying evidence of the intrusion.",
+                recommendation="Configure log forwarding to FortiAnalyzer or external SIEM immediately. This is critical for incident response.",
+                cwe="CWE-778",
+            ))
+
+        # ================================================================
+        # TA0006 — CREDENTIAL ACCESS
+        # ================================================================
+
+        # T1110 — Brute Force
+        # Control: Account lockout + Rate limiting
+        lockout_threshold = glb.get("admin-lockout-threshold", 0)
+        lockout_duration = glb.get("admin-lockout-duration", 0)
+        if not isinstance(lockout_threshold, int) or lockout_threshold == 0:
+            self._add(Finding(
+                rule_id="MITRE-T1110-001",
+                name="T1110 Brute Force — no admin account lockout",
+                category="MITRE ATT&CK Resilience", severity="HIGH",
+                file_path=_host, line_num=None,
+                line_content=f"admin-lockout-threshold={lockout_threshold}, duration={lockout_duration}",
+                description="MITRE T1110: Admin account lockout is not configured. Adversaries can perform unlimited password guessing attempts against the management interface.",
+                recommendation="Set lockout: config system global / set admin-lockout-threshold 3 / set admin-lockout-duration 300.",
+                cwe="CWE-307",
+            ))
+
+        # T1557 — Adversary-in-the-Middle
+        # Control: SSL inspection + HSTS + certificate validation
+        for iface in interfaces:
+            if isinstance(iface, dict):
+                role = str(iface.get("role", "")).lower()
+                access_list = str(iface.get("allowaccess", "")).lower().split()
+                if role in ("wan", "dmz") and "http" in access_list:
+                    self._add(Finding(
+                        rule_id="MITRE-T1557-001",
+                        name=f"T1557 Adversary-in-the-Middle — HTTP on {role} interface",
+                        category="MITRE ATT&CK Resilience", severity="HIGH",
+                        file_path=_host, line_num=None,
+                        line_content=f"interface={iface.get('name','?')}, role={role}, allowaccess includes http",
+                        description=f"MITRE T1557: HTTP (unencrypted) is allowed on {role} interface '{iface.get('name','?')}'. This enables MitM attacks, credential interception, and session hijacking.",
+                        recommendation=f"Remove HTTP from allowaccess on {role} interfaces. Use HTTPS only with admin-https-redirect.",
+                        cwe="CWE-319",
+                    ))
+                    break  # One finding per type
+
+        # ================================================================
+        # TA0008 — LATERAL MOVEMENT
+        # ================================================================
+
+        # T1021 — Remote Services (SMB, RDP, SSH lateral)
+        # Control: Inter-zone policies + segmentation
+        any_any_policies = 0
+        for p in policies:
+            if isinstance(p, dict) and str(p.get("status", "")).lower() != "disable":
+                src = str(p.get("srcintf", [{}])[0].get("name", "") if isinstance(p.get("srcintf"), list) and p.get("srcintf") else p.get("srcintf", "")).lower()
+                dst = str(p.get("dstintf", [{}])[0].get("name", "") if isinstance(p.get("dstintf"), list) and p.get("dstintf") else p.get("dstintf", "")).lower()
+                srcaddr = str(p.get("srcaddr", [{}])[0].get("name", "") if isinstance(p.get("srcaddr"), list) and p.get("srcaddr") else "").lower()
+                dstaddr = str(p.get("dstaddr", [{}])[0].get("name", "") if isinstance(p.get("dstaddr"), list) and p.get("dstaddr") else "").lower()
+                service = str(p.get("service", [{}])[0].get("name", "") if isinstance(p.get("service"), list) and p.get("service") else "").lower()
+                if srcaddr == "all" and dstaddr == "all" and service == "all":
+                    any_any_policies += 1
+        if any_any_policies > 0:
+            self._add(Finding(
+                rule_id="MITRE-T1021-001",
+                name=f"T1021 Remote Services — {any_any_policies} any/any/any policies allow lateral movement",
+                category="MITRE ATT&CK Resilience", severity="HIGH",
+                file_path=_host, line_num=None,
+                line_content=f"any-any-any policies={any_any_policies}",
+                description=f"MITRE T1021: {any_any_policies} firewall policies allow any source to any destination on any service. This permits unrestricted lateral movement (SMB, RDP, SSH, WMI) between network zones.",
+                recommendation="Replace any/any/any rules with specific source, destination, and service restrictions. Implement network segmentation.",
+                cwe="CWE-284",
+            ))
+
+        # ================================================================
+        # TA0010 — EXFILTRATION
+        # ================================================================
+
+        # T1048 — Exfiltration Over Alternative Protocol
+        # Control: DLP + Application Control + egress filtering
+        dlp_on_policies = _policies_with_profile("dlp-sensor")
+        if enabled_policy_count > 0 and dlp_on_policies == 0:
+            self._add(Finding(
+                rule_id="MITRE-T1048-001",
+                name="T1048 Exfiltration Over Alternative Protocol — no DLP",
+                category="MITRE ATT&CK Resilience", severity="MEDIUM",
+                file_path=_host, line_num=None,
+                line_content=f"dlp-sensor attached to 0/{enabled_policy_count} policies",
+                description="MITRE T1048: No DLP (Data Loss Prevention) sensors are attached to any firewall policies. Sensitive data can be exfiltrated via DNS, ICMP, HTTP, or custom protocols without detection.",
+                recommendation="Create DLP sensors to detect sensitive data patterns (SSN, credit cards, PII) and attach to outbound policies.",
+                cwe="CWE-200",
+            ))
+
+        # T1041 — Exfiltration Over C2 Channel
+        # Control: SSL inspection on outbound + botnet detection
+        botnet_domain = False
+        for dp in dns_profiles:
+            if isinstance(dp, dict):
+                domain_filter = dp.get("domain-filter", dp.get("block-botnet", ""))
+                ftgd_dns = dp.get("ftgd-dns", {})
+                if isinstance(ftgd_dns, dict) and ftgd_dns.get("options", ""):
+                    botnet_domain = True
+                    break
+                if str(domain_filter).lower() in ("enable", "enabled"):
+                    botnet_domain = True
+                    break
+        if not botnet_domain and len(dns_profiles) > 0:
+            self._add(Finding(
+                rule_id="MITRE-T1041-001",
+                name="T1041 Exfiltration Over C2 — DNS botnet detection disabled",
+                category="MITRE ATT&CK Resilience", severity="HIGH",
+                file_path=_host, line_num=None,
+                line_content=f"dns_profiles={len(dns_profiles)}, botnet_domain_filter=disabled",
+                description="MITRE T1041: DNS botnet/C2 domain filtering is not enabled. Malware can use known C2 domains for command and control and data exfiltration without being blocked.",
+                recommendation="Enable botnet C2 domain blocking in DNS Filter profiles: config dnsfilter profile / set block-botnet enable.",
+                cwe="CWE-693",
+            ))
+
+        # ================================================================
+        # TA0011 — COMMAND AND CONTROL
+        # ================================================================
+
+        # T1573 — Encrypted Channel (C2 over TLS)
+        # Control: SSL deep inspection
+        if not deep_inspect:
+            self._add(Finding(
+                rule_id="MITRE-T1573-001",
+                name="T1573 Encrypted Channel — encrypted C2 traffic invisible",
+                category="MITRE ATT&CK Resilience", severity="HIGH",
+                file_path=_host, line_num=None,
+                line_content="ssl-deep-inspection=not-detected",
+                description="MITRE T1573: Without SSL deep inspection, adversaries can establish encrypted C2 channels over HTTPS that are completely invisible to IPS, AV, and application control.",
+                recommendation="Deploy SSL deep inspection for outbound user traffic. Whitelist trusted financial/medical sites via SSL exemption lists.",
+                cwe="CWE-693",
+            ))
+
+        # T1090 — Proxy (use of proxy for C2)
+        # Control: Application Control blocking proxy/tunnel apps
+        proxy_blocked = False
+        for app_list in app_lists:
+            if isinstance(app_list, dict):
+                entries = app_list.get("entries", [])
+                if isinstance(entries, list):
+                    for entry in entries:
+                        if isinstance(entry, dict):
+                            cat = str(entry.get("category", "")).lower()
+                            action = str(entry.get("action", "")).lower()
+                            if "proxy" in cat and action == "block":
+                                proxy_blocked = True
+                                break
+        if not proxy_blocked and len(app_lists) > 0:
+            self._add(Finding(
+                rule_id="MITRE-T1090-001",
+                name="T1090 Proxy — proxy/tunnel applications not blocked",
+                category="MITRE ATT&CK Resilience", severity="MEDIUM",
+                file_path=_host, line_num=None,
+                line_content=f"app-control profiles={len(app_lists)}, proxy-blocked=false",
+                description="MITRE T1090: Application Control is not blocking proxy/tunnel applications (Tor, VPN tunnels, SOCKS proxies). Adversaries use these to disguise C2 traffic.",
+                recommendation="Block proxy/tunnel application categories in Application Control profiles.",
+                cwe="CWE-693",
+            ))
+
+        # ================================================================
+        # TA0040 — IMPACT
+        # ================================================================
+
+        # T1498 — Network Denial of Service
+        # Control: DoS protection policies
+        dos = self._api_get("firewall/DoS-policy") or []
+        if not isinstance(dos, list) or len(dos) == 0:
+            self._add(Finding(
+                rule_id="MITRE-T1498-001",
+                name="T1498 Network Denial of Service — no DoS protection",
+                category="MITRE ATT&CK Resilience", severity="HIGH",
+                file_path=_host, line_num=None,
+                line_content="DoS-policy: empty",
+                description="MITRE T1498: No DoS protection policies are configured. The firewall and behind-firewall services are vulnerable to SYN flood, UDP flood, ICMP flood, and application-layer DoS attacks.",
+                recommendation="Create DoS policies for all WAN-facing interfaces with appropriate thresholds for SYN/UDP/ICMP flood anomalies.",
+                cwe="CWE-400",
+            ))
+
+        # T1486 — Data Encrypted for Impact (Ransomware)
+        # Control: AV + Botnet C2 blocking + backup integrity
+        if not sandbox_enabled:
+            self._add(Finding(
+                rule_id="MITRE-T1486-001",
+                name="T1486 Data Encrypted for Impact — no ransomware sandbox detection",
+                category="MITRE ATT&CK Resilience", severity="HIGH",
+                file_path=_host, line_num=None,
+                line_content=f"sandbox=disabled, outbreak_prevention=disabled",
+                description="MITRE T1486: Cloud sandbox and outbreak prevention are disabled. Ransomware samples that evade signature detection (zero-day variants) will not be caught by behavioral analysis.",
+                recommendation="Enable FortiGuard sandbox analysis and outbreak prevention on all AV profiles protecting user traffic.",
+                cwe="CWE-693",
+            ))
+
+        # ================================================================
+        # TA0043 — RECONNAISSANCE
+        # ================================================================
+
+        # T1595 — Active Scanning
+        # Control: IPS on WAN + management interface restrictions
+        wan_has_mgmt = False
+        for iface in interfaces:
+            if isinstance(iface, dict):
+                role = str(iface.get("role", "")).lower()
+                access_list = str(iface.get("allowaccess", "")).lower().split()
+                if role == "wan" and {"https", "ssh", "snmp", "http"} & set(access_list):
+                    wan_has_mgmt = True
+                    break
+        if wan_has_mgmt:
+            self._add(Finding(
+                rule_id="MITRE-T1595-001",
+                name="T1595 Active Scanning — management exposed on WAN",
+                category="MITRE ATT&CK Resilience", severity="CRITICAL",
+                file_path=_host, line_num=None,
+                line_content="WAN interface has management protocols (HTTPS/SSH/SNMP/HTTP)",
+                description="MITRE T1595: Management interfaces are exposed on WAN, allowing adversaries to discover, fingerprint, and attack the firewall's management plane directly from the internet. This is the #1 attack vector for FortiGate compromises (CVE-2024-55591, CVE-2024-21762).",
+                recommendation="Remove all management protocols from WAN interfaces immediately. Use a dedicated management VLAN or VPN-only admin access.",
+                cwe="CWE-284",
+            ))
+
+        # ================================================================
+        # RESILIENCE SUMMARY — count technique coverage
+        # ================================================================
+        mitre_findings = [f for f in self.findings if f.rule_id.startswith("MITRE-")]
+        if not mitre_findings:
+            self._add(Finding(
+                rule_id="MITRE-SUMMARY-PASS",
+                name="MITRE ATT&CK Resilience — all tested controls passed",
+                category="MITRE ATT&CK Resilience", severity="INFO",
+                file_path=_host, line_num=None,
+                line_content="All MITRE ATT&CK resilience checks passed",
+                description="All tested MITRE ATT&CK technique mitigations are properly configured on this FortiGate. Techniques tested: T1190, T1566, T1133, T1059, T1203, T1078, T1071, T1027, T1562, T1110, T1557, T1021, T1048, T1041, T1573, T1090, T1498, T1486, T1595.",
+                recommendation="Continue regular security posture assessments and keep FortiOS firmware up to date.",
+            ))
 
     # ================================================================== #
     #  REMEDIATION EXPORT                                                  #

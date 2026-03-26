@@ -12,7 +12,8 @@
   <img src="https://img.shields.io/badge/version-4.0.0-blue?style=flat-square" alt="Version"/>
   <img src="https://img.shields.io/badge/python-3.10%2B-blue?style=flat-square&logo=python&logoColor=white" alt="Python"/>
   <img src="https://img.shields.io/badge/FortiOS-6.x%20%7C%207.x-red?style=flat-square" alt="FortiOS"/>
-  <img src="https://img.shields.io/badge/rules-220%2B-orange?style=flat-square" alt="Rules"/>
+  <img src="https://img.shields.io/badge/rules-240%2B-orange?style=flat-square" alt="Rules"/>
+  <img src="https://img.shields.io/badge/MITRE_ATT%26CK-19_techniques-dc2626?style=flat-square" alt="MITRE"/>
   <img src="https://img.shields.io/badge/CVEs-30-critical?style=flat-square" alt="CVEs"/>
   <img src="https://img.shields.io/badge/compliance-CIS%20%7C%20PCI--DSS%20%7C%20NIST%20%7C%20SOC2%20%7C%20HIPAA-blueviolet?style=flat-square" alt="Compliance"/>
   <img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="License"/>
@@ -68,11 +69,12 @@
 
 The **Fortinet FortiGate Security Scanner** is a Python-based live-API security assessment tool that connects to FortiGate Next-Generation Firewall (NGFW) appliances via the FortiOS REST API and evaluates their security posture against industry best practices, compliance frameworks, and known vulnerabilities.
 
-It performs **220+ security checks** across **17 check methods**, including firewall policy analysis, admin access hardening, VPN configuration, security profile enforcement, logging, HA, certificate management, ZTNA/SD-WAN readiness, wireless security, backup & DR, authentication (LDAP/RADIUS/SAML), advanced hardening (FIPS, session timers, MFA coverage, anti-spoofing), and **30 known FortiOS CVEs** with automatic firmware version matching.
+It performs **240+ security checks** across **18 check methods**, including firewall policy analysis, admin access hardening, VPN configuration, security profile enforcement, logging, HA, certificate management, ZTNA/SD-WAN readiness, wireless security, backup & DR, authentication (LDAP/RADIUS/SAML), advanced hardening (FIPS, session timers, MFA coverage, anti-spoofing), and **30 known FortiOS CVEs** with automatic firmware version matching.
 
 ### Key Capabilities
 
-- **220+ security rules** across 17 check categories with automatic compliance mapping
+- **240+ security rules** across 18 check categories with automatic compliance mapping
+- **MITRE ATT&CK resilience testing** — 19 technique-specific tests across 9 ATT&CK tactics verify firewall defense against real-world attack scenarios
 - **30 known CVEs** — train-based firmware version matching (includes 2025 CVEs)
 - **5 compliance frameworks** — CIS FortiGate Benchmark, PCI-DSS, NIST 800-53, SOC 2, HIPAA
 - **Remediation automation** — export FortiOS CLI config commands per finding
@@ -87,7 +89,8 @@ It performs **220+ security checks** across **17 check methods**, including fire
 
 | Feature | Description |
 |---------|-------------|
-| **17 Check Methods** | Admin access, system settings, firewall policies, SSL VPN, IPsec VPN, security profiles (AV, IPS, WebFilter, AppControl, DLP, DNS, SSL, email/file), logging, HA, certificates, network hardening, FortiGuard, ZTNA/SD-WAN, wireless, backup & DR, authentication, advanced hardening |
+| **18 Check Methods** | Admin access, system settings, firewall policies, SSL VPN, IPsec VPN, security profiles, logging, HA, certificates, network hardening, FortiGuard, ZTNA/SD-WAN, wireless, backup & DR, authentication, advanced hardening, MITRE ATT&CK resilience |
+| **MITRE ATT&CK Resilience** | 19 technique-specific tests across 9 tactics: T1190, T1566, T1133, T1059, T1203, T1078, T1071, T1027, T1562, T1110, T1557, T1021, T1048, T1041, T1573, T1090, T1498, T1486, T1595 |
 | **30 Known CVEs** | CVE-2025-24472, CVE-2025-22252, CVE-2024-55591, CVE-2024-21762, CVE-2024-35279, CVE-2023-27997, CVE-2022-42475, and 23 more |
 | **5 Compliance Frameworks** | CIS FortiGate Benchmark, PCI-DSS 4.0, NIST 800-53 Rev 5, SOC 2 Type II, HIPAA Security Rule |
 | **Remediation Export** | FortiOS CLI config commands generated per finding (`--remediation fix.txt`) |

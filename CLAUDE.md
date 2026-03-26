@@ -5,7 +5,7 @@
 Fortinet FortiGate Security Scanner — a live-API security posture assessment tool that connects to FortiGate NGFW appliances via the FortiOS REST API and audits configuration against security best practices, compliance frameworks (CIS, PCI-DSS, NIST 800-53, SOC 2, HIPAA), and known CVEs.
 
 - **Language**: Python 3.10+ (requires `requests`)
-- **Scanner file**: `fortinet_scanner.py` (single self-contained file, ~4,400 lines)
+- **Scanner file**: `fortinet_scanner.py` (single self-contained file, ~4,930 lines)
 - **Version**: 4.0.0
 - **License**: MIT
 
@@ -16,7 +16,7 @@ Fortinet FortiGate Security Scanner — a live-API security posture assessment t
 3. **`REMEDIATION_COMMANDS` dict** — 42 FortiOS CLI config commands mapped to rule IDs.
 4. **`Finding` class** — `rule_id, name, category, severity, description, recommendation, cwe, cve, compliance, remediation_cmd` (uses `__slots__`).
 5. **`_ReportMixin`** — shared reporting: `print_report`, `save_json`, `save_html`, `save_remediation`, `save_compliance_csv`, `summary`, `filter_severity`.
-6. **`FortinetScanner(_ReportMixin)`** — live API scanner with 17 check methods (220+ rules).
+6. **`FortinetScanner(_ReportMixin)`** — live API scanner with 18 check methods (240+ rules including MITRE ATT&CK resilience).
 7. **`MultiDeviceScanner`** — batch scanning of multiple FortiGates with unified summary and JSON export.
 8. **CLI**: `argparse` with `host`, `--token`, `--verify-ssl`, `--timeout`, `--json`, `--html`, `--remediation`, `--compliance-csv`, `--inventory`, `--severity`, `--verbose`, `--version`.
 9. **Exit code**: `1` if CRITICAL or HIGH findings, `0` otherwise.
@@ -52,6 +52,7 @@ Fortinet FortiGate Security Scanner — a live-API security posture assessment t
 | Backup & DR | FORTIOS-BACKUP | `_check_backup` | 5 |
 | Authentication | FORTIOS-AUTH | `_check_authentication` | 6 |
 | Advanced Hardening | FORTIOS-SYS/NET/POLICY/LOG/CERT/ZTNA | `_check_advanced_hardening` | ~15 |
+| MITRE ATT&CK Resilience | MITRE-T{NNNN}-{NNN} | `_check_mitre_attack_resilience` | ~19 |
 | Known CVEs | FORTIOS-CVE | `_check_cves` | 30 |
 
 ## Compliance Framework Mapping (v4.0.0)
@@ -103,6 +104,34 @@ Features:
 - Grand total aggregation across all devices
 - Unified JSON report with all devices and findings
 - Exit code 1 if ANY device has CRITICAL/HIGH findings
+
+## MITRE ATT&CK Resilience Testing (v4.0.0)
+
+The `_check_mitre_attack_resilience` method tests whether FortiGate controls mitigate specific ATT&CK Enterprise techniques. Each finding maps to a MITRE technique ID and references the FortiGate feature that should block the attack vector.
+
+| Tactic | Technique | Rule ID | FortiGate Control Tested |
+|--------|-----------|---------|--------------------------|
+| **Initial Access** | T1190 Exploit Public-Facing App | MITRE-T1190-001 | IPS sensor coverage across policies |
+| **Initial Access** | T1566 Phishing | MITRE-T1566-001 | AV + WebFilter coverage on policies |
+| **Initial Access** | T1133 External Remote Services | MITRE-T1133-001 | SSL VPN client certificate requirement |
+| **Execution** | T1059 Command & Scripting | MITRE-T1059-001 | Application Control coverage |
+| **Execution** | T1203 Exploitation for Client | MITRE-T1203-001 | SSL deep inspection presence |
+| **Persistence** | T1078 Valid Accounts | MITRE-T1078-001 | Admin MFA coverage |
+| **Defense Evasion** | T1071 App Layer Protocol (C2) | MITRE-T1071-001 | DNS Filter coverage |
+| **Defense Evasion** | T1027 Obfuscated Files | MITRE-T1027-001 | Sandbox / outbreak prevention |
+| **Defense Evasion** | T1562 Impair Defenses | MITRE-T1562-001 | External log forwarding (FAZ/syslog) |
+| **Credential Access** | T1110 Brute Force | MITRE-T1110-001 | Account lockout threshold |
+| **Credential Access** | T1557 Adversary-in-the-Middle | MITRE-T1557-001 | HTTP on WAN/DMZ interfaces |
+| **Lateral Movement** | T1021 Remote Services | MITRE-T1021-001 | Any/any/any policy detection |
+| **Exfiltration** | T1048 Alt Protocol Exfil | MITRE-T1048-001 | DLP sensor coverage |
+| **Exfiltration** | T1041 C2 Channel Exfil | MITRE-T1041-001 | DNS botnet/C2 domain filtering |
+| **C2** | T1573 Encrypted Channel | MITRE-T1573-001 | SSL deep inspection |
+| **C2** | T1090 Proxy | MITRE-T1090-001 | Proxy/tunnel app blocking |
+| **Impact** | T1498 Network DoS | MITRE-T1498-001 | DoS protection policies |
+| **Impact** | T1486 Ransomware | MITRE-T1486-001 | Sandbox ransomware detection |
+| **Reconnaissance** | T1595 Active Scanning | MITRE-T1595-001 | WAN management exposure |
+
+If all checks pass, an INFO-level `MITRE-SUMMARY-PASS` finding is generated.
 
 ## Known CVEs (30 entries, 2019-2025)
 
