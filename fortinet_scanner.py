@@ -483,6 +483,18 @@ COMPLIANCE_MAP: dict[str, dict[str, list[str]]] = {
     "MITRE-T1498":  {"CIS": ["9.1.1"], "PCI-DSS": ["11.4"], "NIST": ["SC-5"]},
     "MITRE-T1486":  {"CIS": ["4.2.1"], "PCI-DSS": ["5.1"], "NIST": ["SI-3", "CP-9"]},
     "MITRE-T1595":  {"CIS": ["2.1.7"], "PCI-DSS": ["1.2.1"], "NIST": ["AC-17", "SC-7"]},
+    "MITRE-T1572":  {"CIS": ["4.2.6"], "PCI-DSS": ["1.2.1"], "NIST": ["SC-7", "SI-4"]},
+    "MITRE-T1571":  {"CIS": ["4.2.4"], "PCI-DSS": ["1.2.1"], "NIST": ["SC-7", "CM-7"]},
+    "MITRE-T1189":  {"CIS": ["4.2.3"], "PCI-DSS": ["5.1"], "NIST": ["SI-3", "SC-7"]},
+    "MITRE-T1105":  {"CIS": ["4.2.1"], "PCI-DSS": ["5.1", "5.2"], "NIST": ["SI-3"]},
+    "MITRE-T1046":  {"CIS": ["9.1.1"], "PCI-DSS": ["11.4"], "NIST": ["SI-4", "SC-7"]},
+    "MITRE-T1210":  {"CIS": ["4.2.2"], "PCI-DSS": ["6.5", "11.4"], "NIST": ["SI-4", "SI-2"]},
+    "MITRE-T1219":  {"CIS": ["4.2.4"], "PCI-DSS": ["1.2.1"], "NIST": ["CM-7", "SC-7"]},
+    "MITRE-T1568":  {"CIS": ["4.2.6"], "PCI-DSS": ["1.2.1"], "NIST": ["SI-4"]},
+    "MITRE-T1102":  {"CIS": ["4.2.5"], "PCI-DSS": ["1.2.1"], "NIST": ["SC-7", "SI-4"]},
+    "MITRE-T1567":  {"CIS": ["4.2.7"], "PCI-DSS": ["1.3.4"], "NIST": ["SC-7", "AC-4"]},
+    "MITRE-T1499":  {"CIS": ["9.1.1"], "PCI-DSS": ["11.4"], "NIST": ["SC-5", "SI-4"]},
+    "MITRE-T1496":  {"CIS": ["4.2.4"], "PCI-DSS": ["1.2.1"], "NIST": ["CM-7"]},
 }
 
 # ── Remediation CLI commands (FortiOS config) per rule ──────────────────
@@ -4613,18 +4625,249 @@ class FortinetScanner(_ReportMixin):
             ))
 
         # ================================================================
-        # RESILIENCE SUMMARY — count technique coverage
+        # TA0005 — DEFENSE EVASION (Additional)
+        # ================================================================
+
+        # T1572 — Protocol Tunneling (DNS tunnel, ICMP tunnel, HTTP tunnel)
+        # Control: IPS + DNS Filter + Application Control
+        has_dns_filter = len(dns_profiles) > 0
+        if not has_dns_filter:
+            self._add(Finding(
+                rule_id="MITRE-T1572-001",
+                name="T1572 Protocol Tunneling — no DNS filter to detect tunnels",
+                category="MITRE ATT&CK Resilience", severity="HIGH",
+                file_path=_host, line_num=None,
+                line_content="dnsfilter/profile: empty",
+                description="MITRE T1572: No DNS filter profiles configured. DNS tunneling tools (iodine, dnscat2) encode C2 traffic in DNS queries. Without DNS filtering, these tunnel long subdomains and TXT record abuse go undetected.",
+                recommendation="Create DNS Filter profiles with botnet/C2 blocking enabled and attach to all outbound policies.",
+                cwe="CWE-693",
+            ))
+
+        # T1571 — Non-Standard Port (C2 on unexpected ports)
+        # Control: Application Control (identifies app regardless of port)
+        if len(app_lists) == 0:
+            self._add(Finding(
+                rule_id="MITRE-T1571-001",
+                name="T1571 Non-Standard Port — no Application Control for port-agnostic detection",
+                category="MITRE ATT&CK Resilience", severity="HIGH",
+                file_path=_host, line_num=None,
+                line_content="application/list: empty",
+                description="MITRE T1571: No Application Control profiles exist. Without AppCtrl, the FortiGate relies solely on port numbers to classify traffic. Adversaries can run HTTP C2 on port 53 or SSH tunnels on port 443 without detection.",
+                recommendation="Create Application Control profiles and attach to policies. AppCtrl identifies applications by behavior, not port.",
+                cwe="CWE-693",
+            ))
+
+        # T1189 — Drive-by Compromise
+        # Control: WebFilter + AV + SSL Inspection + Sandbox
+        if enabled_policy_count > 0 and wf_on_policies < enabled_policy_count * 0.5:
+            self._add(Finding(
+                rule_id="MITRE-T1189-001",
+                name="T1189 Drive-by Compromise — Web Filter coverage insufficient",
+                category="MITRE ATT&CK Resilience", severity="HIGH",
+                file_path=_host, line_num=None,
+                line_content=f"webfilter-profile on {wf_on_policies}/{enabled_policy_count} policies ({int(wf_on_policies/max(enabled_policy_count,1)*100)}%)",
+                description="MITRE T1189: Web Filter profiles cover less than 50% of policies. Users visiting compromised websites (watering holes) will not have malicious URLs blocked by FortiGuard URL categorization.",
+                recommendation="Attach Web Filter profiles to all policies allowing user internet traffic. Enable FortiGuard URL rating.",
+                cwe="CWE-693",
+            ))
+
+        # T1105 — Ingress Tool Transfer
+        # Control: AV + Sandbox + Web Filter (block malware downloads)
+        if len(av_profiles) == 0:
+            self._add(Finding(
+                rule_id="MITRE-T1105-001",
+                name="T1105 Ingress Tool Transfer — no AV to block attack tool downloads",
+                category="MITRE ATT&CK Resilience", severity="CRITICAL",
+                file_path=_host, line_num=None,
+                line_content="antivirus/profile: empty",
+                description="MITRE T1105: No antivirus profiles configured. Post-exploitation tools (Mimikatz, Cobalt Strike, PsExec) downloaded by attackers will not be detected or blocked.",
+                recommendation="Create AV profiles with blocking enabled for all protocols (HTTP, FTP, SMTP, IMAP) and attach to all policies.",
+                cwe="CWE-693",
+            ))
+
+        # ================================================================
+        # TA0007 — DISCOVERY
+        # ================================================================
+
+        # T1046 — Network Service Discovery (internal scanning)
+        # Control: Inter-zone IPS + Firewall Policy segmentation
+        has_inter_zone_ips = False
+        for p in policies:
+            if isinstance(p, dict) and str(p.get("status", "")).lower() != "disable":
+                src = p.get("srcintf", [])
+                dst = p.get("dstintf", [])
+                src_name = src[0].get("name", "") if isinstance(src, list) and src else str(src)
+                dst_name = dst[0].get("name", "") if isinstance(dst, list) and dst else str(dst)
+                if src_name != dst_name and p.get("ips-sensor", ""):
+                    has_inter_zone_ips = True
+                    break
+        if not has_inter_zone_ips and enabled_policy_count > 2:
+            self._add(Finding(
+                rule_id="MITRE-T1046-001",
+                name="T1046 Network Service Discovery — no inter-zone IPS",
+                category="MITRE ATT&CK Resilience", severity="MEDIUM",
+                file_path=_host, line_num=None,
+                line_content="No IPS sensor on inter-zone (east-west) policies",
+                description="MITRE T1046: No IPS sensors are applied to inter-zone policies. Internal network scanning (Nmap, masscan) by a compromised host traversing the firewall between zones will not trigger IPS detection signatures.",
+                recommendation="Apply IPS sensors to inter-zone (east-west) policies, not just inbound/outbound. This detects lateral movement scanning.",
+                cwe="CWE-693",
+            ))
+
+        # T1210 — Exploitation of Remote Services (EternalBlue, PrintNightmare)
+        # Control: Inter-zone IPS for exploit signatures
+        if not has_inter_zone_ips and enabled_policy_count > 2:
+            self._add(Finding(
+                rule_id="MITRE-T1210-001",
+                name="T1210 Exploitation of Remote Services — east-west exploits undetected",
+                category="MITRE ATT&CK Resilience", severity="HIGH",
+                file_path=_host, line_num=None,
+                line_content="No IPS on inter-zone policies for exploit detection",
+                description="MITRE T1210: Without IPS on inter-zone policies, lateral exploitation (EternalBlue/MS17-010, PrintNightmare, Log4Shell targeting internal services) will not be detected as traffic passes between network zones.",
+                recommendation="Enable IPS with exploit signatures on all inter-zone policies to detect lateral exploitation attempts.",
+                cwe="CWE-693",
+            ))
+
+        # ================================================================
+        # TA0011 — C2 (Additional)
+        # ================================================================
+
+        # T1219 — Remote Access Software (TeamViewer, AnyDesk as C2)
+        # Control: Application Control
+        rat_blocked = False
+        for app_list in app_lists:
+            if isinstance(app_list, dict):
+                entries = app_list.get("entries", [])
+                if isinstance(entries, list):
+                    for entry in entries:
+                        if isinstance(entry, dict):
+                            cat = str(entry.get("category", "")).lower()
+                            action = str(entry.get("action", "")).lower()
+                            if ("remote" in cat or "control" in cat) and action == "block":
+                                rat_blocked = True
+                                break
+        if not rat_blocked and len(app_lists) > 0:
+            self._add(Finding(
+                rule_id="MITRE-T1219-001",
+                name="T1219 Remote Access Software — RATs not blocked by AppCtrl",
+                category="MITRE ATT&CK Resilience", severity="MEDIUM",
+                file_path=_host, line_num=None,
+                line_content=f"app-control profiles={len(app_lists)}, remote-access-blocked=false",
+                description="MITRE T1219: Application Control is not blocking remote access tool categories (TeamViewer, AnyDesk, ScreenConnect, RustDesk). Adversaries deploy these legitimate tools as C2 channels to evade detection.",
+                recommendation="Block unauthorized remote access applications in AppCtrl profiles. Whitelist only sanctioned tools.",
+                cwe="CWE-693",
+            ))
+
+        # T1568 — Dynamic Resolution / DGA (Domain Generation Algorithms)
+        # Control: DNS Filter with FortiGuard reputation
+        if has_dns_filter:
+            for dp in dns_profiles:
+                if isinstance(dp, dict):
+                    ftgd = dp.get("ftgd-dns", {})
+                    if isinstance(ftgd, dict):
+                        filters = ftgd.get("filters", [])
+                        if not isinstance(filters, list) or len(filters) == 0:
+                            self._add(Finding(
+                                rule_id="MITRE-T1568-001",
+                                name="T1568 Dynamic Resolution / DGA — DNS filter lacks category blocking",
+                                category="MITRE ATT&CK Resilience", severity="MEDIUM",
+                                file_path=_host, line_num=None,
+                                line_content=f"dnsfilter '{dp.get('name','?')}' has no FTGD category filters",
+                                description="MITRE T1568: DNS filter profile exists but has no FortiGuard DNS category filters configured. DGA-generated domains and newly registered malicious domains will not be caught by reputation scoring.",
+                                recommendation="Configure FortiGuard DNS category filters to block malicious, phishing, and newly-registered domain categories.",
+                                cwe="CWE-693",
+                            ))
+                            break
+
+        # T1102 — Web Service (C2 via Slack, Discord, GitHub, Pastebin)
+        # Control: Application Control + SSL Inspection
+        if not deep_inspect and len(app_lists) == 0:
+            self._add(Finding(
+                rule_id="MITRE-T1102-001",
+                name="T1102 Web Service C2 — no visibility into cloud service abuse",
+                category="MITRE ATT&CK Resilience", severity="MEDIUM",
+                file_path=_host, line_num=None,
+                line_content="No AppCtrl + No SSL deep inspection",
+                description="MITRE T1102: Without Application Control and SSL deep inspection, adversaries can use legitimate cloud services (Slack, Discord, Telegram, GitHub, Pastebin) as C2 channels. These services use HTTPS, making traffic invisible without inspection.",
+                recommendation="Deploy Application Control to identify cloud service usage. Enable SSL deep inspection for content visibility.",
+                cwe="CWE-693",
+            ))
+
+        # ================================================================
+        # TA0010 — EXFILTRATION (Additional)
+        # ================================================================
+
+        # T1567 — Exfiltration to Cloud Storage
+        # Control: DLP + Application Control + SSL Inspection
+        if dlp_on_policies == 0 and len(app_lists) == 0:
+            self._add(Finding(
+                rule_id="MITRE-T1567-001",
+                name="T1567 Exfiltration to Cloud Storage — no DLP or AppCtrl",
+                category="MITRE ATT&CK Resilience", severity="HIGH",
+                file_path=_host, line_num=None,
+                line_content="dlp=0, app-control=0",
+                description="MITRE T1567: Neither DLP nor Application Control is deployed. Sensitive data can be uploaded to Google Drive, Dropbox, OneDrive, or other cloud storage services without detection or policy enforcement.",
+                recommendation="Deploy DLP sensors to detect sensitive data patterns. Use Application Control to restrict unauthorized cloud storage services.",
+                cwe="CWE-200",
+            ))
+
+        # ================================================================
+        # TA0040 — IMPACT (Additional)
+        # ================================================================
+
+        # T1499 — Endpoint Denial of Service (application-layer DoS)
+        # Control: IPS rate-limiting + DoS policy
+        if len(ips_sensors) == 0:
+            self._add(Finding(
+                rule_id="MITRE-T1499-001",
+                name="T1499 Endpoint DoS — no IPS for application-layer attack detection",
+                category="MITRE ATT&CK Resilience", severity="MEDIUM",
+                file_path=_host, line_num=None,
+                line_content="ips/sensor: empty",
+                description="MITRE T1499: No IPS sensors configured. Application-layer DoS attacks (HTTP Slowloris, RUDY, ReDoS) targeting web servers behind the FortiGate will not be detected or rate-limited by IPS.",
+                recommendation="Create IPS sensors with anomaly detection and rate-based signatures for application-layer DoS.",
+                cwe="CWE-400",
+            ))
+
+        # T1496 — Resource Hijacking (cryptomining)
+        # Control: Application Control + Botnet C2 detection
+        if len(app_lists) == 0:
+            self._add(Finding(
+                rule_id="MITRE-T1496-001",
+                name="T1496 Resource Hijacking — no AppCtrl to block cryptomining",
+                category="MITRE ATT&CK Resilience", severity="MEDIUM",
+                file_path=_host, line_num=None,
+                line_content="application/list: empty",
+                description="MITRE T1496: Without Application Control, cryptomining traffic to mining pools (Stratum protocol) cannot be identified and blocked. Compromised internal hosts may be mining cryptocurrency undetected.",
+                recommendation="Create Application Control profiles that block cryptocurrency mining application signatures.",
+                cwe="CWE-693",
+            ))
+
+        # ================================================================
+        # RESILIENCE SUMMARY
         # ================================================================
         mitre_findings = [f for f in self.findings if f.rule_id.startswith("MITRE-")]
+        total_techniques = 30  # Total techniques we test for
+        gaps = len(mitre_findings)
         if not mitre_findings:
             self._add(Finding(
                 rule_id="MITRE-SUMMARY-PASS",
                 name="MITRE ATT&CK Resilience — all tested controls passed",
                 category="MITRE ATT&CK Resilience", severity="INFO",
                 file_path=_host, line_num=None,
-                line_content="All MITRE ATT&CK resilience checks passed",
-                description="All tested MITRE ATT&CK technique mitigations are properly configured on this FortiGate. Techniques tested: T1190, T1566, T1133, T1059, T1203, T1078, T1071, T1027, T1562, T1110, T1557, T1021, T1048, T1041, T1573, T1090, T1498, T1486, T1595.",
+                line_content=f"All {total_techniques} MITRE ATT&CK resilience checks passed",
+                description=f"All {total_techniques} tested MITRE ATT&CK technique mitigations are properly configured. Tactics tested: Initial Access, Execution, Persistence, Defense Evasion, Credential Access, Discovery, Lateral Movement, Exfiltration, C2, Impact, Reconnaissance.",
                 recommendation="Continue regular security posture assessments and keep FortiOS firmware up to date.",
+            ))
+        else:
+            score = max(0, int((1 - gaps / total_techniques) * 100))
+            self._add(Finding(
+                rule_id="MITRE-SUMMARY-SCORE",
+                name=f"MITRE ATT&CK Resilience Score: {score}%",
+                category="MITRE ATT&CK Resilience", severity="INFO",
+                file_path=_host, line_num=None,
+                line_content=f"score={score}%, gaps={gaps}/{total_techniques}",
+                description=f"MITRE ATT&CK resilience score: {score}% ({total_techniques - gaps}/{total_techniques} controls properly configured, {gaps} gaps identified). Higher score = better defense against real-world attack techniques.",
+                recommendation=f"Address the {gaps} MITRE ATT&CK finding(s) above to improve resilience. Prioritize CRITICAL and HIGH findings first.",
             ))
 
     # ================================================================== #

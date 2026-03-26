@@ -130,8 +130,22 @@ The `_check_mitre_attack_resilience` method tests whether FortiGate controls mit
 | **Impact** | T1498 Network DoS | MITRE-T1498-001 | DoS protection policies |
 | **Impact** | T1486 Ransomware | MITRE-T1486-001 | Sandbox ransomware detection |
 | **Reconnaissance** | T1595 Active Scanning | MITRE-T1595-001 | WAN management exposure |
+| **Defense Evasion** | T1572 Protocol Tunneling | MITRE-T1572-001 | DNS filter for tunnel detection |
+| **Defense Evasion** | T1571 Non-Standard Port | MITRE-T1571-001 | Application Control presence |
+| **Initial Access** | T1189 Drive-by Compromise | MITRE-T1189-001 | Web Filter coverage |
+| **C2** | T1105 Ingress Tool Transfer | MITRE-T1105-001 | AV profile existence |
+| **Discovery** | T1046 Network Service Discovery | MITRE-T1046-001 | Inter-zone IPS (east-west) |
+| **Lateral Movement** | T1210 Exploit Remote Services | MITRE-T1210-001 | Inter-zone IPS for exploits |
+| **C2** | T1219 Remote Access Software | MITRE-T1219-001 | RAT category blocking in AppCtrl |
+| **C2** | T1568 Dynamic Resolution / DGA | MITRE-T1568-001 | DNS filter FTGD category filters |
+| **C2** | T1102 Web Service C2 | MITRE-T1102-001 | AppCtrl + SSL inspection combo |
+| **Exfiltration** | T1567 Exfil to Cloud Storage | MITRE-T1567-001 | DLP + AppCtrl coverage |
+| **Impact** | T1499 Endpoint DoS | MITRE-T1499-001 | IPS for app-layer DoS |
+| **Impact** | T1496 Resource Hijacking | MITRE-T1496-001 | AppCtrl crypto-mining blocking |
 
-If all checks pass, an INFO-level `MITRE-SUMMARY-PASS` finding is generated.
+**Total: 30 techniques across 10 ATT&CK tactics** with a resilience score (0-100%) calculated at the end.
+
+If all checks pass, an INFO-level `MITRE-SUMMARY-PASS` finding is generated. Otherwise, a `MITRE-SUMMARY-SCORE` finding shows the resilience percentage.
 
 ## Known CVEs (30 entries, 2019-2025)
 
