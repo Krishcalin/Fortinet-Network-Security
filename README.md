@@ -5,15 +5,15 @@
 <h1 align="center">Fortinet FortiGate Security Scanner</h1>
 
 <p align="center">
-  <strong>Comprehensive FortiOS REST API Security Posture Assessment</strong>
+  <strong>Live-API Security Posture Assessment with MITRE ATT&CK Resilience Testing</strong>
 </p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/version-4.0.0-blue?style=flat-square" alt="Version"/>
   <img src="https://img.shields.io/badge/python-3.10%2B-blue?style=flat-square&logo=python&logoColor=white" alt="Python"/>
   <img src="https://img.shields.io/badge/FortiOS-6.x%20%7C%207.x-red?style=flat-square" alt="FortiOS"/>
-  <img src="https://img.shields.io/badge/rules-240%2B-orange?style=flat-square" alt="Rules"/>
-  <img src="https://img.shields.io/badge/MITRE_ATT%26CK-19_techniques-dc2626?style=flat-square" alt="MITRE"/>
+  <img src="https://img.shields.io/badge/rules-260%2B-orange?style=flat-square" alt="Rules"/>
+  <img src="https://img.shields.io/badge/MITRE_ATT%26CK-30_techniques-dc2626?style=flat-square" alt="MITRE"/>
   <img src="https://img.shields.io/badge/CVEs-30-critical?style=flat-square" alt="CVEs"/>
   <img src="https://img.shields.io/badge/compliance-CIS%20%7C%20PCI--DSS%20%7C%20NIST%20%7C%20SOC2%20%7C%20HIPAA-blueviolet?style=flat-square" alt="Compliance"/>
   <img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="License"/>
@@ -21,67 +21,30 @@
 
 ---
 
-## Table of Contents
-
-- [Overview](#overview)
-- [Features](#features)
-- [Supported Targets](#supported-targets)
-- [Architecture](#architecture)
-- [Prerequisites](#prerequisites)
-- [Installation](#installation)
-- [API Token Setup](#api-token-setup)
-- [Usage](#usage)
-  - [Basic Scan](#basic-scan)
-  - [Filtered Scan](#filtered-scan)
-  - [Report Generation](#report-generation)
-  - [Environment Variables](#environment-variables)
-- [Check Categories](#check-categories)
-  - [1. Admin Access (FORTIOS-ADMIN)](#1-admin-access-fortios-admin)
-  - [2. Firewall Policies (FORTIOS-POLICY)](#2-firewall-policies-fortios-policy)
-  - [3. SSL VPN (FORTIOS-SSLVPN)](#3-ssl-vpn-fortios-sslvpn)
-  - [4. IPsec VPN (FORTIOS-IPSEC)](#4-ipsec-vpn-fortios-ipsec)
-  - [5. Security Profiles (FORTIOS-PROFILE)](#5-security-profiles-fortios-profile)
-  - [6. Logging & Monitoring (FORTIOS-LOG)](#6-logging--monitoring-fortios-log)
-  - [7. High Availability (FORTIOS-HA)](#7-high-availability-fortios-ha)
-  - [8. Certificates (FORTIOS-CERT)](#8-certificates-fortios-cert)
-  - [9. Network Hardening (FORTIOS-NET)](#9-network-hardening-fortios-net)
-  - [10. FortiGuard Updates (FORTIOS-UPDATE)](#10-fortiguard-updates-fortios-update)
-  - [11. ZTNA / SASE (FORTIOS-ZTNA)](#11-ztna--sase-fortios-ztna)
-  - [12. Known CVEs (FORTIOS-CVE)](#12-known-cves-fortios-cve)
-  - [13. Wireless Security (FORTIOS-WIRELESS)](#13-wireless-security-fortios-wireless)
-  - [14. Backup & DR (FORTIOS-BACKUP)](#14-backup--dr-fortios-backup)
-  - [15. Authentication (FORTIOS-AUTH)](#15-authentication-fortios-auth)
-- [API Endpoints](#api-endpoints)
-- [Output Formats](#output-formats)
-  - [Terminal Output](#terminal-output)
-  - [JSON Report](#json-report)
-  - [HTML Report](#html-report)
-- [Exit Codes](#exit-codes)
-- [CLI Reference](#cli-reference)
-- [Examples](#examples)
-- [CI/CD Integration](#cicd-integration)
-- [Security Considerations](#security-considerations)
-- [License](#license)
-
----
-
 ## Overview
 
-The **Fortinet FortiGate Security Scanner** is a Python-based live-API security assessment tool that connects to FortiGate Next-Generation Firewall (NGFW) appliances via the FortiOS REST API and evaluates their security posture against industry best practices, compliance frameworks, and known vulnerabilities.
+The **Fortinet FortiGate Security Scanner** is a Python-based live-API security assessment tool that connects to FortiGate NGFW appliances via the FortiOS REST API and evaluates security posture against industry best practices, compliance frameworks, MITRE ATT&CK techniques, and known vulnerabilities.
 
-It performs **240+ security checks** across **18 check methods**, including firewall policy analysis, admin access hardening, VPN configuration, security profile enforcement, logging, HA, certificate management, ZTNA/SD-WAN readiness, wireless security, backup & DR, authentication (LDAP/RADIUS/SAML), advanced hardening (FIPS, session timers, MFA coverage, anti-spoofing), and **30 known FortiOS CVEs** with automatic firmware version matching.
+It performs **260+ security checks** across **18 check methods**, including:
+- **Configuration auditing** — admin access, firewall policies, VPN, security profiles, logging, HA, certificates, network hardening, wireless, backup, authentication, ZTNA/SD-WAN, FIPS, session management
+- **MITRE ATT&CK resilience** — 30 technique-specific tests across 10 tactics with a 0-100% resilience score
+- **CVE detection** — 30 known FortiOS CVEs (2019-2025) with train-based firmware version matching
+- **Compliance mapping** — CIS, PCI-DSS, NIST 800-53, SOC 2, HIPAA controls per finding
+- **Remediation automation** — 42 FortiOS CLI config commands exported per finding
 
 ### Key Capabilities
 
-- **240+ security rules** across 18 check categories with automatic compliance mapping
-- **MITRE ATT&CK resilience testing** — 19 technique-specific tests across 9 ATT&CK tactics verify firewall defense against real-world attack scenarios
-- **30 known CVEs** — train-based firmware version matching (includes 2025 CVEs)
-- **5 compliance frameworks** — CIS FortiGate Benchmark, PCI-DSS, NIST 800-53, SOC 2, HIPAA
-- **Remediation automation** — export FortiOS CLI config commands per finding
-- **Multi-device scanning** — scan entire fleet via JSON inventory with unified reporting
-- **Multi-format reports** — Console (colour-coded), JSON, interactive HTML, compliance CSV
-- **Zero-agent** — REST API only, no software on target
-- **CI/CD ready** — exit code 1 on CRITICAL/HIGH for pipeline gating
+| Capability | Details |
+|-----------|---------|
+| **260+ security rules** | 18 check methods covering all FortiGate security domains |
+| **30 MITRE ATT&CK techniques** | Resilience testing across 10 tactics with percentage scoring |
+| **30 known CVEs** | Train-based firmware version matching (FortiOS 6.2 through 7.6) |
+| **5 compliance frameworks** | CIS FortiGate, PCI-DSS 4.0, NIST 800-53 Rev 5, SOC 2 Type II, HIPAA |
+| **42 remediation commands** | FortiOS CLI config blocks per finding (`--remediation`) |
+| **Multi-device scanning** | Fleet-wide assessment via JSON inventory (`--inventory`) |
+| **6 output formats** | Console, JSON, HTML (dark theme), compliance CSV, remediation script, ATT&CK score |
+| **Zero-agent** | REST API only, no software on target |
+| **CI/CD ready** | Exit code 1 on CRITICAL/HIGH for pipeline gating |
 
 ---
 
@@ -89,17 +52,16 @@ It performs **240+ security checks** across **18 check methods**, including fire
 
 | Feature | Description |
 |---------|-------------|
-| **18 Check Methods** | Admin access, system settings, firewall policies, SSL VPN, IPsec VPN, security profiles, logging, HA, certificates, network hardening, FortiGuard, ZTNA/SD-WAN, wireless, backup & DR, authentication, advanced hardening, MITRE ATT&CK resilience |
-| **MITRE ATT&CK Resilience** | 19 technique-specific tests across 9 tactics: T1190, T1566, T1133, T1059, T1203, T1078, T1071, T1027, T1562, T1110, T1557, T1021, T1048, T1041, T1573, T1090, T1498, T1486, T1595 |
+| **18 Check Methods** | Admin access, system settings, firewall policies, SSL VPN, IPsec VPN, security profiles, logging, HA, certificates, network hardening, FortiGuard updates, ZTNA/SD-WAN, wireless, backup & DR, authentication, advanced hardening, MITRE ATT&CK resilience, known CVEs |
+| **MITRE ATT&CK Resilience** | 30 techniques across 10 tactics: T1190, T1566, T1133, T1189, T1059, T1203, T1078, T1071, T1027, T1562, T1572, T1571, T1110, T1557, T1046, T1021, T1210, T1048, T1041, T1567, T1573, T1090, T1105, T1219, T1568, T1102, T1498, T1486, T1499, T1496, T1595 |
 | **30 Known CVEs** | CVE-2025-24472, CVE-2025-22252, CVE-2024-55591, CVE-2024-21762, CVE-2024-35279, CVE-2023-27997, CVE-2022-42475, and 23 more |
-| **5 Compliance Frameworks** | CIS FortiGate Benchmark, PCI-DSS 4.0, NIST 800-53 Rev 5, SOC 2 Type II, HIPAA Security Rule |
-| **Remediation Export** | FortiOS CLI config commands generated per finding (`--remediation fix.txt`) |
-| **Multi-Device Scanning** | JSON inventory file for batch scanning with unified summary (`--inventory devices.json`) |
-| **Compliance CSV Export** | Audit evidence export mapping findings to CIS/PCI-DSS/NIST/SOC2/HIPAA controls (`--compliance-csv`) |
-| **Train-Based CVE Matching** | Firmware version matched against affected version ranges per release train (6.2-7.6) |
-| **Dark Theme HTML Reports** | Interactive reports with severity filtering, expandable details, and search |
-| **Self-Signed Cert Support** | SSL verification disabled by default for appliance self-signed certificates |
-| **Single File** | Entire scanner in one self-contained Python file (~4,400 lines) — no complex setup |
+| **Compliance Mapping** | 76 rule-to-framework mappings across CIS, PCI-DSS, NIST, SOC2, HIPAA |
+| **Remediation Export** | 42 FortiOS CLI config commands (`--remediation fix.txt`) |
+| **Multi-Device Scanning** | JSON inventory for batch scanning with unified summary (`--inventory devices.json`) |
+| **Compliance CSV** | Audit evidence export with per-framework control columns (`--compliance-csv`) |
+| **Resilience Score** | 0-100% MITRE ATT&CK score showing defense coverage against real-world attacks |
+| **Dark Theme HTML** | Interactive reports with severity filtering, search, and expandable details |
+| **Single File** | Entire scanner in one Python file (~5,174 lines) |
 
 ---
 
@@ -116,42 +78,42 @@ It performs **240+ security checks** across **18 check methods**, including fire
 ## Architecture
 
 ```
-┌───────────────────────────────────────────────────────┐
-│                fortinet_scanner.py (v4.0.0)            │
-├───────────────────────────────────────────────────────┤
-│  FORTIOS_CVES[]        30 CVE definitions (2019-2025) │
-│  COMPLIANCE_MAP{}      45 rule→framework mappings      │
-│  REMEDIATION_COMMANDS{}42 FortiOS CLI fix commands     │
-│  Finding               __slots__ + compliance + remed  │
-│  _ReportMixin          print_report, save_json,        │
-│                        save_html, save_remediation,    │
-│                        save_compliance_csv              │
-│  FortinetScanner       17 _check_* methods (220+ rules)│
-│  MultiDeviceScanner    Batch scanning + unified reports│
-│  main()                CLI entry point                 │
-└───────────────────────────────────────────────────────┘
-         │                           │
-         ▼                           ▼
-   FortiOS REST API           Report Output
+┌──────────────────────────────────────────────────────────────┐
+│                  fortinet_scanner.py (v4.0.0)                 │
+├──────────────────────────────────────────────────────────────┤
+│  FORTIOS_CVES[]          30 CVE definitions (2019-2025)      │
+│  COMPLIANCE_MAP{}        76 rule → CIS/PCI/NIST/SOC2/HIPAA   │
+│  REMEDIATION_COMMANDS{}  42 FortiOS CLI fix commands          │
+│  Finding                 __slots__ + compliance + remediation │
+│  _ReportMixin            console, JSON, HTML, CSV, remediation│
+│  FortinetScanner         18 _check_* methods (260+ rules)     │
+│  MultiDeviceScanner      Fleet scanning + unified reports     │
+│  main()                  CLI with single + multi-device modes │
+└──────────────────────────────────────────────────────────────┘
+         │                              │
+         ▼                              ▼
+   FortiOS REST API              Report Output
    /api/v2/cmdb/...          Console | JSON | HTML
-   /api/v2/monitor/...
+   /api/v2/monitor/...       CSV | Remediation | Score
 ```
 
 ### Scanner Flow
 
 1. **Connect** — Authenticate to FortiGate via API token
-2. **Discover** — Retrieve system info and firmware version from `/api/v2/monitor/system/status`
-3. **Collect** — Pull configuration from `/api/v2/cmdb/` endpoints
-4. **Analyse** — Run 16 check methods across 15 categories
-5. **CVE Match** — Compare firmware version against 20 known CVE version ranges
-6. **Report** — Output findings to console, JSON, and/or HTML
+2. **Discover** — Retrieve system info and firmware version
+3. **Collect** — Pull configuration from 30+ API endpoints
+4. **Audit** — Run 18 check methods across all security domains
+5. **CVE Match** — Compare firmware against 30 known CVE version ranges
+6. **MITRE Test** — Evaluate 30 ATT&CK technique mitigations, calculate resilience score
+7. **Comply** — Map findings to CIS, PCI-DSS, NIST, SOC2, HIPAA controls
+8. **Report** — Output to console, JSON, HTML, compliance CSV, remediation script
 
 ---
 
 ## Prerequisites
 
 - **Python 3.10+**
-- **requests** library
+- **requests** library (`pip install requests`)
 - **FortiGate** with REST API enabled
 - **API token** with read access to system configuration
 
@@ -160,11 +122,8 @@ It performs **240+ security checks** across **18 check methods**, including fire
 ## Installation
 
 ```bash
-# Clone the repository
 git clone https://github.com/Krishcalin/Fortinet-Network-Security.git
 cd Fortinet-Network-Security
-
-# Install dependencies
 pip install requests
 ```
 
@@ -172,9 +131,7 @@ pip install requests
 
 ## API Token Setup
 
-Generate a REST API token on the FortiGate:
-
-1. Navigate to **System > Administrators**
+1. Navigate to **System > Administrators** on the FortiGate
 2. Click **Create New > REST API Admin**
 3. Set a username (e.g., `scanner-api`)
 4. Assign an **admin profile** with **read-only** access
@@ -240,10 +197,6 @@ python fortinet_scanner.py --inventory devices.json --json unified_report.json
 
 ### Environment Variables
 
-| Variable | Description |
-|----------|-------------|
-| `FORTIOS_API_TOKEN` | FortiOS REST API token (alternative to `--token`) |
-
 ```bash
 export FORTIOS_API_TOKEN="your-api-token-here"
 python fortinet_scanner.py 10.1.1.1
@@ -251,392 +204,106 @@ python fortinet_scanner.py 10.1.1.1
 
 ---
 
-## Check Categories
+## MITRE ATT&CK Resilience Testing
 
-### 1. Admin Access (FORTIOS-ADMIN)
+The scanner tests **30 MITRE ATT&CK Enterprise techniques across 10 tactics**, verifying that FortiGate security controls can detect and block real-world attack scenarios. Each test checks a specific FortiGate feature against the ATT&CK technique it should mitigate.
 
-**22 rules** — Audits administrator account security, password policy, MFA, and API user configuration.
+| Tactic | Techniques Tested | FortiGate Controls Verified |
+|--------|:-:|---------------------------|
+| **Initial Access** | 4 | IPS coverage, AV + WebFilter on policies, VPN client cert, drive-by URL blocking |
+| **Execution** | 2 | Application Control deployment, SSL deep inspection |
+| **Persistence** | 1 | Admin MFA coverage percentage |
+| **Defense Evasion** | 5 | DNS filter, sandbox/outbreak prevention, external log forwarding, tunnel detection, port-agnostic AppCtrl |
+| **Credential Access** | 2 | Account lockout threshold, HTTP on WAN/DMZ |
+| **Discovery** | 1 | Inter-zone (east-west) IPS |
+| **Lateral Movement** | 2 | Any/any/any policy detection, east-west exploit IPS |
+| **C2** | 6 | SSL deep inspection, proxy/RAT blocking, AV for tools, DGA detection, cloud service C2 |
+| **Exfiltration** | 3 | DLP sensors, DNS botnet/C2 blocking, cloud storage control |
+| **Impact** | 4 | DoS policies, ransomware sandbox, app-layer DoS, cryptomining detection |
+| **Reconnaissance** | 1 | WAN management interface exposure |
 
-| Rule ID | Severity | Description |
-|---------|----------|-------------|
-| FORTIOS-ADMIN-001 | CRITICAL | HTTP admin access enabled on interface |
-| FORTIOS-ADMIN-002 | HIGH | Admin idle timeout exceeds 300 seconds |
-| FORTIOS-ADMIN-003 | HIGH | Weak admin password policy (min length < 8) |
-| FORTIOS-ADMIN-004 | HIGH | No trusted hosts configured for admin |
-| FORTIOS-ADMIN-005 | CRITICAL | Default "admin" account still active |
-| FORTIOS-ADMIN-006 | HIGH | API user without trusted hosts |
-| FORTIOS-ADMIN-007 | MEDIUM | API token without expiry date |
-| FORTIOS-ADMIN-008 | HIGH | Multiple super_admin profiles |
-| FORTIOS-ADMIN-009 | MEDIUM | PING enabled on WAN interface |
-| FORTIOS-ADMIN-010 | HIGH | Telnet admin enabled on interface |
-| FORTIOS-ADMIN-011 | HIGH | No two-factor authentication for admin |
-| FORTIOS-ADMIN-012 | MEDIUM | Admin account using default profile |
-| FORTIOS-ADMIN-013 | MEDIUM | Password policy missing uppercase requirement |
-| FORTIOS-ADMIN-014 | MEDIUM | Password policy missing lowercase requirement |
-| FORTIOS-ADMIN-015 | MEDIUM | Password policy missing number requirement |
-| FORTIOS-ADMIN-016 | MEDIUM | Password policy missing special character requirement |
-| FORTIOS-ADMIN-017 | HIGH | Password expiry not configured |
-| FORTIOS-ADMIN-018 | MEDIUM | Password reuse allowed |
-| FORTIOS-ADMIN-019 | HIGH | Too many super_admin accounts (>2) |
-| FORTIOS-ADMIN-020 | HIGH | Guest auth enabled on admin account |
-| FORTIOS-ADMIN-021 | HIGH | API user with super_admin profile |
-| FORTIOS-ADMIN-022 | LOW | API user without documentation/comments |
-
-### 2. Firewall Policies (FORTIOS-POLICY)
-
-**14 rules** — Evaluates firewall policy hygiene, segmentation, NAT, and security posture.
-
-| Rule ID | Severity | Description |
-|---------|----------|-------------|
-| FORTIOS-POLICY-001 | LOW | Disabled firewall policy (hygiene) |
-| FORTIOS-POLICY-002 | CRITICAL | Any-to-any allow rule detected |
-| FORTIOS-POLICY-003 | HIGH | Allow policy with 'all' source |
-| FORTIOS-POLICY-004 | HIGH | Allow policy with ALL services (overly broad) |
-| FORTIOS-POLICY-005 | HIGH | Allow policy without logging |
-| FORTIOS-POLICY-006 | CRITICAL | Allow policy without UTM/security profiles |
-| FORTIOS-POLICY-007 | LOW | Unnamed firewall policy |
-| FORTIOS-POLICY-008 | MEDIUM | Deny policy without logging |
-| FORTIOS-POLICY-009 | HIGH | Allow policy with 'all' destination |
-| FORTIOS-POLICY-010 | MEDIUM | Allow policy without SSL inspection |
-| FORTIOS-POLICY-011 | MEDIUM | Broad allow policy with permanent schedule |
-| FORTIOS-POLICY-012 | LOW | High ratio of disabled policies |
-| FORTIOS-POLICY-013 | HIGH | VIP without port forwarding restriction |
-| FORTIOS-POLICY-014 | MEDIUM | No egress filtering policies detected |
-
-### 3. SSL VPN (FORTIOS-SSLVPN)
-
-**14 rules** — Comprehensive SSL VPN security: TLS, authentication, portal settings, and session controls.
-
-| Rule ID | Severity | Description |
-|---------|----------|-------------|
-| FORTIOS-SSLVPN-001 | CRITICAL | SSL VPN using weak TLS version (< 1.2) |
-| FORTIOS-SSLVPN-002 | HIGH | Split tunnelling enabled |
-| FORTIOS-SSLVPN-003 | MEDIUM | SSL VPN on default port |
-| FORTIOS-SSLVPN-004 | HIGH | No client certificate authentication |
-| FORTIOS-SSLVPN-005 | HIGH | Idle timeout exceeds 300 seconds |
-| FORTIOS-SSLVPN-006 | MEDIUM | Weak SSL VPN cipher suite |
-| FORTIOS-SSLVPN-007 | HIGH | No MFA configured for SSL VPN |
-| FORTIOS-SSLVPN-008 | HIGH | No login attempt limit |
-| FORTIOS-SSLVPN-009 | MEDIUM | Full tunnel to entire LAN subnet |
-| FORTIOS-SSLVPN-010 | MEDIUM | Weak user group password policy |
-| FORTIOS-SSLVPN-011 | MEDIUM | Portal without host check (endpoint compliance) |
-| FORTIOS-SSLVPN-012 | MEDIUM | Portal allows FTP access |
-| FORTIOS-SSLVPN-013 | MEDIUM | Portal without concurrent login limit |
-| FORTIOS-SSLVPN-014 | MEDIUM | HTTP compression enabled (CRIME/BREACH) |
-
-### 4. IPsec VPN (FORTIOS-IPSEC)
-
-**12 rules** — Audits IPsec VPN Phase 1 and Phase 2 proposals, DPD, and key management.
-
-| Rule ID | Severity | Description |
-|---------|----------|-------------|
-| FORTIOS-IPSEC-001 | CRITICAL | Weak Phase 1 encryption (DES/3DES) |
-| FORTIOS-IPSEC-002 | CRITICAL | Weak Phase 1 hash (MD5) |
-| FORTIOS-IPSEC-003 | HIGH | Weak Diffie-Hellman group (DH1/DH2/DH5) |
-| FORTIOS-IPSEC-004 | HIGH | IKEv1 aggressive mode (identity exposure) |
-| FORTIOS-IPSEC-005 | CRITICAL | Weak Phase 2 encryption (DES/3DES) |
-| FORTIOS-IPSEC-006 | HIGH | No Perfect Forward Secrecy (PFS) |
-| FORTIOS-IPSEC-007 | MEDIUM | Dead Peer Detection disabled |
-| FORTIOS-IPSEC-008 | HIGH | Pre-shared key too short |
-| FORTIOS-IPSEC-009 | HIGH | Weak Phase 2 hash (MD5) |
-| FORTIOS-IPSEC-010 | MEDIUM | Phase 1 key lifetime too long |
-| FORTIOS-IPSEC-011 | MEDIUM | Phase 2 key lifetime too long |
-| FORTIOS-IPSEC-012 | MEDIUM | IKEv1 instead of IKEv2 |
-
-### 5. Security Profiles (FORTIOS-PROFILE)
-
-**11 rules** — Validates security profiles (AV, IPS, WebFilter, AppControl, DLP, DNS, SSL, email/file filter, ICAP).
-
-| Rule ID | Severity | Description |
-|---------|----------|-------------|
-| FORTIOS-PROFILE-001 | HIGH | No antivirus profiles configured |
-| FORTIOS-PROFILE-002 | HIGH | No IPS sensors configured |
-| FORTIOS-PROFILE-003 | MEDIUM | No web filter profiles configured |
-| FORTIOS-PROFILE-004 | MEDIUM | No application control profiles configured |
-| FORTIOS-PROFILE-005 | HIGH | No DLP sensors configured |
-| FORTIOS-PROFILE-006 | MEDIUM | SSL inspection in certificate-only mode |
-| FORTIOS-AV/IPS/WF/APP/DLP/DNS | Various | Per-profile configuration validation |
-| FORTIOS-PROFILE-009 | MEDIUM | No email filter profiles configured |
-| FORTIOS-PROFILE-010 | MEDIUM | No file filter profiles configured |
-| FORTIOS-PROFILE-011 | MEDIUM | No ICAP profiles configured |
-
-### 6. Logging & Monitoring (FORTIOS-LOG)
-
-**16 rules** — Comprehensive logging: FortiAnalyzer, syslog, event filters, encryption, alert email, automation.
-
-| Rule ID | Severity | Description |
-|---------|----------|-------------|
-| FORTIOS-LOG-001 | HIGH | No FortiAnalyzer configured |
-| FORTIOS-LOG-002 | HIGH | No syslog server configured |
-| FORTIOS-LOG-003 | MEDIUM | Local log disk full action set to overwrite |
-| FORTIOS-LOG-004 | MEDIUM | Log encryption not enabled |
-| FORTIOS-LOG-005 | HIGH | FAZ connection not using encryption |
-| FORTIOS-LOG-006 | MEDIUM | FAZ reliable logging disabled |
-| FORTIOS-LOG-007 | HIGH | Syslog not using TLS/reliable mode |
-| FORTIOS-LOG-008 | HIGH | System event logging disabled |
-| FORTIOS-LOG-009 | MEDIUM | VPN event logging disabled |
-| FORTIOS-LOG-010 | MEDIUM | User event logging disabled |
-| FORTIOS-LOG-011 | LOW | WAN optimisation logging disabled |
-| FORTIOS-LOG-012 | MEDIUM | Log anonymisation enabled |
-| FORTIOS-LOG-013 | MEDIUM | Brief log format enabled |
-| FORTIOS-LOG-014 | MEDIUM | Alert email not configured |
-| FORTIOS-LOG-015 | LOW | No automation triggers configured |
-| FORTIOS-LOG-016 | MEDIUM | No redundant syslog server configured |
-
-### 7. High Availability (FORTIOS-HA)
-
-**8 rules** — Checks HA cluster configuration, failover, and heartbeat security.
-
-| Rule ID | Severity | Description |
-|---------|----------|-------------|
-| FORTIOS-HA-001 | MEDIUM | HA not configured (single point of failure) |
-| FORTIOS-HA-002 | HIGH | HA heartbeat encryption disabled |
-| FORTIOS-HA-003 | MEDIUM | Session pickup not enabled |
-| FORTIOS-HA-004 | MEDIUM | No dedicated HA heartbeat interface |
-| FORTIOS-HA-005 | MEDIUM | HA override disabled (no priority failback) |
-| FORTIOS-HA-006 | HIGH | HA group password not set |
-| FORTIOS-HA-007 | MEDIUM | HA firmware mismatch in cluster |
-| FORTIOS-HA-008 | LOW | Gratuitous ARP delay too short |
-
-### 8. Certificates (FORTIOS-CERT)
-
-**10 rules** — Validates certificate security, expiry, key strength, revocation, and wildcard usage.
-
-| Rule ID | Severity | Description |
-|---------|----------|-------------|
-| FORTIOS-CERT-001 | HIGH | Default Fortinet factory certificate in use |
-| FORTIOS-CERT-002 | CRITICAL | Certificate expired |
-| FORTIOS-CERT-003 | HIGH | Certificate expiring within 30 days |
-| FORTIOS-CERT-004 | HIGH | Weak certificate key size (< 2048-bit) |
-| FORTIOS-CERT-005 | MEDIUM | Self-signed certificate in production |
-| FORTIOS-CERT-006 | HIGH | Certificate with SHA-1 signature |
-| FORTIOS-CERT-007 | MEDIUM | Certificate with long validity (>3 years) |
-| FORTIOS-CERT-008 | LOW | No certificate renewal automation |
-| FORTIOS-CERT-009 | MEDIUM | Wildcard certificate detected |
-| FORTIOS-CERT-010 | MEDIUM | No CRL/OCSP revocation checking |
-
-### 9. Network Hardening (FORTIOS-NET)
-
-**16 rules** — Comprehensive network security: DoS protection, routing authentication, SNMP hardening, NTP, and anti-spoofing.
-
-| Rule ID | Severity | Description |
-|---------|----------|-------------|
-| FORTIOS-NET-001 | MEDIUM | No DoS policy configured |
-| FORTIOS-NET-002 | MEDIUM | DoS SYN flood threshold too high |
-| FORTIOS-NET-003 | MEDIUM | DoS UDP flood threshold too high |
-| FORTIOS-NET-004 | LOW | DoS ICMP flood threshold too high |
-| FORTIOS-NET-005 | HIGH | DHCP relay on WAN interface |
-| FORTIOS-NET-006 | LOW | DNS server override disabled on WAN |
-| FORTIOS-NET-007 | HIGH | Source IP check (RPF/anti-spoofing) disabled |
-| FORTIOS-NET-008 | HIGH | TCP sessions without SYN allowed |
-| FORTIOS-NET-009 | MEDIUM | IPv6 enabled but no IPv6 firewall policies |
-| FORTIOS-NET-010 | LOW | LLDP reception enabled globally |
-| FORTIOS-NET-011 | HIGH | BGP neighbour without MD5 authentication |
-| FORTIOS-NET-012 | HIGH | OSPF interface without authentication |
-| FORTIOS-NET-013 | CRITICAL | SNMP default community string (public/private) |
-| FORTIOS-NET-014 | HIGH | SNMPv1 enabled (cleartext, no auth) |
-| FORTIOS-NET-015 | HIGH | SNMPv3 user without authentication |
-| FORTIOS-NET-016 | MEDIUM | NTP authentication not enabled |
-
-### 10. FortiGuard Updates (FORTIOS-UPDATE)
-
-**7 rules** — Validates FortiGuard licensing, signature freshness, and update status.
-
-| Rule ID | Severity | Description |
-|---------|----------|-------------|
-| FORTIOS-UPDATE-001 | HIGH | FortiGuard service expired or disabled |
-| FORTIOS-UPDATE-002 | HIGH | FortiGuard not connected |
-| FORTIOS-UPDATE-003 | MEDIUM | FortiGuard licence expiring within 30 days |
-| FORTIOS-UPDATE-004 | HIGH | AV/IPS signatures outdated (>7 days) |
-| FORTIOS-UPDATE-005 | MEDIUM | FortiGuard service not updated (>30 days) |
-| FORTIOS-UPDATE-006 | HIGH | Automatic updates disabled |
-| FORTIOS-UPDATE-007 | CRITICAL | FortiOS running on end-of-life branch |
-
-### 11. ZTNA / SASE / SD-WAN (FORTIOS-ZTNA)
-
-**5 rules** — Evaluates Zero Trust Network Access readiness and SD-WAN configuration.
-
-| Rule ID | Severity | Description |
-|---------|----------|-------------|
-| FORTIOS-ZTNA-001 | MEDIUM | ZTNA access proxies not configured |
-| FORTIOS-ZTNA-002 | MEDIUM | ZTNA access proxy with no API gateway rules |
-| FORTIOS-ZTNA-003 | HIGH | ZTNA proxy without client certificate requirement |
-| FORTIOS-ZTNA-004 | HIGH | SD-WAN enabled without health checks |
-| FORTIOS-ZTNA-005 | MEDIUM | SD-WAN without service/SLA rules |
-
-### 12. Known CVEs (FORTIOS-CVE)
-
-**20 CVEs** — Automatically matches firmware version against known FortiOS vulnerabilities.
-
-| Rule ID | CVE | Severity | Description |
-|---------|-----|----------|-------------|
-| FORTIOS-CVE-001 | CVE-2024-55591 | CRITICAL | Auth bypass via Node.js websocket module |
-| FORTIOS-CVE-002 | CVE-2024-21762 | CRITICAL | SSL VPN out-of-bounds write (RCE) |
-| FORTIOS-CVE-003 | CVE-2024-23113 | CRITICAL | Format string vulnerability in fgfmd |
-| FORTIOS-CVE-004 | CVE-2023-27997 | CRITICAL | SSL VPN heap buffer overflow (xortigate) |
-| FORTIOS-CVE-005 | CVE-2022-42475 | CRITICAL | SSL VPN heap overflow + backdoor |
-| FORTIOS-CVE-006 | CVE-2024-47575 | CRITICAL | FortiJump — FortiManager missing auth |
-| FORTIOS-CVE-007 | CVE-2023-48788 | CRITICAL | FortiClient EMS SQL injection |
-| FORTIOS-CVE-008 | CVE-2023-36554 | HIGH | FortiManager API RCE |
-| FORTIOS-CVE-009 | CVE-2023-50176 | HIGH | Session hijacking via cookie reuse |
-| FORTIOS-CVE-010 | CVE-2024-0012 | CRITICAL | Node.js websocket auth bypass |
-| FORTIOS-CVE-011 | CVE-2022-40684 | CRITICAL | Auth bypass in admin API |
-| FORTIOS-CVE-012 | CVE-2021-44228 | CRITICAL | Log4j (FortiOS Java components) |
-| FORTIOS-CVE-013 | CVE-2023-25610 | CRITICAL | Buffer underflow in admin interface |
-| FORTIOS-CVE-014 | CVE-2022-41328 | HIGH | Path traversal in firmware upgrade |
-| FORTIOS-CVE-015 | CVE-2023-44250 | HIGH | Privilege escalation via HA protocol |
-| FORTIOS-CVE-016 | CVE-2023-42789 | CRITICAL | Captive portal buffer overflow |
-| FORTIOS-CVE-017 | CVE-2023-42790 | HIGH | Captive portal stack overflow |
-| FORTIOS-CVE-018 | CVE-2024-48884 | MEDIUM | Path traversal in HTTPD |
-| FORTIOS-CVE-019 | CVE-2024-46666 | MEDIUM | Resource exhaustion in HTTPD |
-| FORTIOS-CVE-020 | CVE-2024-46668 | HIGH | Memory exhaustion in IPS |
-
-### 13. Wireless Security (FORTIOS-WIRELESS)
-
-**8 rules** — Audits wireless controller, VAP/SSID security, WIDS, and CAPWAP encryption.
-
-| Rule ID | Severity | Description |
-|---------|----------|-------------|
-| FORTIOS-WIRELESS-001 | HIGH | Weak wireless security mode (Open/WEP/WPA) |
-| FORTIOS-WIRELESS-002 | MEDIUM | Guest SSID lacks client isolation |
-| FORTIOS-WIRELESS-003 | LOW | Internal SSID broadcast enabled |
-| FORTIOS-WIRELESS-004 | MEDIUM | No WIDS / rogue AP detection configured |
-| FORTIOS-WIRELESS-005 | LOW | No maximum client limit on SSID |
-| FORTIOS-WIRELESS-006 | MEDIUM | Protected Management Frames (802.11w) disabled |
-| FORTIOS-WIRELESS-007 | HIGH | CAPWAP tunnel using cleartext (no DTLS) |
-| FORTIOS-WIRELESS-008 | LOW | 802.11r FT-over-DS enabled (CVE-2017-13082) |
-
-### 14. Backup & DR (FORTIOS-BACKUP)
-
-**5 rules** — Validates backup, disaster recovery, and configuration management.
-
-| Rule ID | Severity | Description |
-|---------|----------|-------------|
-| FORTIOS-BACKUP-001 | MEDIUM | No FortiManager for centralised backup |
-| FORTIOS-BACKUP-002 | LOW | Config revision on logout disabled |
-| FORTIOS-BACKUP-003 | MEDIUM | HA session pickup disabled (failover gap) |
-| FORTIOS-BACKUP-004 | LOW | Automatic config save without review |
-| FORTIOS-BACKUP-005 | MEDIUM | USB auto-install config enabled |
-
-### 15. Authentication (FORTIOS-AUTH)
-
-**6 rules** — Audits LDAP, RADIUS, SAML/SSO, and local user authentication security.
-
-| Rule ID | Severity | Description |
-|---------|----------|-------------|
-| FORTIOS-AUTH-001 | HIGH | LDAP server without TLS encryption |
-| FORTIOS-AUTH-002 | HIGH | RADIUS shared secret too short (< 16 chars) |
-| FORTIOS-AUTH-003 | LOW | RADIUS timeout excessively long |
-| FORTIOS-AUTH-004 | LOW | No SSO/SAML integration configured |
-| FORTIOS-AUTH-005 | MEDIUM | Local user without MFA |
-| FORTIOS-AUTH-006 | MEDIUM | LDAP TLS without server identity check |
+**Resilience Score**: Each scan produces a 0-100% score. A `MITRE-SUMMARY-SCORE` finding shows how many of the 30 controls are properly configured. 100% = `MITRE-SUMMARY-PASS`.
 
 ---
 
-## API Endpoints
+## Check Categories
 
-The scanner queries the following FortiOS REST API endpoints:
+### Configuration Auditing (16 categories, 200+ rules)
 
-| Category | Endpoint | Purpose |
-|----------|----------|---------|
-| System | `/api/v2/monitor/system/status` | Firmware version, hostname, serial |
-| Admin | `/api/v2/cmdb/system/admin` | Admin accounts and profiles |
-| API Users | `/api/v2/cmdb/system/api-user` | REST API user configuration |
-| Global Settings | `/api/v2/cmdb/system/global` | System-wide security settings |
-| Interfaces | `/api/v2/cmdb/system/interface` | Interface management access |
-| Firewall | `/api/v2/cmdb/firewall/policy` | Firewall policy rules |
-| SSL VPN | `/api/v2/cmdb/vpn.ssl/settings` | SSL VPN configuration |
-| IPsec Phase 1 | `/api/v2/cmdb/vpn.ipsec/phase1-interface` | IKE proposals |
-| IPsec Phase 2 | `/api/v2/cmdb/vpn.ipsec/phase2-interface` | ESP proposals |
-| Antivirus | `/api/v2/cmdb/antivirus/profile` | AV profile configuration |
-| IPS | `/api/v2/cmdb/ips/sensor` | IPS sensor configuration |
-| Web Filter | `/api/v2/cmdb/webfilter/profile` | Web filtering profiles |
-| App Control | `/api/v2/cmdb/application/list` | Application control lists |
-| DLP | `/api/v2/cmdb/dlp/sensor` | Data loss prevention sensors |
-| FortiAnalyzer | `/api/v2/cmdb/log.fortianalyzer/setting` | FortiAnalyzer log target |
-| Syslog | `/api/v2/cmdb/log.syslogd/setting` | Syslog server configuration |
-| HA | `/api/v2/cmdb/system/ha` | High availability settings |
-| Certificates | `/api/v2/cmdb/vpn.certificate/local` | Local certificate store |
-| ZTNA | `/api/v2/cmdb/firewall/access-proxy` | ZTNA access proxy rules |
-| Licensing | `/api/v2/monitor/license/status` | FortiGuard license status |
-| Wireless VAPs | `/api/v2/cmdb/wireless-controller/vap` | Wireless SSID configuration |
-| WTP Profiles | `/api/v2/cmdb/wireless-controller/wtp-profile` | Access point profiles |
-| WIDS | `/api/v2/cmdb/wireless-controller/wids-profile` | Wireless intrusion detection |
-| Central Mgmt | `/api/v2/cmdb/system/central-management` | FortiManager integration |
-| LDAP | `/api/v2/cmdb/user/ldap` | LDAP server configuration |
-| RADIUS | `/api/v2/cmdb/user/radius` | RADIUS server configuration |
-| SAML | `/api/v2/cmdb/user/saml` | SAML IdP configuration |
-| Local Users | `/api/v2/cmdb/user/local` | Local user accounts |
+| # | Category | Prefix | Rules | Key Checks |
+|:-:|----------|--------|:-----:|------------|
+| 1 | Admin Access | FORTIOS-ADMIN | 24 | HTTP admin, idle timeout, password policy, MFA, trusted hosts, API users, default admin |
+| 2 | System Settings | FORTIOS-SYS | 12 | Strong crypto, banners, account lockout, TLS enforcement |
+| 3 | Firewall Policies | FORTIOS-POLICY | 16 | Any/any rules, logging, security profiles, policy hygiene, egress filtering |
+| 4 | SSL VPN | FORTIOS-SSLVPN | 14 | TLS version, ciphers, client cert, split tunneling, session limits, compression |
+| 5 | IPsec VPN | FORTIOS-IPSEC | 12 | Phase 1/2 crypto, DH groups, DPD, PFS, key lifetime, IKE version |
+| 6 | Security Profiles | FORTIOS-PROFILE | 11 | AV, IPS, WebFilter, AppControl, DLP, DNS, SSL inspection, email/file filters |
+| 7 | Logging & Monitoring | FORTIOS-LOG | 18 | FortiAnalyzer, syslog, event logging, encryption, automation, alerts |
+| 8 | High Availability | FORTIOS-HA | 8 | HA mode, heartbeat auth/encryption, session pickup, firmware sync |
+| 9 | Certificates | FORTIOS-CERT | 11 | Default certs, expiry, key strength, SHA-1, self-signed, wildcard, CRL/OCSP |
+| 10 | Network Hardening | FORTIOS-NET | 18 | DoS, SNMP, routing auth, NTP, IPv6, anti-spoofing, LLDP, DNS encryption |
+| 11 | FortiGuard Updates | FORTIOS-UPDATE | 7 | License status, signature freshness, EOL branch, auto-updates |
+| 12 | ZTNA / SD-WAN | FORTIOS-ZTNA | 6 | Access proxy, client certs, SD-WAN health checks, SLA rules |
+| 13 | Wireless Security | FORTIOS-WIRELESS | 9 | SSID security, WIDS, client isolation, CAPWAP, 802.11w/r |
+| 14 | Backup & DR | FORTIOS-BACKUP | 5 | FortiManager, config revision, session pickup, USB auto-install |
+| 15 | Authentication | FORTIOS-AUTH | 6 | LDAP/RADIUS/SAML security, MFA, server identity verification |
+| 16 | Advanced Hardening | FORTIOS-SYS/NET/etc. | ~15 | FIPS 140-2, TCP timers, SSH grace, SCP, DNS encryption, MFA %, default admin, policy profile analysis, log transport, certs, anti-spoofing, automation, SD-WAN |
+
+### Known CVEs (30 CVEs)
+
+| ID | CVE | Severity | Description |
+|---|-----|:--------:|-------------|
+| CVE-001 | CVE-2024-55591 | CRITICAL | Auth bypass via Node.js websocket |
+| CVE-002 | CVE-2024-21762 | CRITICAL | SSL VPN out-of-bounds write (RCE) |
+| CVE-003 | CVE-2024-23113 | CRITICAL | Format string in fgfmd daemon |
+| CVE-004 | CVE-2023-27997 | CRITICAL | SSL VPN heap buffer overflow (xortigate) |
+| CVE-005 | CVE-2022-42475 | CRITICAL | SSL VPN heap overflow + backdoor |
+| CVE-023 | CVE-2025-24472 | CRITICAL | CSF proxy auth bypass — super-admin |
+| CVE-027 | CVE-2024-35279 | CRITICAL | Stack buffer overflow in fgfmd — RCE |
+| CVE-029 | CVE-2025-22252 | CRITICAL | RADIUS auth bypass with empty secret |
+| ... | ... | ... | 22 more HIGH/MEDIUM CVEs covering 2019-2025 |
+
+---
+
+## CLI Reference
+
+```
+usage: fortinet_scanner.py [-h] [--token TOKEN] [--verify-ssl] [--timeout SEC]
+                           [--json FILE] [--html FILE] [--remediation FILE]
+                           [--compliance-csv FILE] [--inventory FILE]
+                           [--severity {CRITICAL,HIGH,MEDIUM,LOW,INFO}]
+                           [--verbose] [--version]
+                           [host]
+
+positional arguments:
+  host                    FortiGate hostname or IP (optional with --inventory)
+
+options:
+  --token TOKEN           FortiOS REST API token (env: FORTIOS_API_TOKEN)
+  --verify-ssl            Verify SSL certificate (default: disabled)
+  --timeout SEC           API request timeout in seconds (default: 30)
+  --json FILE             Save JSON report
+  --html FILE             Save interactive HTML report
+  --remediation FILE      Export FortiOS CLI fix commands
+  --compliance-csv FILE   Export compliance mapping CSV (CIS/PCI/NIST/SOC2/HIPAA)
+  --inventory FILE        Multi-device JSON inventory for batch scanning
+  --severity LEVEL        Minimum severity (default: LOW)
+  --verbose, -v           Verbose output
+  --version               Show version
+```
 
 ---
 
 ## Output Formats
 
-### Terminal Output
-
-Colour-coded console output with severity indicators:
-
-```
-============================================================
-  Fortinet FortiGate Security Scanner v1.0.0
-============================================================
-  Target     : 10.1.1.1
-  Firmware   : FortiOS 7.0.14
-  Hostname   : FW-EDGE-01
-  Serial     : FGT60F1234567890
-============================================================
-
-[CRITICAL] FORTIOS-CVE-001 — Authentication bypass via Node.js websocket module
-  CVE       : CVE-2024-55591
-  CWE       : CWE-288
-  Details   : An authentication bypass using an alternate path...
-  Fix       : Upgrade to FortiOS 7.0.17 or later...
-
-[HIGH] FORTIOS-ADMIN-002 — Admin idle timeout exceeds 300 seconds
-  CWE       : CWE-613
-  Details   : Admin idle timeout is set to 480 seconds...
-  Fix       : Set admin idle timeout to 300 seconds or less...
-```
-
-### JSON Report
-
-```bash
-python fortinet_scanner.py 10.1.1.1 --token <TOKEN> --json report.json
-```
-
-```json
-{
-  "scanner": "fortinet_scanner",
-  "version": "1.0.0",
-  "target": "10.1.1.1",
-  "scan_time": "2026-03-14T10:30:00Z",
-  "summary": {"CRITICAL": 5, "HIGH": 12, "MEDIUM": 8, "LOW": 2},
-  "findings": [
-    {
-      "rule_id": "FORTIOS-CVE-001",
-      "name": "Authentication bypass via Node.js websocket module",
-      "severity": "CRITICAL",
-      "cve": "CVE-2024-55591",
-      "cwe": "CWE-288",
-      "description": "...",
-      "recommendation": "..."
-    }
-  ]
-}
-```
-
-### HTML Report
-
-```bash
-python fortinet_scanner.py 10.1.1.1 --token <TOKEN> --html report.html
-```
-
-Generates an interactive HTML report with:
-- Dark theme (Catppuccin Mocha palette)
-- Severity filtering buttons
-- Expandable finding details
-- Summary statistics dashboard
-- Search functionality
+| Format | Flag | Description |
+|--------|------|-------------|
+| **Console** | *(default)* | Colour-coded findings with compliance refs and CLI fix preview |
+| **JSON** | `--json` | Full report with findings, compliance, remediation commands |
+| **HTML** | `--html` | Dark-themed interactive report with filtering and search |
+| **Remediation** | `--remediation` | FortiOS CLI config blocks per finding |
+| **Compliance CSV** | `--compliance-csv` | Audit evidence: CIS, PCI-DSS, NIST, SOC2, HIPAA columns |
+| **Unified JSON** | `--inventory + --json` | Multi-device aggregated report |
 
 ---
 
@@ -646,66 +313,6 @@ Generates an interactive HTML report with:
 |------|---------|
 | `0` | No CRITICAL or HIGH findings |
 | `1` | One or more CRITICAL or HIGH findings detected |
-
----
-
-## CLI Reference
-
-```
-usage: fortinet_scanner.py [-h] [--token TOKEN] [--verify-ssl]
-                           [--timeout TIMEOUT] [--json FILE] [--html FILE]
-                           [--severity {CRITICAL,HIGH,MEDIUM,LOW,INFO}]
-                           [--verbose] [--version]
-                           host
-
-Fortinet FortiGate / FortiOS Network Security Scanner
-
-positional arguments:
-  host                  FortiGate hostname or IP address
-
-options:
-  -h, --help            show this help message and exit
-  --token TOKEN         FortiOS REST API token. Env: FORTIOS_API_TOKEN
-  --verify-ssl          Verify SSL certificate (default: disabled)
-  --timeout TIMEOUT     API request timeout in seconds (default: 30)
-  --json FILE           Save JSON report to FILE
-  --html FILE           Save HTML report to FILE
-  --severity LEVEL      Minimum severity to report (default: LOW)
-  --verbose, -v         Verbose output
-  --version             show program's version number and exit
-```
-
----
-
-## Examples
-
-### Scan a FortiGate with default settings
-
-```bash
-python fortinet_scanner.py 192.168.1.1 --token abc123def456
-```
-
-### Generate all report formats
-
-```bash
-python fortinet_scanner.py fw.corp.local \
-  --token $FORTIOS_API_TOKEN \
-  --json fortinet_report.json \
-  --html fortinet_report.html \
-  --verbose
-```
-
-### Only show critical and high findings
-
-```bash
-python fortinet_scanner.py 10.0.0.1 --token $FORTIOS_API_TOKEN --severity HIGH
-```
-
-### Scan with SSL verification (trusted cert)
-
-```bash
-python fortinet_scanner.py fw.prod.corp.com --token $FORTIOS_API_TOKEN --verify-ssl
-```
 
 ---
 
@@ -720,32 +327,30 @@ python fortinet_scanner.py fw.prod.corp.com --token $FORTIOS_API_TOKEN --verify-
     python fortinet_scanner.py ${{ secrets.FORTIGATE_HOST }} \
       --token ${{ secrets.FORTIOS_API_TOKEN }} \
       --severity HIGH \
-      --json fortinet-report.json
-  continue-on-error: false
+      --json fortinet-report.json \
+      --compliance-csv audit.csv \
+      --remediation fix.txt
 
-- name: Upload Report
+- name: Upload Reports
   if: always()
   uses: actions/upload-artifact@v4
   with:
-    name: fortinet-security-report
-    path: fortinet-report.json
+    name: fortinet-security-reports
+    path: |
+      fortinet-report.json
+      audit.csv
+      fix.txt
 ```
 
-### GitLab CI
+### Multi-Device Fleet Scan
 
 ```yaml
-fortinet-scan:
-  stage: security
-  script:
-    - pip install requests
-    - python fortinet_scanner.py $FORTIGATE_HOST
-        --token $FORTIOS_API_TOKEN
-        --severity HIGH
-        --json fortinet-report.json
-  artifacts:
-    paths:
-      - fortinet-report.json
-    when: always
+- name: Fleet Security Scan
+  run: |
+    pip install requests
+    python fortinet_scanner.py \
+      --inventory ${{ secrets.DEVICE_INVENTORY_PATH }} \
+      --json fleet-report.json
 ```
 
 ---
@@ -755,9 +360,10 @@ fortinet-scan:
 - **API Token Security** — Store tokens in environment variables or secrets managers, never in code
 - **Read-Only Access** — Create API tokens with read-only admin profiles
 - **Trusted Hosts** — Restrict API token access to the scanner's IP address
-- **Network Segmentation** — Run scans from a management network with access to FortiGate admin interfaces
-- **SSL Verification** — Use `--verify-ssl` in production environments with trusted certificates
-- **Report Handling** — Reports may contain sensitive configuration details; handle them according to your data classification policy
+- **Network Segmentation** — Run scans from a management network
+- **SSL Verification** — Use `--verify-ssl` in environments with trusted certificates
+- **Report Handling** — Reports contain sensitive configuration details; handle per data classification policy
+- **Remediation Scripts** — Always review `--remediation` output before applying to production
 
 ---
 
