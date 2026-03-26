@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Fortinet FortiGate / FortiOS Network Security Scanner v1.0.0
+Fortinet FortiGate / FortiOS Network Security Scanner v4.0.0
 
 A comprehensive live-API security scanner for Fortinet FortiGate NGFW
 appliances.  Connects via the FortiOS REST API (/api/v2/cmdb/...) and
@@ -30,7 +30,7 @@ import urllib3
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-VERSION = "3.0.0"
+VERSION = "4.0.0"
 
 # ---------------------------------------------------------------------------
 # requests (required for API mode)
@@ -283,6 +283,121 @@ FORTIOS_CVES: list[dict] = [
         "recommendation": "Upgrade to the fixed version.",
         "cwe": "CWE-121",
     },
+    # ── 2025 CVEs ───────────────────────────────────────────────────────
+    {
+        "id": "FORTIOS-CVE-021", "cve": "CVE-2024-48884", "severity": "HIGH",
+        "name": "Path traversal in FortiOS httpd — file read",
+        "affected": [
+            {"train": "7.4", "fixed": "7.4.5"},
+            {"train": "7.2", "fixed": "7.2.10"},
+            {"train": "7.0", "fixed": "7.0.16"},
+        ],
+        "description": "A path traversal vulnerability in FortiOS httpd allows a remote authenticated attacker with read-only admin privileges to read arbitrary files on the device.",
+        "recommendation": "Upgrade to FortiOS 7.4.5, 7.2.10, or 7.0.16. Restrict admin access to trusted IPs.",
+        "cwe": "CWE-22",
+    },
+    {
+        "id": "FORTIOS-CVE-022", "cve": "CVE-2024-48886", "severity": "HIGH",
+        "name": "SSL VPN authentication bypass via cookie manipulation",
+        "affected": [
+            {"train": "7.4", "fixed": "7.4.5"},
+            {"train": "7.2", "fixed": "7.2.10"},
+        ],
+        "description": "An authentication bypass in FortiOS SSL VPN allows a remote attacker to bypass authentication via crafted cookie values, gaining unauthorized VPN access.",
+        "recommendation": "Upgrade to FortiOS 7.4.5 or 7.2.10. Monitor SSL VPN auth logs for anomalies.",
+        "cwe": "CWE-287",
+    },
+    {
+        "id": "FORTIOS-CVE-023", "cve": "CVE-2025-24472", "severity": "CRITICAL",
+        "name": "CSF proxy authentication bypass — super-admin",
+        "affected": [
+            {"train": "7.0", "fixed": "7.0.17"},
+        ],
+        "description": "An authentication bypass in FortiOS CSF proxy allows a remote unauthenticated attacker to gain super-admin privileges via crafted CSF proxy requests. Related to CVE-2024-55591, actively exploited.",
+        "recommendation": "Upgrade to FortiOS 7.0.17+. Disable HTTP/HTTPS management on WAN interfaces. Restrict management to trusted IPs.",
+        "cwe": "CWE-288",
+    },
+    {
+        "id": "FORTIOS-CVE-024", "cve": "CVE-2024-46666", "severity": "MEDIUM",
+        "name": "Resource consumption via crafted HTTP/S requests",
+        "affected": [
+            {"train": "7.4", "fixed": "7.4.4"},
+            {"train": "7.2", "fixed": "7.2.9"},
+            {"train": "7.0", "fixed": "7.0.16"},
+        ],
+        "description": "Uncontrolled resource consumption in FortiOS allows a remote unauthenticated attacker to cause denial of service via crafted HTTP/S requests consuming excessive memory.",
+        "recommendation": "Upgrade to the fixed version. Implement rate limiting on management interfaces.",
+        "cwe": "CWE-400",
+    },
+    {
+        "id": "FORTIOS-CVE-025", "cve": "CVE-2024-46668", "severity": "HIGH",
+        "name": "httpd memory exhaustion via large request bodies",
+        "affected": [
+            {"train": "7.4", "fixed": "7.4.4"},
+            {"train": "7.2", "fixed": "7.2.9"},
+        ],
+        "description": "A resource allocation vulnerability in FortiOS httpd allows a remote unauthenticated attacker to cause memory exhaustion and denial of service by sending large HTTP request bodies.",
+        "recommendation": "Upgrade to FortiOS 7.4.4 or 7.2.9. Configure request size limits on upstream WAF/LB.",
+        "cwe": "CWE-770",
+    },
+    {
+        "id": "FORTIOS-CVE-026", "cve": "CVE-2024-50563", "severity": "HIGH",
+        "name": "Weak authentication in FGFM protocol",
+        "affected": [
+            {"train": "7.4", "fixed": "7.4.5"},
+            {"train": "7.2", "fixed": "7.2.10"},
+            {"train": "7.0", "fixed": "7.0.16"},
+        ],
+        "description": "Weak authentication in the FGFM (FortiGate-FortiManager) protocol allows an attacker with network access to forge communications between FortiGate and FortiManager.",
+        "recommendation": "Upgrade to fixed version. Restrict FGFM port (541) access. Use certificate-based FortiManager auth.",
+        "cwe": "CWE-1390",
+    },
+    {
+        "id": "FORTIOS-CVE-027", "cve": "CVE-2024-35279", "severity": "CRITICAL",
+        "name": "Stack-based buffer overflow in fgfmd — RCE",
+        "affected": [
+            {"train": "7.4", "fixed": "7.4.5"},
+            {"train": "7.2", "fixed": "7.2.10"},
+        ],
+        "description": "A stack-based buffer overflow in the FortiOS fgfmd daemon allows a remote unauthenticated attacker to execute arbitrary code via specially crafted FGFM requests.",
+        "recommendation": "Upgrade to FortiOS 7.4.5 or 7.2.10. Restrict FGFM port (541) to trusted FortiManager IPs only.",
+        "cwe": "CWE-121",
+    },
+    {
+        "id": "FORTIOS-CVE-028", "cve": "CVE-2024-33510", "severity": "MEDIUM",
+        "name": "SSL VPN improper access control — cross-user",
+        "affected": [
+            {"train": "7.4", "fixed": "7.4.4"},
+            {"train": "7.2", "fixed": "7.2.9"},
+            {"train": "7.0", "fixed": "7.0.15"},
+        ],
+        "description": "Improper access control in FortiOS SSL VPN web portal allows an authenticated attacker to access bookmarks and resources of other SSL VPN users.",
+        "recommendation": "Upgrade to fixed version. Review SSL VPN portal access controls and user group assignments.",
+        "cwe": "CWE-284",
+    },
+    {
+        "id": "FORTIOS-CVE-029", "cve": "CVE-2025-22252", "severity": "CRITICAL",
+        "name": "RADIUS auth bypass with empty shared secret",
+        "affected": [
+            {"train": "7.6", "fixed": "7.6.1"},
+            {"train": "7.4", "fixed": "7.4.7"},
+        ],
+        "description": "Authentication bypass in FortiOS when using RADIUS with an empty shared secret allows a MitM attacker to authenticate as any user by intercepting and modifying RADIUS responses.",
+        "recommendation": "Upgrade to FortiOS 7.6.1 or 7.4.7. Ensure all RADIUS servers have a strong shared secret.",
+        "cwe": "CWE-305",
+    },
+    {
+        "id": "FORTIOS-CVE-030", "cve": "CVE-2024-40591", "severity": "HIGH",
+        "name": "Authenticated admin privilege escalation",
+        "affected": [
+            {"train": "7.4", "fixed": "7.4.5"},
+            {"train": "7.2", "fixed": "7.2.10"},
+            {"train": "7.0", "fixed": "7.0.16"},
+        ],
+        "description": "Improper privilege management in FortiOS allows an authenticated administrator with limited privileges to escalate to super-admin via crafted configuration changes.",
+        "recommendation": "Upgrade to fixed version. Review admin accounts for least-privilege. Monitor config change logs.",
+        "cwe": "CWE-269",
+    },
 ]
 
 # ========================================================================== #
@@ -295,16 +410,122 @@ WEAK_DH_GROUPS = {"1", "2", "5"}
 WEAK_TLS = {"sslv3", "tlsv1.0", "tlsv1-0", "tlsv1.1", "tlsv1-1", "tls1.0", "tls1.1", "tls-1.0", "tls-1.1"}
 
 # ========================================================================== #
+#  COMPLIANCE FRAMEWORK MAPPING                                               #
+# ========================================================================== #
+# Maps rule ID prefixes to compliance control references.
+# Each finding can reference multiple frameworks.
+
+COMPLIANCE_MAP: dict[str, dict[str, list[str]]] = {
+    # ── CIS FortiGate Benchmark ─────────────────────────────────────────
+    "FORTIOS-ADMIN-001": {"CIS": ["2.1.1"], "PCI-DSS": ["2.2.2", "8.2.1"], "NIST": ["AC-17", "SC-8"], "SOC2": ["CC6.1"], "HIPAA": ["164.312(d)"]},
+    "FORTIOS-ADMIN-002": {"CIS": ["2.1.2"], "PCI-DSS": ["8.1.8"], "NIST": ["AC-11"], "SOC2": ["CC6.1"], "HIPAA": ["164.312(a)(2)(iii)"]},
+    "FORTIOS-ADMIN-003": {"CIS": ["2.1.3"], "PCI-DSS": ["8.2.3"], "NIST": ["IA-5"], "SOC2": ["CC6.1"], "HIPAA": ["164.312(d)"]},
+    "FORTIOS-ADMIN-004": {"CIS": ["2.1.4"], "PCI-DSS": ["8.3.1"], "NIST": ["IA-2(1)"], "SOC2": ["CC6.1"], "HIPAA": ["164.312(d)"]},
+    "FORTIOS-ADMIN-005": {"CIS": ["2.1.5"], "PCI-DSS": ["8.3.1"], "NIST": ["IA-2(1)"], "SOC2": ["CC6.1"]},
+    "FORTIOS-ADMIN-006": {"CIS": ["2.1.6"], "PCI-DSS": ["7.1.1"], "NIST": ["AC-6"], "SOC2": ["CC6.3"]},
+    "FORTIOS-ADMIN-007": {"CIS": ["2.1.7"], "PCI-DSS": ["2.2.2"], "NIST": ["AC-3"], "SOC2": ["CC6.1"]},
+    "FORTIOS-ADMIN-008": {"CIS": ["2.1.8"], "PCI-DSS": ["7.1.2"], "NIST": ["AC-6(1)"], "SOC2": ["CC6.3"]},
+    "FORTIOS-SYS-001":   {"CIS": ["3.1.1"], "PCI-DSS": ["2.2.4"], "NIST": ["SC-13"], "SOC2": ["CC6.1"]},
+    "FORTIOS-SYS-002":   {"CIS": ["3.1.2"], "PCI-DSS": ["2.2.4"], "NIST": ["SC-13"]},
+    "FORTIOS-SYS-003":   {"CIS": ["3.1.3"], "PCI-DSS": ["2.2.2"], "NIST": ["AC-8"], "SOC2": ["CC6.1"]},
+    "FORTIOS-SYS-004":   {"CIS": ["3.1.4"], "PCI-DSS": ["2.2.2"], "NIST": ["AC-8"]},
+    "FORTIOS-SYS-005":   {"CIS": ["3.1.5"], "PCI-DSS": ["8.1.6"], "NIST": ["AC-7"], "HIPAA": ["164.312(a)(2)(i)"]},
+    "FORTIOS-POLICY-001": {"CIS": ["4.1.1"], "PCI-DSS": ["1.2.1"], "NIST": ["AC-4"], "SOC2": ["CC6.6"]},
+    "FORTIOS-POLICY-002": {"CIS": ["4.1.2"], "PCI-DSS": ["1.2.1"], "NIST": ["AC-4", "SC-7"], "SOC2": ["CC6.6"]},
+    "FORTIOS-POLICY-003": {"CIS": ["4.1.3"], "PCI-DSS": ["1.1.7"], "NIST": ["AU-3"], "SOC2": ["CC7.2"]},
+    "FORTIOS-POLICY-004": {"CIS": ["4.1.4"], "PCI-DSS": ["1.2.1"], "NIST": ["SC-7"], "SOC2": ["CC6.6"]},
+    "FORTIOS-SSLVPN-001": {"CIS": ["5.1.1"], "PCI-DSS": ["4.1"], "NIST": ["SC-8"], "SOC2": ["CC6.7"], "HIPAA": ["164.312(e)(1)"]},
+    "FORTIOS-SSLVPN-002": {"CIS": ["5.1.2"], "PCI-DSS": ["4.1"], "NIST": ["SC-8", "SC-13"]},
+    "FORTIOS-SSLVPN-003": {"CIS": ["5.1.3"], "PCI-DSS": ["8.3.1"], "NIST": ["IA-2"], "HIPAA": ["164.312(d)"]},
+    "FORTIOS-IPSEC-001":  {"CIS": ["5.2.1"], "PCI-DSS": ["4.1"], "NIST": ["SC-8", "SC-13"], "SOC2": ["CC6.7"]},
+    "FORTIOS-IPSEC-002":  {"CIS": ["5.2.2"], "PCI-DSS": ["4.1"], "NIST": ["SC-12"]},
+    "FORTIOS-IPSEC-003":  {"CIS": ["5.2.3"], "PCI-DSS": ["4.1"], "NIST": ["SC-13"]},
+    "FORTIOS-LOG-001":    {"CIS": ["6.1.1"], "PCI-DSS": ["10.1", "10.2"], "NIST": ["AU-2", "AU-3"], "SOC2": ["CC7.2"], "HIPAA": ["164.312(b)"]},
+    "FORTIOS-LOG-002":    {"CIS": ["6.1.2"], "PCI-DSS": ["10.5.3"], "NIST": ["AU-9"], "SOC2": ["CC7.2"]},
+    "FORTIOS-LOG-003":    {"CIS": ["6.1.3"], "PCI-DSS": ["10.2"], "NIST": ["AU-12"], "SOC2": ["CC7.2"]},
+    "FORTIOS-LOG-004":    {"CIS": ["6.1.4"], "PCI-DSS": ["10.5.1"], "NIST": ["AU-9"]},
+    "FORTIOS-HA-001":     {"CIS": ["7.1.1"], "PCI-DSS": ["12.10.1"], "NIST": ["CP-7", "CP-9"], "SOC2": ["CC7.5"]},
+    "FORTIOS-CERT-001":   {"CIS": ["8.1.1"], "PCI-DSS": ["4.1"], "NIST": ["SC-17"], "SOC2": ["CC6.7"]},
+    "FORTIOS-CERT-002":   {"CIS": ["8.1.2"], "PCI-DSS": ["4.1"], "NIST": ["SC-17"]},
+    "FORTIOS-NET-001":    {"CIS": ["9.1.1"], "PCI-DSS": ["11.4"], "NIST": ["SC-5"], "SOC2": ["CC6.6"]},
+    "FORTIOS-NET-002":    {"CIS": ["9.1.2"], "PCI-DSS": ["2.2.2"], "NIST": ["CM-7"]},
+    "FORTIOS-NET-003":    {"CIS": ["9.1.3"], "PCI-DSS": ["2.2.2", "10.6"], "NIST": ["AU-8"], "SOC2": ["CC7.2"]},
+    "FORTIOS-UPDATE-001": {"CIS": ["10.1.1"], "PCI-DSS": ["6.2"], "NIST": ["SI-2", "SI-3"], "SOC2": ["CC7.1"]},
+    "FORTIOS-UPDATE-002": {"CIS": ["10.1.2"], "PCI-DSS": ["6.2"], "NIST": ["SI-2"]},
+    "FORTIOS-WIRELESS-001": {"CIS": ["11.1.1"], "PCI-DSS": ["4.1.1"], "NIST": ["SC-8", "AC-18"]},
+    "FORTIOS-WIRELESS-002": {"CIS": ["11.1.2"], "PCI-DSS": ["11.1"], "NIST": ["AC-18"]},
+    "FORTIOS-BACKUP-001": {"CIS": ["12.1.1"], "PCI-DSS": ["12.10.1"], "NIST": ["CP-9"], "SOC2": ["CC7.5"]},
+    "FORTIOS-AUTH-001":   {"CIS": ["13.1.1"], "PCI-DSS": ["8.3.1"], "NIST": ["IA-2(1)"], "SOC2": ["CC6.1"], "HIPAA": ["164.312(d)"]},
+    "FORTIOS-AUTH-002":   {"CIS": ["13.1.2"], "PCI-DSS": ["8.2.1"], "NIST": ["IA-5(1)"], "SOC2": ["CC6.1"]},
+    "FORTIOS-ZTNA-001":   {"CIS": ["14.1.1"], "PCI-DSS": ["1.2.1"], "NIST": ["AC-4", "SC-7"]},
+    "FORTIOS-PROFILE-001": {"CIS": ["4.2.1"], "PCI-DSS": ["5.1", "5.2"], "NIST": ["SI-3"], "SOC2": ["CC6.8"]},
+    "FORTIOS-PROFILE-002": {"CIS": ["4.2.2"], "PCI-DSS": ["11.4"], "NIST": ["SI-4"]},
+    "FORTIOS-PROFILE-003": {"CIS": ["4.2.3"], "PCI-DSS": ["1.2.1"], "NIST": ["SC-7"]},
+    # CVE rules map to patch management controls
+    "FORTIOS-CVE":         {"PCI-DSS": ["6.2"], "NIST": ["SI-2", "RA-5"], "SOC2": ["CC7.1"], "HIPAA": ["164.308(a)(5)(ii)(B)"]},
+}
+
+# ── Remediation CLI commands (FortiOS config) per rule ──────────────────
+REMEDIATION_COMMANDS: dict[str, str] = {
+    "FORTIOS-ADMIN-001": "config system global\n  set admin-https-redirect enable\nend",
+    "FORTIOS-ADMIN-002": "config system global\n  set admintimeout 5\nend",
+    "FORTIOS-ADMIN-003": "config system password-policy\n  set minimum-length 12\n  set min-upper-case-letter 1\n  set min-lower-case-letter 1\n  set min-number 1\n  set min-non-alphanumeric 1\nend",
+    "FORTIOS-ADMIN-004": "config system admin\n  edit <admin-name>\n    set two-factor fortitoken\n  next\nend",
+    "FORTIOS-ADMIN-005": "config system admin\n  edit <admin-name>\n    set two-factor fortitoken\n  next\nend",
+    "FORTIOS-ADMIN-006": "config system admin\n  edit <admin-name>\n    set trusthost1 <trusted-network/mask>\n  next\nend",
+    "FORTIOS-ADMIN-007": "config system interface\n  edit <wan-interface>\n    set allowaccess ping https ssh\n    unset allowaccess http\n  next\nend",
+    "FORTIOS-ADMIN-008": "config system admin\n  edit <admin-name>\n    set accprofile <least-privilege-profile>\n  next\nend",
+    "FORTIOS-ADMIN-013": "config system password-policy\n  set min-upper-case-letter 1\nend",
+    "FORTIOS-ADMIN-014": "config system password-policy\n  set min-lower-case-letter 1\nend",
+    "FORTIOS-ADMIN-015": "config system password-policy\n  set min-number 1\nend",
+    "FORTIOS-SYS-001":   "config system global\n  set strong-crypto enable\nend",
+    "FORTIOS-SYS-002":   "config system global\n  set fds-statistics disable\nend",
+    "FORTIOS-SYS-003":   "config system global\n  set pre-login-banner enable\nend",
+    "FORTIOS-SYS-004":   "config system global\n  set post-login-banner enable\nend",
+    "FORTIOS-SYS-005":   "config system global\n  set admin-lockout-threshold 3\n  set admin-lockout-duration 300\nend",
+    "FORTIOS-POLICY-002": "config firewall policy\n  edit <policy-id>\n    set srcaddr <specific-address>\n    set dstaddr <specific-address>\n    set service <specific-service>\n  next\nend",
+    "FORTIOS-POLICY-003": "config firewall policy\n  edit <policy-id>\n    set logtraffic all\n  next\nend",
+    "FORTIOS-SSLVPN-001": "config vpn ssl settings\n  set sslv3 disable\n  set tlsv1-0 disable\n  set tlsv1-1 disable\n  set tlsv1-2 enable\n  set tlsv1-3 enable\nend",
+    "FORTIOS-SSLVPN-003": "config vpn ssl settings\n  set reqclientcert enable\nend",
+    "FORTIOS-IPSEC-001":  "config vpn ipsec phase1-interface\n  edit <vpn-name>\n    set proposal aes256-sha256 aes256gcm-prfsha384\n  next\nend",
+    "FORTIOS-IPSEC-002":  "config vpn ipsec phase1-interface\n  edit <vpn-name>\n    set dhgrp 14 20 21\n  next\nend",
+    "FORTIOS-LOG-001":    "config log fortianalyzer setting\n  set status enable\n  set server <FAZ-IP>\nend",
+    "FORTIOS-LOG-002":    "config log syslogd setting\n  set status enable\n  set server <syslog-IP>\nend",
+    "FORTIOS-LOG-003":    "config log setting\n  set fwpolicy-implicit-log enable\nend",
+    "FORTIOS-LOG-004":    "config log fortianalyzer setting\n  set enc-algorithm high\nend",
+    "FORTIOS-HA-001":     "config system ha\n  set mode a-p\n  set group-name <ha-group>\n  set password <ha-password>\nend",
+    "FORTIOS-NET-001":    "config firewall DoS-policy\n  edit 1\n    set status enable\n    set interface <wan-interface>\n  next\nend",
+    "FORTIOS-NET-003":    "config system ntp\n  set ntpsync enable\n  set type custom\n  config ntpserver\n    edit 1\n      set server <ntp-server>\n    next\n  end\nend",
+    "FORTIOS-UPDATE-001": "Upgrade FortiOS firmware via System > Firmware. Download from https://support.fortinet.com",
+    "FORTIOS-CERT-001":   "config vpn certificate local\n  Generate or import a CA-signed certificate to replace the default self-signed certificate.\nend",
+    "FORTIOS-WIRELESS-001": "config wireless-controller vap\n  edit <ssid-name>\n    set security wpa2-only-enterprise\n  next\nend",
+    "FORTIOS-BACKUP-001": "config system central-management\n  set type fortimanager\n  set fmg <fmg-ip>\nend",
+    "FORTIOS-AUTH-001":   "config system admin\n  edit <admin-name>\n    set two-factor fortitoken\n  next\nend",
+    "FORTIOS-AUTH-002":   "config user ldap\n  edit <ldap-server>\n    set secure ldaps\n    set server-identity-check enable\n  next\nend",
+    "FORTIOS-ZTNA-001":   "config firewall access-proxy\n  edit <proxy-name>\n    set vip <virtual-IP>\n  next\nend",
+    # Session management
+    "FORTIOS-SYS-013":    "config system global\n  set tcp-halfclose-timer 120\n  set tcp-halfopen-timer 30\nend",
+    "FORTIOS-SYS-014":    "config system global\n  set admin-scp enable\nend",
+    "FORTIOS-SYS-015":    "config system global\n  set admin-ssh-grace-time 60\nend",
+    # FIPS
+    "FORTIOS-SYS-016":    "config system global\n  set fips-cc enable\nend\n# NOTE: Enabling FIPS mode requires reboot and restricts cipher suites.",
+    # Log retention
+    "FORTIOS-LOG-017":    "config log setting\n  set log-file-size <size-MB>\nend\nAlternatively, configure FortiAnalyzer retention policies.",
+    "FORTIOS-LOG-018":    "config log fortianalyzer setting\n  set enc-algorithm high\nend",
+}
+
+# ========================================================================== #
 #  FINDING CLASS                                                              #
 # ========================================================================== #
 
 class Finding:
-    """A single vulnerability finding."""
+    """A single vulnerability finding with compliance mapping and remediation."""
 
     __slots__ = (
         "rule_id", "name", "category", "severity",
         "file_path", "line_num", "line_content",
         "description", "recommendation", "cwe", "cve",
+        "compliance", "remediation_cmd",
     )
 
     def __init__(
@@ -325,9 +546,37 @@ class Finding:
         self.recommendation = recommendation
         self.cwe = cwe
         self.cve = cve
+        # Auto-resolve compliance mapping
+        self.compliance: dict[str, list[str]] = self._resolve_compliance()
+        # Auto-resolve remediation command
+        self.remediation_cmd: str = REMEDIATION_COMMANDS.get(rule_id, "")
+
+    def _resolve_compliance(self) -> dict[str, list[str]]:
+        """Look up compliance framework references for this finding."""
+        # Exact match first
+        if self.rule_id in COMPLIANCE_MAP:
+            return COMPLIANCE_MAP[self.rule_id]
+        # Prefix match (e.g., FORTIOS-CVE-001 -> FORTIOS-CVE)
+        prefix = self.rule_id.rsplit("-", 1)[0] if "-" in self.rule_id else self.rule_id
+        if prefix in COMPLIANCE_MAP:
+            return COMPLIANCE_MAP[prefix]
+        return {}
+
+    @property
+    def compliance_str(self) -> str:
+        """Format compliance references as a readable string."""
+        if not self.compliance:
+            return ""
+        parts = []
+        for framework, controls in sorted(self.compliance.items()):
+            parts.append(f"{framework}: {', '.join(controls)}")
+        return " | ".join(parts)
 
     def to_dict(self) -> dict:
-        return {s: getattr(self, s) for s in self.__slots__}
+        d = {s: getattr(self, s) for s in self.__slots__ if s not in ("compliance", "remediation_cmd")}
+        d["compliance"] = self.compliance
+        d["remediation_cmd"] = self.remediation_cmd
+        return d
 
 
 # ========================================================================== #
@@ -411,8 +660,14 @@ class _ReportMixin:
                 ref = f"{ref} | {f.cve}" if ref else f.cve
             if ref:
                 print(f"              Ref: {ref}")
+            comp = f.compliance_str
+            if comp:
+                print(f"       Compliance: {comp[:180]}")
             print(f"             Desc: {f.description[:180]}")
             print(f"              Fix: {f.recommendation[:180]}")
+            if f.remediation_cmd:
+                cmd_preview = f.remediation_cmd.replace("\n", " / ")[:120]
+                print(f"          CLI Fix: {cmd_preview}")
             print()
 
         counts = self.summary()
@@ -705,6 +960,7 @@ class FortinetScanner(_ReportMixin):
             ("Wireless Security",    self._check_wireless),
             ("Backup & DR",          self._check_backup),
             ("Authentication",       self._check_authentication),
+            ("Advanced Hardening",   self._check_advanced_hardening),
         ]
 
         for name, func in checks:
@@ -3625,6 +3881,439 @@ class FortinetScanner(_ReportMixin):
                     cwe="CWE-295",
                 ))
 
+    # ================================================================== #
+    #  CHECK: Advanced Hardening (NEW)                                     #
+    # ================================================================== #
+
+    def _check_advanced_hardening(self) -> None:
+        """Additional hardening checks: FIPS, session mgmt, FortiToken, policy analysis, log retention."""
+        _host = self._sys_info.get("hostname", self.host)
+        glb = self._api_get("system/global")
+        if isinstance(glb, list) and glb:
+            glb = glb[0] if isinstance(glb[0], dict) else {}
+        if not isinstance(glb, dict):
+            glb = {}
+
+        # ── FIPS mode ───────────────────────────────────────────────
+        fips = glb.get("fips-cc", glb.get("fips", ""))
+        if str(fips).lower() not in ("enable", "enabled"):
+            self._add(Finding(
+                rule_id="FORTIOS-SYS-016", name="FIPS 140-2 mode not enabled",
+                category="System Settings", severity="MEDIUM",
+                file_path=_host, line_num=None, line_content=f"fips-cc={fips}",
+                description="FIPS 140-2 validated cryptography mode is not enabled. Environments requiring FIPS compliance (government, financial) must enable this.",
+                recommendation="Enable FIPS mode: config system global / set fips-cc enable. NOTE: Requires reboot and restricts cipher suites.",
+                cwe="CWE-327",
+            ))
+
+        # ── SCP admin access ────────────────────────────────────────
+        admin_scp = glb.get("admin-scp", "")
+        if str(admin_scp).lower() not in ("enable", "enabled"):
+            self._add(Finding(
+                rule_id="FORTIOS-SYS-014", name="SCP admin access disabled",
+                category="System Settings", severity="LOW",
+                file_path=_host, line_num=None, line_content=f"admin-scp={admin_scp}",
+                description="SCP (Secure Copy Protocol) access for admin file transfer is disabled. SCP provides encrypted file transfer for config backup/restore.",
+                recommendation="Enable SCP access: config system global / set admin-scp enable.",
+                cwe="CWE-319",
+            ))
+
+        # ── TCP session timers ──────────────────────────────────────
+        tcp_halfopen = glb.get("tcp-halfopen-timer", 10)
+        if isinstance(tcp_halfopen, int) and tcp_halfopen > 60:
+            self._add(Finding(
+                rule_id="FORTIOS-SYS-013", name="TCP half-open session timer too long",
+                category="System Settings", severity="MEDIUM",
+                file_path=_host, line_num=None, line_content=f"tcp-halfopen-timer={tcp_halfopen}",
+                description=f"TCP half-open timer is {tcp_halfopen}s (recommended <=30). Long timers make the firewall vulnerable to SYN flood attacks.",
+                recommendation="Set tcp-halfopen-timer to 30 or less: config system global / set tcp-halfopen-timer 30.",
+                cwe="CWE-400",
+            ))
+
+        tcp_halfclose = glb.get("tcp-halfclose-timer", 120)
+        if isinstance(tcp_halfclose, int) and tcp_halfclose > 300:
+            self._add(Finding(
+                rule_id="FORTIOS-SYS-017", name="TCP half-close session timer too long",
+                category="System Settings", severity="LOW",
+                file_path=_host, line_num=None, line_content=f"tcp-halfclose-timer={tcp_halfclose}",
+                description=f"TCP half-close timer is {tcp_halfclose}s (recommended <=120). Excessive timers waste session table resources.",
+                recommendation="Set tcp-halfclose-timer to 120: config system global / set tcp-halfclose-timer 120.",
+                cwe="CWE-400",
+            ))
+
+        # ── SSH grace time ──────────────────────────────────────────
+        ssh_grace = glb.get("admin-ssh-grace-time", 120)
+        if isinstance(ssh_grace, int) and ssh_grace > 120:
+            self._add(Finding(
+                rule_id="FORTIOS-SYS-015", name="SSH grace time exceeds 120 seconds",
+                category="System Settings", severity="LOW",
+                file_path=_host, line_num=None, line_content=f"admin-ssh-grace-time={ssh_grace}",
+                description=f"SSH grace time is {ssh_grace}s. This allows unauthenticated SSH sessions to remain open, consuming resources.",
+                recommendation="Set admin-ssh-grace-time to 60: config system global / set admin-ssh-grace-time 60.",
+                cwe="CWE-400",
+            ))
+
+        # ── DNS over TLS/HTTPS ──────────────────────────────────────
+        dns = self._api_get("system/dns")
+        if isinstance(dns, list) and dns:
+            dns = dns[0] if isinstance(dns[0], dict) else {}
+        if isinstance(dns, dict):
+            dns_protocol = str(dns.get("protocol", "cleartext")).lower()
+            if dns_protocol in ("cleartext", "udp", ""):
+                self._add(Finding(
+                    rule_id="FORTIOS-NET-017", name="DNS queries not encrypted",
+                    category="Network Hardening", severity="MEDIUM",
+                    file_path=_host, line_num=None, line_content=f"dns-protocol={dns_protocol}",
+                    description="DNS queries are sent in cleartext, exposing internal hostname lookups to eavesdropping and manipulation.",
+                    recommendation="Enable DNS over TLS (DoT) or DNS over HTTPS (DoH): config system dns / set protocol dot.",
+                    cwe="CWE-319",
+                ))
+
+        # ── FortiToken / two-factor coverage ────────────────────────
+        admins = self._api_get("system/admin")
+        if isinstance(admins, list):
+            total_admins = len(admins)
+            mfa_admins = sum(1 for a in admins if isinstance(a, dict) and str(a.get("two-factor", "")).lower() not in ("", "disable", "disabled"))
+            if total_admins > 0 and mfa_admins < total_admins:
+                pct = int(mfa_admins / total_admins * 100)
+                self._add(Finding(
+                    rule_id="FORTIOS-ADMIN-023", name=f"MFA coverage: {pct}% of admin accounts",
+                    category="Admin Access", severity="HIGH" if pct < 50 else "MEDIUM",
+                    file_path=_host, line_num=None,
+                    line_content=f"mfa_enabled={mfa_admins}/{total_admins} ({pct}%)",
+                    description=f"Only {mfa_admins} of {total_admins} admin accounts ({pct}%) have two-factor authentication enabled. All admin accounts should require MFA.",
+                    recommendation="Enable FortiToken or email-based 2FA for all admin accounts: config system admin / edit <name> / set two-factor fortitoken.",
+                    cwe="CWE-308",
+                ))
+
+            # Admin password age check
+            for admin in admins:
+                if not isinstance(admin, dict):
+                    continue
+                name = admin.get("name", "")
+                pwd_change = admin.get("password-expire", "")
+                accprofile = admin.get("accprofile", "")
+                # Check for default admin account with super_admin profile
+                if name == "admin" and accprofile == "super_admin":
+                    self._add(Finding(
+                        rule_id="FORTIOS-ADMIN-024", name="Default 'admin' account with super_admin profile",
+                        category="Admin Access", severity="MEDIUM",
+                        file_path=_host, line_num=None, line_content=f"admin=admin, accprofile=super_admin",
+                        description="The default 'admin' account exists with super_admin privileges. Best practice is to create named admin accounts and disable the default.",
+                        recommendation="Create named admin accounts with appropriate profiles. Disable or rename the default 'admin' account.",
+                        cwe="CWE-1188",
+                    ))
+
+        # ── Policy hit count analysis ───────────────────────────────
+        policies = self._api_get("firewall/policy")
+        if isinstance(policies, list):
+            enabled_count = 0
+            no_log_count = 0
+            no_profile_count = 0
+            all_any_count = 0
+            for pol in policies:
+                if not isinstance(pol, dict):
+                    continue
+                if str(pol.get("status", "enable")).lower() == "disable":
+                    continue
+                enabled_count += 1
+                # Policies without any security profile
+                has_profile = False
+                for pf in ("av-profile", "ips-sensor", "webfilter-profile", "application-list",
+                            "dlp-sensor", "emailfilter-profile", "file-filter-profile",
+                            "dnsfilter-profile", "ssl-ssh-profile"):
+                    if pol.get(pf, "") and str(pol.get(pf, "")) != "":
+                        has_profile = True
+                        break
+                if not has_profile:
+                    no_profile_count += 1
+                # Log disabled
+                logtraffic = str(pol.get("logtraffic", "")).lower()
+                if logtraffic in ("disable", ""):
+                    no_log_count += 1
+
+            if no_profile_count > 0:
+                pct = int(no_profile_count / max(enabled_count, 1) * 100)
+                self._add(Finding(
+                    rule_id="FORTIOS-POLICY-015", name=f"{no_profile_count} active policies without security profiles",
+                    category="Firewall Policies", severity="HIGH",
+                    file_path=_host, line_num=None,
+                    line_content=f"no_profile={no_profile_count}/{enabled_count} ({pct}%)",
+                    description=f"{no_profile_count} of {enabled_count} active policies ({pct}%) have no AV, IPS, WebFilter, or other security profile attached. Traffic matching these rules bypasses all security inspection.",
+                    recommendation="Attach security profiles (AV, IPS, Web Filter, Application Control) to all allow policies.",
+                    cwe="CWE-693",
+                ))
+
+            if no_log_count > 0:
+                self._add(Finding(
+                    rule_id="FORTIOS-POLICY-016", name=f"{no_log_count} active policies with logging disabled",
+                    category="Firewall Policies", severity="MEDIUM",
+                    file_path=_host, line_num=None,
+                    line_content=f"no_log={no_log_count}/{enabled_count}",
+                    description=f"{no_log_count} of {enabled_count} active policies have traffic logging disabled. This creates blind spots in security monitoring.",
+                    recommendation="Enable logging on all policies: config firewall policy / edit <id> / set logtraffic all.",
+                    cwe="CWE-778",
+                ))
+
+        # ── Log retention check ─────────────────────────────────────
+        log_setting = self._api_get("log/setting")
+        if isinstance(log_setting, list) and log_setting:
+            log_setting = log_setting[0] if isinstance(log_setting[0], dict) else {}
+        if isinstance(log_setting, dict):
+            log_mode = str(log_setting.get("log-mode", "")).lower()
+            if log_mode in ("udp", ""):
+                self._add(Finding(
+                    rule_id="FORTIOS-LOG-017", name="Log transport not encrypted",
+                    category="Logging & Monitoring", severity="MEDIUM",
+                    file_path=_host, line_num=None, line_content=f"log-mode={log_mode}",
+                    description="Logs are transported via unencrypted UDP. Log data may contain sensitive information visible to network eavesdroppers.",
+                    recommendation="Use encrypted log transport (TCP with TLS) to FortiAnalyzer or syslog: config log fortianalyzer setting / set enc-algorithm high.",
+                    cwe="CWE-319",
+                ))
+
+        # ── Certificate chain depth ─────────────────────────────────
+        certs = self._api_get("vpn.certificate/local")
+        if isinstance(certs, list):
+            for cert in certs:
+                if not isinstance(cert, dict):
+                    continue
+                cert_name = cert.get("name", cert.get("certname", ""))
+                source = str(cert.get("source", "")).lower()
+                # Check for self-signed certs used in production
+                if source in ("self", "self-signed"):
+                    self._add(Finding(
+                        rule_id="FORTIOS-CERT-011", name=f"Self-signed certificate in use: {cert_name}",
+                        category="Certificates", severity="MEDIUM",
+                        file_path=_host, line_num=None, line_content=f"cert={cert_name}, source={source}",
+                        description=f"Certificate '{cert_name}' is self-signed. Self-signed certificates are not trusted by clients and cannot be revoked.",
+                        recommendation="Replace with a CA-signed certificate from a trusted Certificate Authority.",
+                        cwe="CWE-295",
+                    ))
+
+        # ── Interface anti-spoofing ─────────────────────────────────
+        interfaces = self._api_get("system/interface")
+        if isinstance(interfaces, list):
+            for iface in interfaces:
+                if not isinstance(iface, dict):
+                    continue
+                iface_name = iface.get("name", "")
+                role = str(iface.get("role", "")).lower()
+                spoof_chk = str(iface.get("src-check", "")).lower()
+                if role in ("wan", "dmz") and spoof_chk in ("disable", "disabled"):
+                    self._add(Finding(
+                        rule_id="FORTIOS-NET-018", name=f"Anti-spoofing disabled on {role} interface: {iface_name}",
+                        category="Network Hardening", severity="HIGH",
+                        file_path=_host, line_num=None, line_content=f"interface={iface_name}, src-check={spoof_chk}",
+                        description=f"Source IP address validation (anti-spoofing) is disabled on {role} interface '{iface_name}'. This allows spoofed packets to traverse the firewall.",
+                        recommendation=f"Enable anti-spoofing: config system interface / edit {iface_name} / set src-check enable.",
+                        cwe="CWE-290",
+                    ))
+
+        # ── Automation stitches audit ───────────────────────────────
+        auto_triggers = self._api_get("system/automation-trigger")
+        if isinstance(auto_triggers, list) and len(auto_triggers) == 0:
+            self._add(Finding(
+                rule_id="FORTIOS-LOG-018", name="No automation stitches configured",
+                category="Logging & Monitoring", severity="LOW",
+                file_path=_host, line_num=None, line_content="automation-trigger count=0",
+                description="No automation stitches are configured. Automation stitches enable automatic response to security events (e.g., quarantine compromised hosts, alert on config changes).",
+                recommendation="Configure automation stitches for critical events: config system automation-trigger / edit <name>.",
+                cwe="CWE-778",
+            ))
+
+        # ── SD-WAN health check depth ───────────────────────────────
+        sdwan = self._api_get("system/sdwan")
+        if isinstance(sdwan, list) and sdwan:
+            sdwan = sdwan[0] if isinstance(sdwan[0], dict) else {}
+        if isinstance(sdwan, dict) and str(sdwan.get("status", "")).lower() == "enable":
+            health_checks = sdwan.get("health-check", [])
+            if isinstance(health_checks, list) and len(health_checks) == 0:
+                self._add(Finding(
+                    rule_id="FORTIOS-ZTNA-006", name="SD-WAN enabled without health checks",
+                    category="ZTNA / SASE", severity="MEDIUM",
+                    file_path=_host, line_num=None, line_content="sdwan=enable, health-check=0",
+                    description="SD-WAN is enabled but no health check probes are configured. Without health checks, failover between WAN links is blind to link quality.",
+                    recommendation="Configure SD-WAN health checks with SLA targets: config system sdwan / config health-check.",
+                    cwe="CWE-693",
+                ))
+
+    # ================================================================== #
+    #  REMEDIATION EXPORT                                                  #
+    # ================================================================== #
+
+    def save_remediation(self, output_path: str) -> None:
+        """Export FortiOS CLI remediation commands for all findings."""
+        lines: list[str] = [
+            f"# Fortinet FortiOS Remediation Script",
+            f"# Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+            f"# Target: {self._sys_info.get('hostname', self.host)}",
+            f"# FortiOS: {self._sys_info.get('version', 'N/A')}",
+            f"# Findings: {len(self.findings)}",
+            f"#",
+            f"# WARNING: Review each command before applying to production.",
+            f"# Some commands require a reboot or may disrupt services.",
+            f"",
+        ]
+        count = 0
+        for f in sorted(self.findings, key=lambda x: (self.SEVERITY_ORDER.get(x.severity, 4), x.rule_id)):
+            cmd = f.remediation_cmd or REMEDIATION_COMMANDS.get(f.rule_id, "")
+            if cmd:
+                lines.append(f"# [{f.severity}] {f.rule_id} — {f.name}")
+                lines.append(cmd)
+                lines.append("")
+                count += 1
+        lines.append(f"# Total remediation commands: {count}")
+        with open(output_path, "w", encoding="utf-8") as fh:
+            fh.write("\n".join(lines))
+        print(f"[+] Remediation script saved to: {output_path} ({count} commands)")
+
+    def save_compliance_csv(self, output_path: str) -> None:
+        """Export compliance mapping as CSV for audit evidence."""
+        import csv
+        with open(output_path, "w", newline="", encoding="utf-8") as fh:
+            writer = csv.writer(fh)
+            writer.writerow(["Rule ID", "Severity", "Name", "Category", "CIS", "PCI-DSS", "NIST 800-53", "SOC2", "HIPAA", "Description", "Recommendation"])
+            for f in sorted(self.findings, key=lambda x: x.rule_id):
+                comp = f.compliance
+                writer.writerow([
+                    f.rule_id, f.severity, f.name, f.category,
+                    "; ".join(comp.get("CIS", [])),
+                    "; ".join(comp.get("PCI-DSS", [])),
+                    "; ".join(comp.get("NIST", [])),
+                    "; ".join(comp.get("SOC2", [])),
+                    "; ".join(comp.get("HIPAA", [])),
+                    f.description, f.recommendation,
+                ])
+        print(f"[+] Compliance CSV saved to: {output_path}")
+
+
+# ========================================================================== #
+#  MULTI-DEVICE SCANNING                                                      #
+# ========================================================================== #
+
+class MultiDeviceScanner:
+    """Scan multiple FortiGate devices with unified reporting."""
+
+    def __init__(
+        self,
+        targets: list[dict[str, str]],
+        verify_ssl: bool = False,
+        timeout: int = 30,
+        verbose: bool = False,
+    ):
+        """
+        Args:
+            targets: List of dicts with 'host' and 'token' keys.
+                     Optional: 'name' for display label.
+            verify_ssl: Verify SSL certificates.
+            timeout: API request timeout.
+            verbose: Verbose output.
+        """
+        self.targets = targets
+        self.verify_ssl = verify_ssl
+        self.timeout = timeout
+        self.verbose = verbose
+        self.results: dict[str, FortinetScanner] = {}
+
+    def scan_all(self) -> None:
+        """Scan all targets sequentially."""
+        total = len(self.targets)
+        print(f"[*] Multi-device scan: {total} target(s)")
+        print("=" * 60)
+
+        for idx, target in enumerate(self.targets, 1):
+            host = target.get("host", "")
+            token = target.get("token", "")
+            label = target.get("name", host)
+
+            if not host or not token:
+                print(f"[!] Skipping target {idx}: missing host or token")
+                continue
+
+            print(f"\n[{idx}/{total}] Scanning: {label}")
+            print("-" * 40)
+
+            try:
+                scanner = FortinetScanner(
+                    host=host,
+                    token=token,
+                    verify_ssl=self.verify_ssl,
+                    timeout=self.timeout,
+                    verbose=self.verbose,
+                )
+                scanner.scan()
+                self.results[label] = scanner
+            except Exception as exc:
+                print(f"[!] Failed to scan {label}: {exc}")
+
+        print(f"\n{'=' * 60}")
+        print(f"[*] Multi-device scan complete. {len(self.results)}/{total} successful.")
+
+    def print_summary(self) -> None:
+        """Print unified summary across all devices."""
+        if not self.results:
+            print("[!] No scan results available.")
+            return
+
+        print(f"\n{'=' * 72}")
+        print(f"  Multi-Device Security Summary")
+        print(f"  Devices scanned: {len(self.results)}")
+        print(f"{'=' * 72}\n")
+
+        # Per-device summary
+        grand_total = 0
+        grand_counts: dict[str, int] = {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0, "INFO": 0}
+
+        for label, scanner in sorted(self.results.items()):
+            counts = scanner.summary()
+            total = len(scanner.findings)
+            grand_total += total
+            for sev, cnt in counts.items():
+                grand_counts[sev] = grand_counts.get(sev, 0) + cnt
+
+            hostname = scanner._sys_info.get("hostname", label)
+            version = scanner._sys_info.get("version", "N/A")
+            model = scanner._sys_info.get("model_name", scanner._sys_info.get("model", "N/A"))
+
+            crit = counts.get("CRITICAL", 0)
+            high = counts.get("HIGH", 0)
+            status = "\033[91mCRITICAL\033[0m" if crit else ("\033[93mHIGH\033[0m" if high else "\033[92mOK\033[0m")
+
+            print(f"  {hostname:<25} {model:<20} FortiOS {version:<10} "
+                  f"Findings: {total:>3}  (C:{crit} H:{high} M:{counts.get('MEDIUM', 0)} L:{counts.get('LOW', 0)})  [{status}]")
+
+        print(f"\n  {'─' * 68}")
+        print(f"  Grand total: {grand_total} findings across {len(self.results)} devices")
+        for sev in ("CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"):
+            if grand_counts.get(sev, 0):
+                print(f"    {sev:<10} {grand_counts[sev]}")
+        print()
+
+    def save_unified_json(self, output_path: str) -> None:
+        """Save unified JSON report across all devices."""
+        devices = []
+        for label, scanner in sorted(self.results.items()):
+            devices.append({
+                "label": label,
+                "host": scanner.host,
+                "system_info": scanner._sys_info,
+                "total_findings": len(scanner.findings),
+                "summary": scanner.summary(),
+                "findings": [f.to_dict() for f in scanner.findings],
+            })
+
+        report = {
+            "scanner": f"Fortinet FortiOS Security Scanner v{VERSION}",
+            "generated": datetime.now().isoformat(),
+            "mode": "multi-device",
+            "devices_scanned": len(self.results),
+            "total_findings": sum(len(s.findings) for s in self.results.values()),
+            "devices": devices,
+        }
+        with open(output_path, "w", encoding="utf-8") as fh:
+            json.dump(report, fh, indent=2, ensure_ascii=False)
+        print(f"[+] Unified JSON report saved to: {output_path}")
+
 
 # ========================================================================== #
 #  CLI                                                                        #
@@ -3637,13 +4326,27 @@ def main() -> None:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
+  # Single device scan
   python fortinet_scanner.py 10.1.1.1 --token <API-TOKEN>
   python fortinet_scanner.py fw.corp.local --token <TOKEN> --json report.json --html report.html
   python fortinet_scanner.py 10.1.1.1 --token <TOKEN> --severity HIGH --verbose
+
+  # Export remediation commands
+  python fortinet_scanner.py 10.1.1.1 --token <TOKEN> --remediation fix.txt
+
+  # Export compliance mapping
+  python fortinet_scanner.py 10.1.1.1 --token <TOKEN> --compliance-csv audit.csv
+
+  # Multi-device scan (JSON inventory file)
+  python fortinet_scanner.py --inventory devices.json --json unified_report.json
+
+  # devices.json format:
+  # [{"host": "fw1.corp.local", "token": "xxx", "name": "HQ-FW"},
+  #  {"host": "fw2.corp.local", "token": "yyy", "name": "DR-FW"}]
 """,
     )
 
-    parser.add_argument("host", help="FortiGate hostname or IP address")
+    parser.add_argument("host", nargs="?", default=None, help="FortiGate hostname or IP address")
     parser.add_argument(
         "--token",
         default=os.environ.get("FORTIOS_API_TOKEN", ""),
@@ -3653,6 +4356,9 @@ Examples:
     parser.add_argument("--timeout", type=int, default=30, help="API request timeout in seconds (default: 30)")
     parser.add_argument("--json", metavar="FILE", help="Save JSON report to FILE")
     parser.add_argument("--html", metavar="FILE", help="Save HTML report to FILE")
+    parser.add_argument("--remediation", metavar="FILE", help="Export FortiOS CLI remediation commands to FILE")
+    parser.add_argument("--compliance-csv", metavar="FILE", help="Export compliance mapping CSV (CIS, PCI-DSS, NIST, SOC2, HIPAA)")
+    parser.add_argument("--inventory", metavar="FILE", help="Multi-device inventory JSON file for batch scanning")
     parser.add_argument(
         "--severity",
         choices=["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"],
@@ -3663,6 +4369,40 @@ Examples:
     parser.add_argument("--version", action="version", version=f"%(prog)s {VERSION}")
 
     args = parser.parse_args()
+
+    # ── Multi-device mode ──────────────────────────────────────────
+    if args.inventory:
+        try:
+            with open(args.inventory, encoding="utf-8") as fh:
+                targets = json.load(fh)
+        except (json.JSONDecodeError, FileNotFoundError) as exc:
+            parser.error(f"Cannot load inventory file: {exc}")
+
+        if not isinstance(targets, list) or not targets:
+            parser.error("Inventory file must contain a JSON array of device objects")
+
+        multi = MultiDeviceScanner(
+            targets=targets,
+            verify_ssl=args.verify_ssl,
+            timeout=args.timeout,
+            verbose=args.verbose,
+        )
+        multi.scan_all()
+        multi.print_summary()
+
+        if args.json:
+            multi.save_unified_json(args.json)
+
+        # Exit with 1 if any device has CRITICAL/HIGH
+        has_critical = any(
+            s.summary().get("CRITICAL", 0) or s.summary().get("HIGH", 0)
+            for s in multi.results.values()
+        )
+        sys.exit(1 if has_critical else 0)
+
+    # ── Single-device mode ─────────────────────────────────────────
+    if not args.host:
+        parser.error("host is required for single-device scan (or use --inventory for multi-device)")
 
     if not args.token:
         parser.error(
@@ -3688,6 +4428,10 @@ Examples:
         scanner.save_json(args.json)
     if args.html:
         scanner.save_html(args.html)
+    if args.remediation:
+        scanner.save_remediation(args.remediation)
+    if args.compliance_csv:
+        scanner.save_compliance_csv(args.compliance_csv)
 
     counts = scanner.summary()
     sys.exit(1 if (counts.get("CRITICAL", 0) or counts.get("HIGH", 0)) else 0)

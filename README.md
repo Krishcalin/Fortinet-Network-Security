@@ -9,11 +9,12 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-3.0.0-blue?style=flat-square" alt="Version"/>
+  <img src="https://img.shields.io/badge/version-4.0.0-blue?style=flat-square" alt="Version"/>
   <img src="https://img.shields.io/badge/python-3.10%2B-blue?style=flat-square&logo=python&logoColor=white" alt="Python"/>
   <img src="https://img.shields.io/badge/FortiOS-6.x%20%7C%207.x-red?style=flat-square" alt="FortiOS"/>
-  <img src="https://img.shields.io/badge/rules-196-orange?style=flat-square" alt="Rules"/>
-  <img src="https://img.shields.io/badge/CVEs-20-critical?style=flat-square" alt="CVEs"/>
+  <img src="https://img.shields.io/badge/rules-220%2B-orange?style=flat-square" alt="Rules"/>
+  <img src="https://img.shields.io/badge/CVEs-30-critical?style=flat-square" alt="CVEs"/>
+  <img src="https://img.shields.io/badge/compliance-CIS%20%7C%20PCI--DSS%20%7C%20NIST%20%7C%20SOC2%20%7C%20HIPAA-blueviolet?style=flat-square" alt="Compliance"/>
   <img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="License"/>
 </p>
 
@@ -65,18 +66,20 @@
 
 ## Overview
 
-The **Fortinet FortiGate Security Scanner** is a Python-based live-API security assessment tool that connects to FortiGate Next-Generation Firewall (NGFW) appliances via the FortiOS REST API and evaluates their security posture against industry best practices and known vulnerabilities.
+The **Fortinet FortiGate Security Scanner** is a Python-based live-API security assessment tool that connects to FortiGate Next-Generation Firewall (NGFW) appliances via the FortiOS REST API and evaluates their security posture against industry best practices, compliance frameworks, and known vulnerabilities.
 
-It performs **196 security checks** across **15 categories**, including firewall policy hygiene, admin access hardening, VPN configuration, security profile enforcement, logging, high availability, certificate management, ZTNA readiness, wireless security, backup & disaster recovery, authentication (LDAP/RADIUS/SAML), and **20 known FortiOS CVEs** with automatic firmware version matching.
+It performs **220+ security checks** across **17 check methods**, including firewall policy analysis, admin access hardening, VPN configuration, security profile enforcement, logging, HA, certificate management, ZTNA/SD-WAN readiness, wireless security, backup & DR, authentication (LDAP/RADIUS/SAML), advanced hardening (FIPS, session timers, MFA coverage, anti-spoofing), and **30 known FortiOS CVEs** with automatic firmware version matching.
 
 ### Key Capabilities
 
-- **Live API scanning** — Connects directly to FortiGate appliances via REST API
-- **Zero-agent deployment** — No software installation on the target device
-- **CVE detection** — Automatic firmware version matching against 20 known FortiOS vulnerabilities
-- **Multi-format reports** — Console (colour-coded), JSON, and interactive HTML
-- **CI/CD ready** — Exit code 1 on CRITICAL/HIGH findings for pipeline integration
-- **Severity filtering** — Focus on findings that matter most
+- **220+ security rules** across 17 check categories with automatic compliance mapping
+- **30 known CVEs** — train-based firmware version matching (includes 2025 CVEs)
+- **5 compliance frameworks** — CIS FortiGate Benchmark, PCI-DSS, NIST 800-53, SOC 2, HIPAA
+- **Remediation automation** — export FortiOS CLI config commands per finding
+- **Multi-device scanning** — scan entire fleet via JSON inventory with unified reporting
+- **Multi-format reports** — Console (colour-coded), JSON, interactive HTML, compliance CSV
+- **Zero-agent** — REST API only, no software on target
+- **CI/CD ready** — exit code 1 on CRITICAL/HIGH for pipeline gating
 
 ---
 
@@ -84,12 +87,16 @@ It performs **196 security checks** across **15 categories**, including firewall
 
 | Feature | Description |
 |---------|-------------|
-| **22 Check Categories** | Admin access, system settings, firewall policies, SSL VPN, IPsec VPN, security profiles (AV, IPS, WebFilter, AppControl, DLP, DNS, SSL inspection, email/file filter, ICAP), logging, HA, certificates, network hardening (DoS, SNMP, routing, NTP), FortiGuard, ZTNA/SD-WAN, wireless security, backup & DR, authentication (LDAP/RADIUS/SAML), CVEs |
-| **20 Known CVEs** | CVE-2024-55591, CVE-2024-21762, CVE-2023-27997, CVE-2022-42475, and more |
-| **Train-Based CVE Matching** | Automatically matches firmware version against affected version ranges per release train |
+| **17 Check Methods** | Admin access, system settings, firewall policies, SSL VPN, IPsec VPN, security profiles (AV, IPS, WebFilter, AppControl, DLP, DNS, SSL, email/file), logging, HA, certificates, network hardening, FortiGuard, ZTNA/SD-WAN, wireless, backup & DR, authentication, advanced hardening |
+| **30 Known CVEs** | CVE-2025-24472, CVE-2025-22252, CVE-2024-55591, CVE-2024-21762, CVE-2024-35279, CVE-2023-27997, CVE-2022-42475, and 23 more |
+| **5 Compliance Frameworks** | CIS FortiGate Benchmark, PCI-DSS 4.0, NIST 800-53 Rev 5, SOC 2 Type II, HIPAA Security Rule |
+| **Remediation Export** | FortiOS CLI config commands generated per finding (`--remediation fix.txt`) |
+| **Multi-Device Scanning** | JSON inventory file for batch scanning with unified summary (`--inventory devices.json`) |
+| **Compliance CSV Export** | Audit evidence export mapping findings to CIS/PCI-DSS/NIST/SOC2/HIPAA controls (`--compliance-csv`) |
+| **Train-Based CVE Matching** | Firmware version matched against affected version ranges per release train (6.2-7.6) |
 | **Dark Theme HTML Reports** | Interactive reports with severity filtering, expandable details, and search |
 | **Self-Signed Cert Support** | SSL verification disabled by default for appliance self-signed certificates |
-| **Single File** | Entire scanner in one self-contained Python file — no complex setup |
+| **Single File** | Entire scanner in one self-contained Python file (~4,400 lines) — no complex setup |
 
 ---
 
@@ -106,17 +113,20 @@ It performs **196 security checks** across **15 categories**, including firewall
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────┐
-│                fortinet_scanner.py               │
-├─────────────────────────────────────────────────┤
-│  FORTIOS_CVES[]        20 CVE definitions       │
-│  Finding               __slots__-based class     │
-│  _ReportMixin          print_report, save_json,  │
-│                        save_html, summary,       │
-│                        filter_severity           │
-│  FortinetScanner       16 _check_* methods       │
-│  main()                CLI entry point           │
-└─────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────┐
+│                fortinet_scanner.py (v4.0.0)            │
+├───────────────────────────────────────────────────────┤
+│  FORTIOS_CVES[]        30 CVE definitions (2019-2025) │
+│  COMPLIANCE_MAP{}      45 rule→framework mappings      │
+│  REMEDIATION_COMMANDS{}42 FortiOS CLI fix commands     │
+│  Finding               __slots__ + compliance + remed  │
+│  _ReportMixin          print_report, save_json,        │
+│                        save_html, save_remediation,    │
+│                        save_compliance_csv              │
+│  FortinetScanner       17 _check_* methods (220+ rules)│
+│  MultiDeviceScanner    Batch scanning + unified reports│
+│  main()                CLI entry point                 │
+└───────────────────────────────────────────────────────┘
          │                           │
          ▼                           ▼
    FortiOS REST API           Report Output
@@ -195,6 +205,34 @@ python fortinet_scanner.py 10.1.1.1 --token <TOKEN> --json report.json --html re
 
 # Verbose output with all details
 python fortinet_scanner.py 10.1.1.1 --token <TOKEN> --verbose
+```
+
+### Remediation Export
+
+```bash
+# Export FortiOS CLI config commands to fix findings
+python fortinet_scanner.py 10.1.1.1 --token <TOKEN> --remediation fix_commands.txt
+```
+
+### Compliance Mapping Export
+
+```bash
+# Export audit evidence CSV mapped to CIS, PCI-DSS, NIST, SOC2, HIPAA
+python fortinet_scanner.py 10.1.1.1 --token <TOKEN> --compliance-csv audit_evidence.csv
+```
+
+### Multi-Device Scanning
+
+```bash
+# Create an inventory file (devices.json):
+# [
+#   {"host": "fw1.corp.local", "token": "token1", "name": "HQ-Firewall"},
+#   {"host": "fw2.corp.local", "token": "token2", "name": "DR-Firewall"},
+#   {"host": "10.1.1.1",       "token": "token3", "name": "Branch-FW"}
+# ]
+
+# Scan all devices with unified reporting
+python fortinet_scanner.py --inventory devices.json --json unified_report.json
 ```
 
 ### Environment Variables
