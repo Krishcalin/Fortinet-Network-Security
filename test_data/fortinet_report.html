@@ -1,0 +1,2719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Fortinet FortiOS Security Report</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#1a1b2e;color:#cdd6f4;line-height:1.5}
+.container{max-width:1440px;margin:0 auto;padding:24px}
+h1{font-size:1.6rem;margin-bottom:4px;color:#f38ba8}
+.meta{color:#7f849c;font-size:0.85rem;margin-bottom:24px}
+.summary{display:flex;gap:16px;margin-bottom:24px;flex-wrap:wrap}
+.summary .card{background:#313244;border-radius:10px;padding:16px 24px;min-width:120px;text-align:center}
+.summary .card .count{font-size:1.8rem;font-weight:700}
+.summary .card .label{font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:#7f849c}
+.critical .count{color:#f38ba8} .high .count{color:#fab387}
+.medium .count{color:#89b4fa} .low .count{color:#a6e3a1} .info .count{color:#cdd6f4}
+.filters{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+.filters label{color:#7f849c;font-size:0.85rem;margin-right:4px}
+.filters select,.filters input{background:#313244;color:#cdd6f4;border:1px solid #45475a;border-radius:6px;padding:6px 10px;font-size:0.85rem}
+.filters input{min-width:220px}
+table{width:100%;border-collapse:collapse;font-size:0.82rem}
+thead{position:sticky;top:0;background:#181825;z-index:1}
+th{text-align:left;padding:10px 8px;border-bottom:2px solid #45475a;color:#f38ba8;font-weight:600;white-space:nowrap}
+td{padding:8px;border-bottom:1px solid #313244;vertical-align:top}
+tr:hover{background:#313244}
+code{background:#1e1e2e;padding:2px 6px;border-radius:4px;font-size:0.78rem;word-break:break-all}
+.chip{display:inline-block;padding:2px 10px;border-radius:100px;font-size:0.7rem;font-weight:700;text-transform:uppercase}
+.chip.critical{background:rgba(243,139,168,0.18);color:#f38ba8}
+.chip.high{background:rgba(250,179,135,0.18);color:#fab387}
+.chip.medium{background:rgba(137,180,250,0.18);color:#89b4fa}
+.chip.low{background:rgba(166,227,161,0.18);color:#a6e3a1}
+.chip.info{background:rgba(205,214,244,0.12);color:#cdd6f4}
+.loc{white-space:nowrap;font-size:0.78rem;color:#f38ba8}
+.wrap{overflow-x:auto}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>Fortinet FortiOS Security Scanner v4.0.0 — Report</h1>
+<p class="meta">Generated: 2026-03-31 08:17:25 &middot;
+Target: https://10.0.0.1 &middot; FGT-TEST-LAB &middot; FortiGate-60F &middot; FortiOS v7.0.10 &middot;
+Total findings: 239</p>
+
+<div class="summary">
+  <div class="card critical"><div class="count">19</div><div class="label">Critical</div></div>
+  <div class="card high"><div class="count">99</div><div class="label">High</div></div>
+  <div class="card medium"><div class="count">83</div><div class="label">Medium</div></div>
+  <div class="card low"><div class="count">34</div><div class="label">Low</div></div>
+  <div class="card info"><div class="count">4</div><div class="label">Info</div></div>
+</div>
+
+<div class="filters">
+  <label>Severity:</label>
+  <select id="fSev"><option value="">All</option><option>CRITICAL</option><option>HIGH</option><option>MEDIUM</option><option>LOW</option><option>INFO</option></select>
+  <label>Category:</label>
+  <select id="fCat"><option value="">All</option></select>
+  <label>Search:</label>
+  <input id="fSearch" placeholder="Filter by rule ID, name, detail…">
+</div>
+
+<div class="wrap">
+<table id="tbl">
+<thead><tr>
+  <th>Severity</th><th>Rule ID</th><th>Category</th><th>Name</th>
+  <th>Target</th><th>Detail</th><th>Ref</th><th>Description</th><th>Recommendation</th>
+</tr></thead>
+<tbody>
+<tr>
+  <td><span class="chip critical">CRITICAL</span></td>
+  <td>FORTIOS-ADMIN-012</td>
+  <td>Admin Access</td>
+  <td>Management protocols on WAN interface</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>interface=wan1, role=wan, mgmt_access=snmp,fgfm,https,ssh</code></td>
+  <td>CWE-284</td>
+  <td>WAN interface &#x27;wan1&#x27; allows management protocols (snmp, fgfm, https, ssh). This exposes the management plane to the internet.</td>
+  <td>Remove all management protocols from WAN interfaces. Use a dedicated management interface or VPN for admin access.</td>
+</tr>
+<tr>
+  <td><span class="chip critical">CRITICAL</span></td>
+  <td>FORTIOS-CERT-002</td>
+  <td>Certificates</td>
+  <td>Expired certificate</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>certificate=Fortinet_Factory_Self-Sign, expired=2020-01-01 00:00:00</code></td>
+  <td>CWE-295</td>
+  <td>Certificate &#x27;Fortinet_Factory_Self-Sign&#x27; expired on 2020-01-01 00:00:00.</td>
+  <td>Replace the expired certificate immediately.</td>
+</tr>
+<tr>
+  <td><span class="chip critical">CRITICAL</span></td>
+  <td>FORTIOS-POLICY-002</td>
+  <td>Firewall Policies</td>
+  <td>Any-to-any allow policy</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>policy=Allow-All-Internet (ID 1), src=all, dst=all</code></td>
+  <td>CWE-284</td>
+  <td>Policy &#x27;Allow-All-Internet&#x27; allows traffic from any source to any destination, bypassing segmentation.</td>
+  <td>Replace with specific source and destination address objects.</td>
+</tr>
+<tr>
+  <td><span class="chip critical">CRITICAL</span></td>
+  <td>FORTIOS-POLICY-006</td>
+  <td>Firewall Policies</td>
+  <td>Allow policy without security profiles</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>policy=Allow-All-Internet (ID 1), utm_profiles=none</code></td>
+  <td>CWE-693</td>
+  <td>Policy &#x27;Allow-All-Internet&#x27; allows traffic without any UTM security profiles (AV, IPS, WebFilter, AppControl).</td>
+  <td>Apply security profiles (antivirus, IPS, web filter, application control) to all allow policies.</td>
+</tr>
+<tr>
+  <td><span class="chip critical">CRITICAL</span></td>
+  <td>FORTIOS-POLICY-006</td>
+  <td>Firewall Policies</td>
+  <td>Allow policy without security profiles</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>policy=DMZ-Access (ID 2), utm_profiles=none</code></td>
+  <td>CWE-693</td>
+  <td>Policy &#x27;DMZ-Access&#x27; allows traffic without any UTM security profiles (AV, IPS, WebFilter, AppControl).</td>
+  <td>Apply security profiles (antivirus, IPS, web filter, application control) to all allow policies.</td>
+</tr>
+<tr>
+  <td><span class="chip critical">CRITICAL</span></td>
+  <td>FORTIOS-POLICY-006</td>
+  <td>Firewall Policies</td>
+  <td>Allow policy without security profiles</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>policy= (ID 3), utm_profiles=none</code></td>
+  <td>CWE-693</td>
+  <td>Policy &#x27;&#x27; allows traffic without any UTM security profiles (AV, IPS, WebFilter, AppControl).</td>
+  <td>Apply security profiles (antivirus, IPS, web filter, application control) to all allow policies.</td>
+</tr>
+<tr>
+  <td><span class="chip critical">CRITICAL</span></td>
+  <td>FORTIOS-CVE-001</td>
+  <td>Known CVEs</td>
+  <td>Authentication bypass via Node.js websocket module</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>FortiOS 7.0.10 &lt; 7.0.17 (train 7.0)</code></td>
+  <td>CWE-288 | CVE-2024-55591</td>
+  <td>An authentication bypass using an alternate path (CWE-288) in FortiOS allows a remote unauthenticated attacker to gain super-admin privileges via crafted requests to the Node.js websocket module. Actively exploited in the wild since November 2024.</td>
+  <td>Upgrade to FortiOS 7.0.17 or later. Restrict management interface access to trusted IPs. Disable HTTP/HTTPS admin access on WAN interfaces.</td>
+</tr>
+<tr>
+  <td><span class="chip critical">CRITICAL</span></td>
+  <td>FORTIOS-CVE-002</td>
+  <td>Known CVEs</td>
+  <td>SSL VPN out-of-bounds write (RCE)</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>FortiOS 7.0.10 &lt; 7.0.14 (train 7.0)</code></td>
+  <td>CWE-787 | CVE-2024-21762</td>
+  <td>An out-of-bounds write vulnerability in FortiOS SSL VPN (sslvpnd) allows a remote unauthenticated attacker to execute arbitrary code or commands via specially crafted HTTP requests. Added to CISA Known Exploited Vulnerabilities (KEV) catalogue.</td>
+  <td>Upgrade to the fixed version for your branch. If immediate patching is not possible, disable SSL VPN as a workaround.</td>
+</tr>
+<tr>
+  <td><span class="chip critical">CRITICAL</span></td>
+  <td>FORTIOS-CVE-003</td>
+  <td>Known CVEs</td>
+  <td>Format string vulnerability in fgfmd daemon</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>FortiOS 7.0.10 &lt; 7.0.14 (train 7.0)</code></td>
+  <td>CWE-134 | CVE-2024-23113</td>
+  <td>A format string vulnerability (CWE-134) in the FortiOS fgfmd daemon allows a remote unauthenticated attacker to execute arbitrary code or commands via specially crafted requests.</td>
+  <td>Upgrade to the fixed version. Restrict access to the FGFM port (tcp/541) to trusted FortiManager IPs only.</td>
+</tr>
+<tr>
+  <td><span class="chip critical">CRITICAL</span></td>
+  <td>FORTIOS-CVE-004</td>
+  <td>Known CVEs</td>
+  <td>SSL VPN heap buffer overflow (xortigate)</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>FortiOS 7.0.10 &lt; 7.0.12 (train 7.0)</code></td>
+  <td>CWE-122 | CVE-2023-27997</td>
+  <td>A heap-based buffer overflow vulnerability in FortiOS SSL VPN allows a remote attacker to execute arbitrary code via specially crafted requests. Publicly known as &#x27;xortigate&#x27;.</td>
+  <td>Upgrade to the fixed version for your branch. Disable SSL VPN if not required.</td>
+</tr>
+<tr>
+  <td><span class="chip critical">CRITICAL</span></td>
+  <td>FORTIOS-CVE-006</td>
+  <td>Known CVEs</td>
+  <td>FortiManager missing authentication (FortiJump)</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>FortiOS 7.0.10 &lt; 7.0.13 (train 7.0)</code></td>
+  <td>CWE-306 | CVE-2024-47575</td>
+  <td>A missing authentication for critical function vulnerability (CWE-306) in FortiManager fgfmsd daemon allows a remote unauthenticated attacker to execute arbitrary code via specially crafted requests. Known as &#x27;FortiJump&#x27;.</td>
+  <td>Upgrade FortiManager to the fixed version. Restrict FGFM access to known FortiGate IP addresses.</td>
+</tr>
+<tr>
+  <td><span class="chip critical">CRITICAL</span></td>
+  <td>FORTIOS-CVE-007</td>
+  <td>Known CVEs</td>
+  <td>FortiClient EMS SQL injection</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>FortiOS 7.0.10 &lt; 7.0.11 (train 7.0)</code></td>
+  <td>CWE-89 | CVE-2023-48788</td>
+  <td>An SQL injection vulnerability in FortiClient EMS allows an unauthenticated attacker to execute commands via specially crafted requests to the DAS component.</td>
+  <td>Upgrade FortiClient EMS to the fixed version.</td>
+</tr>
+<tr>
+  <td><span class="chip critical">CRITICAL</span></td>
+  <td>FORTIOS-CVE-008</td>
+  <td>Known CVEs</td>
+  <td>Management interface authentication bypass</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>FortiOS 7.0.10 &lt; 7.0.17 (train 7.0)</code></td>
+  <td>CWE-288 | CVE-2024-0012</td>
+  <td>An authentication bypass in the FortiOS management interface allows a remote unauthenticated attacker to gain super-admin privileges.</td>
+  <td>Upgrade to FortiOS 7.0.17+. Restrict management access to trusted internal networks only.</td>
+</tr>
+<tr>
+  <td><span class="chip critical">CRITICAL</span></td>
+  <td>FORTIOS-CVE-019</td>
+  <td>Known CVEs</td>
+  <td>Captive portal buffer overflow</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>FortiOS 7.0.10 &lt; 7.0.13 (train 7.0)</code></td>
+  <td>CWE-122 | CVE-2023-42789</td>
+  <td>A heap-based buffer overflow in the FortiOS captive portal may allow an attacker with access to the captive portal to execute arbitrary code via specially crafted HTTP requests.</td>
+  <td>Upgrade to the fixed version. Restrict captive portal access.</td>
+</tr>
+<tr>
+  <td><span class="chip critical">CRITICAL</span></td>
+  <td>FORTIOS-CVE-023</td>
+  <td>Known CVEs</td>
+  <td>CSF proxy authentication bypass — super-admin</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>FortiOS 7.0.10 &lt; 7.0.17 (train 7.0)</code></td>
+  <td>CWE-288 | CVE-2025-24472</td>
+  <td>An authentication bypass in FortiOS CSF proxy allows a remote unauthenticated attacker to gain super-admin privileges via crafted CSF proxy requests. Related to CVE-2024-55591, actively exploited.</td>
+  <td>Upgrade to FortiOS 7.0.17+. Disable HTTP/HTTPS management on WAN interfaces. Restrict management to trusted IPs.</td>
+</tr>
+<tr>
+  <td><span class="chip critical">CRITICAL</span></td>
+  <td>MITRE-T1562-001</td>
+  <td>MITRE ATT&amp;CK Resilience</td>
+  <td>T1562 Impair Defenses — no external log forwarding</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>fortianalyzer=disable, syslog=disable</code></td>
+  <td>CWE-778</td>
+  <td>MITRE T1562: No external log forwarding (FortiAnalyzer or Syslog) is configured. An attacker who compromises the firewall can delete local logs, destroying evidence of the intrusion.</td>
+  <td>Configure log forwarding to FortiAnalyzer or external SIEM immediately. This is critical for incident response.</td>
+</tr>
+<tr>
+  <td><span class="chip critical">CRITICAL</span></td>
+  <td>MITRE-T1595-001</td>
+  <td>MITRE ATT&amp;CK Resilience</td>
+  <td>T1595 Active Scanning — management exposed on WAN</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>WAN interface has management protocols (HTTPS/SSH/SNMP/HTTP)</code></td>
+  <td>CWE-284</td>
+  <td>MITRE T1595: Management interfaces are exposed on WAN, allowing adversaries to discover, fingerprint, and attack the firewall&#x27;s management plane directly from the internet. This is the #1 attack vector for FortiGate compromises (CVE-2024-55591, CVE-2024-21762).</td>
+  <td>Remove all management protocols from WAN interfaces immediately. Use a dedicated management VLAN or VPN-only admin access.</td>
+</tr>
+<tr>
+  <td><span class="chip critical">CRITICAL</span></td>
+  <td>FORTIOS-NET-013</td>
+  <td>Network Hardening</td>
+  <td>SNMP default community string</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>snmp community=public (ID 1)</code></td>
+  <td>CWE-1188</td>
+  <td>SNMP community string &#x27;public&#x27; is a well-known default. Attackers can read device configuration.</td>
+  <td>Change SNMP community strings to complex values or migrate to SNMPv3 with authentication.</td>
+</tr>
+<tr>
+  <td><span class="chip critical">CRITICAL</span></td>
+  <td>FORTIOS-NET-013</td>
+  <td>Network Hardening</td>
+  <td>SNMP default community string</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>snmp community=private (ID 2)</code></td>
+  <td>CWE-1188</td>
+  <td>SNMP community string &#x27;private&#x27; is a well-known default. Attackers can read device configuration.</td>
+  <td>Change SNMP community strings to complex values or migrate to SNMPv3 with authentication.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-ADMIN-001</td>
+  <td>Admin Access</td>
+  <td>HTTP admin access may be enabled</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>admin-https-redirect=disable</code></td>
+  <td>CWE-319</td>
+  <td>Administrative access via HTTP exposes credentials in cleartext.</td>
+  <td>Disable HTTP admin access. Use HTTPS only with admin-https-redirect enabled.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-ADMIN-009</td>
+  <td>Admin Access</td>
+  <td>HTTP admin access on interface</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>interface=wan1, allowaccess=https ssh http telnet ping snmp fgfm</code></td>
+  <td>CWE-319</td>
+  <td>Interface &#x27;wan1&#x27; allows HTTP management access.</td>
+  <td>Remove HTTP from allowaccess. Use HTTPS only.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-ADMIN-009</td>
+  <td>Admin Access</td>
+  <td>HTTP admin access on interface</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>interface=dmz, allowaccess=http ping</code></td>
+  <td>CWE-319</td>
+  <td>Interface &#x27;dmz&#x27; allows HTTP management access.</td>
+  <td>Remove HTTP from allowaccess. Use HTTPS only.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-ADMIN-010</td>
+  <td>Admin Access</td>
+  <td>Telnet access on interface</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>interface=wan1, allowaccess=https ssh http telnet ping snmp fgfm</code></td>
+  <td>CWE-319</td>
+  <td>Interface &#x27;wan1&#x27; allows Telnet access (unencrypted).</td>
+  <td>Remove telnet from allowaccess. Use SSH only.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-ADMIN-023</td>
+  <td>Admin Access</td>
+  <td>MFA coverage: 0% of admin accounts</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>mfa_enabled=0/3 (0%)</code></td>
+  <td>CWE-308</td>
+  <td>Only 0 of 3 admin accounts (0%) have two-factor authentication enabled. All admin accounts should require MFA.</td>
+  <td>Enable FortiToken or email-based 2FA for all admin accounts: config system admin / edit &lt;name&gt; / set two-factor fortitoken.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-AUTH-001</td>
+  <td>Authentication</td>
+  <td>LDAP server without TLS encryption</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>LDAP &#x27;legacy-ldap&#x27; secure=disable, port=389</code></td>
+  <td>CWE-319</td>
+  <td>LDAP server &#x27;legacy-ldap&#x27; communicates in cleartext. Credentials and directory data are exposed on the network.</td>
+  <td>Enable LDAPS (port 636) or STARTTLS by setting secure to &#x27;ldaps&#x27; or &#x27;starttls&#x27;.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-AUTH-002</td>
+  <td>Authentication</td>
+  <td>RADIUS shared secret too short</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>RADIUS &#x27;radius-primary&#x27; secret length &lt; 16 chars</code></td>
+  <td>CWE-521</td>
+  <td>RADIUS server &#x27;radius-primary&#x27; shared secret is less than 16 characters, making it vulnerable to brute-force attacks.</td>
+  <td>Use a RADIUS shared secret of at least 22 characters with mixed character types.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-AUTH-002</td>
+  <td>Authentication</td>
+  <td>RADIUS shared secret too short</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>RADIUS &#x27;radius-secondary&#x27; secret length &lt; 16 chars</code></td>
+  <td>CWE-521</td>
+  <td>RADIUS server &#x27;radius-secondary&#x27; shared secret is less than 16 characters, making it vulnerable to brute-force attacks.</td>
+  <td>Use a RADIUS shared secret of at least 22 characters with mixed character types.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-CERT-001</td>
+  <td>Certificates</td>
+  <td>Default Fortinet factory certificate in use</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>certificate=Fortinet_Factory_Self-Sign</code></td>
+  <td>CWE-295</td>
+  <td>The default Fortinet factory certificate &#x27;Fortinet_Factory_Self-Sign&#x27; is in use. This is a known, shared certificate.</td>
+  <td>Replace the factory certificate with a CA-signed certificate specific to your organisation.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-CERT-003</td>
+  <td>Certificates</td>
+  <td>Certificate expiring within 30 days</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>certificate=corp-wildcard, expires=2026-04-15 00:00:00</code></td>
+  <td>CWE-295</td>
+  <td>Certificate &#x27;corp-wildcard&#x27; will expire on 2026-04-15 00:00:00.</td>
+  <td>Renew the certificate before expiry.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-CERT-005</td>
+  <td>Certificates</td>
+  <td>Certificate with weak key size</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>certificate=Fortinet_Factory_Self-Sign, key-size=1024</code></td>
+  <td>CWE-326</td>
+  <td>Certificate &#x27;Fortinet_Factory_Self-Sign&#x27; uses a 1024-bit key. Keys shorter than 2048 bits are considered weak.</td>
+  <td>Replace with a certificate using at least 2048-bit RSA or 256-bit ECDSA key.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-CERT-006</td>
+  <td>Certificates</td>
+  <td>Certificate using SHA-1 signature algorithm</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>certificate=Fortinet_Factory_Self-Sign, signature-algorithm=sha1WithRSAEncryption</code></td>
+  <td>CWE-328</td>
+  <td>Certificate &#x27;Fortinet_Factory_Self-Sign&#x27; uses SHA-1 signature algorithm, which is deprecated and vulnerable to collision attacks.</td>
+  <td>Replace with a certificate using SHA-256 or SHA-384 signature algorithm.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-CERT-010</td>
+  <td>Certificates</td>
+  <td>No certificate revocation checking configured</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>crl=empty, ocsp-server=empty</code></td>
+  <td>CWE-299</td>
+  <td>No CRL or OCSP servers are configured. Revoked certificates will still be accepted as valid.</td>
+  <td>Configure CRL distribution points or OCSP servers for certificate revocation checking.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-POLICY-003</td>
+  <td>Firewall Policies</td>
+  <td>Allow policy with &#x27;all&#x27; source</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>policy=DMZ-Access (ID 2), srcaddr=all</code></td>
+  <td>CWE-284</td>
+  <td>Policy &#x27;DMZ-Access&#x27; allows traffic from any source address.</td>
+  <td>Restrict the source to specific address objects or groups.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-POLICY-004</td>
+  <td>Firewall Policies</td>
+  <td>Allow policy with ALL services</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>policy=Allow-All-Internet (ID 1), service=ALL</code></td>
+  <td>CWE-284</td>
+  <td>Policy &#x27;Allow-All-Internet&#x27; allows all services/ports.</td>
+  <td>Restrict services to only those required.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-POLICY-004</td>
+  <td>Firewall Policies</td>
+  <td>Allow policy with ALL services</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>policy= (ID 3), service=ALL</code></td>
+  <td>CWE-284</td>
+  <td>Policy &#x27;&#x27; allows all services/ports.</td>
+  <td>Restrict services to only those required.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-POLICY-005</td>
+  <td>Firewall Policies</td>
+  <td>No traffic logging on allow policy</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>policy=Allow-All-Internet (ID 1), logtraffic=disable</code></td>
+  <td>CWE-778</td>
+  <td>Policy &#x27;Allow-All-Internet&#x27; does not log traffic, hindering forensic investigation.</td>
+  <td>Enable logtraffic=all or logtraffic=utm on all allow policies.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-POLICY-005</td>
+  <td>Firewall Policies</td>
+  <td>No traffic logging on allow policy</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>policy=DMZ-Access (ID 2), logtraffic=disable</code></td>
+  <td>CWE-778</td>
+  <td>Policy &#x27;DMZ-Access&#x27; does not log traffic, hindering forensic investigation.</td>
+  <td>Enable logtraffic=all or logtraffic=utm on all allow policies.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-POLICY-005</td>
+  <td>Firewall Policies</td>
+  <td>No traffic logging on allow policy</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>policy= (ID 3), logtraffic=disable</code></td>
+  <td>CWE-778</td>
+  <td>Policy &#x27;&#x27; does not log traffic, hindering forensic investigation.</td>
+  <td>Enable logtraffic=all or logtraffic=utm on all allow policies.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-POLICY-009</td>
+  <td>Firewall Policies</td>
+  <td>Allow policy with &#x27;all&#x27; destination</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>policy= (ID 3), dstaddr=all</code></td>
+  <td>CWE-284</td>
+  <td>Policy &#x27;&#x27; allows traffic to any destination address.</td>
+  <td>Restrict the destination to specific address objects or groups.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-POLICY-013</td>
+  <td>Firewall Policies</td>
+  <td>VIP without port forwarding restriction</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>vip=WebServer-VIP, portforward=disable</code></td>
+  <td>CWE-284</td>
+  <td>VIP &#x27;WebServer-VIP&#x27; maps all ports from 203.0.113.10 to the internal server. This exposes all services on the target.</td>
+  <td>Enable port forwarding and restrict to only required ports: set portforward enable.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-POLICY-015</td>
+  <td>Firewall Policies</td>
+  <td>4 active policies without security profiles</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>no_profile=4/4 (100%)</code></td>
+  <td>CWE-693</td>
+  <td>4 of 4 active policies (100%) have no AV, IPS, WebFilter, or other security profile attached. Traffic matching these rules bypasses all security inspection.</td>
+  <td>Attach security profiles (AV, IPS, Web Filter, Application Control) to all allow policies.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-UPDATE-001</td>
+  <td>FortiGuard &amp; Updates</td>
+  <td>FortiGuard antivirus service expired</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>antivirus=expired</code></td>
+  <td>CWE-1104</td>
+  <td>FortiGuard service &#x27;antivirus&#x27; is expired. Security signatures may be outdated.</td>
+  <td>Renew the FortiGuard antivirus license to ensure up-to-date threat protection.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-UPDATE-001</td>
+  <td>FortiGuard &amp; Updates</td>
+  <td>FortiGuard webfilter service disabled</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>webfilter=disabled</code></td>
+  <td>CWE-1104</td>
+  <td>FortiGuard service &#x27;webfilter&#x27; is disabled. Security signatures may be outdated.</td>
+  <td>Renew the FortiGuard webfilter license to ensure up-to-date threat protection.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-UPDATE-002</td>
+  <td>FortiGuard &amp; Updates</td>
+  <td>FortiGuard not connected</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>fortiguard=disconnected</code></td>
+  <td>CWE-1104</td>
+  <td>FortiGuard Distribution Network is not connected. Security updates cannot be downloaded.</td>
+  <td>Verify FortiGuard connectivity. Check DNS, proxy, and firewall rules for FortiGuard servers.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-UPDATE-004</td>
+  <td>FortiGuard &amp; Updates</td>
+  <td>FortiGuard ips signatures outdated</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>ips last_update=2025-12-01 00:00:00 (120 days ago)</code></td>
+  <td>CWE-1104</td>
+  <td>FortiGuard ips signatures are 120 days old. AV/IPS signatures should update daily.</td>
+  <td>Check FortiGuard connectivity and automatic update schedule. Signatures should update at least daily.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-UPDATE-006</td>
+  <td>FortiGuard &amp; Updates</td>
+  <td>Automatic updates disabled</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>autoupdate status=disable</code></td>
+  <td>CWE-1104</td>
+  <td>Automatic signature updates are disabled. The FortiGate will not receive the latest threat definitions.</td>
+  <td>Enable automatic updates: config system autoupdate schedule / set status enable.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-HA-002</td>
+  <td>High Availability</td>
+  <td>HA heartbeat not authenticated</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>ha authentication=disable</code></td>
+  <td>CWE-306</td>
+  <td>HA heartbeat communication is not authenticated, allowing potential cluster hijacking.</td>
+  <td>Enable HA authentication: set authentication enable / set password &lt;strong-password&gt;.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-HA-004</td>
+  <td>High Availability</td>
+  <td>HA cluster firmware version mismatch</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>versions=v7.0.8, v7.0.10</code></td>
+  <td>CWE-1104</td>
+  <td>HA cluster members are running different firmware versions: v7.0.8, v7.0.10.</td>
+  <td>Upgrade all HA cluster members to the same firmware version.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-HA-005</td>
+  <td>High Availability</td>
+  <td>HA cluster communication not encrypted</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>ha encryption=disable</code></td>
+  <td>CWE-319</td>
+  <td>HA cluster communication is not encrypted. Configuration and session data exchanged between peers may be intercepted.</td>
+  <td>Enable HA encryption: config system ha / set encryption enable.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-IPSEC-001</td>
+  <td>IPsec VPN</td>
+  <td>IPsec Phase 1 aggressive mode</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>tunnel=Site-B-Tunnel, mode=aggressive</code></td>
+  <td>CWE-319</td>
+  <td>IPsec tunnel &#x27;Site-B-Tunnel&#x27; uses aggressive mode, which sends identity in cleartext and is susceptible to offline brute-force attacks.</td>
+  <td>Use main mode (IKEv1) or IKEv2 instead of aggressive mode.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-IPSEC-002</td>
+  <td>IPsec VPN</td>
+  <td>IPsec Phase 1 weak encryption</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>tunnel=Site-B-Tunnel, proposal contains des-md5</code></td>
+  <td>CWE-327</td>
+  <td>IPsec tunnel &#x27;Site-B-Tunnel&#x27; uses weak encryption algorithm &#x27;des-md5&#x27;.</td>
+  <td>Use AES-256 or AES-128 encryption. Remove DES, 3DES, RC4.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-IPSEC-002</td>
+  <td>IPsec VPN</td>
+  <td>IPsec Phase 1 weak encryption</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>tunnel=Site-B-Tunnel, proposal contains 3des-md5</code></td>
+  <td>CWE-327</td>
+  <td>IPsec tunnel &#x27;Site-B-Tunnel&#x27; uses weak encryption algorithm &#x27;3des-md5&#x27;.</td>
+  <td>Use AES-256 or AES-128 encryption. Remove DES, 3DES, RC4.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-IPSEC-002</td>
+  <td>IPsec VPN</td>
+  <td>IPsec Phase 1 weak encryption</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>tunnel=Cloud-VPN, proposal contains 3des-sha256</code></td>
+  <td>CWE-327</td>
+  <td>IPsec tunnel &#x27;Cloud-VPN&#x27; uses weak encryption algorithm &#x27;3des-sha256&#x27;.</td>
+  <td>Use AES-256 or AES-128 encryption. Remove DES, 3DES, RC4.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-IPSEC-003</td>
+  <td>IPsec VPN</td>
+  <td>IPsec Phase 1 weak hash algorithm</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>tunnel=Site-B-Tunnel, proposal contains des-md5</code></td>
+  <td>CWE-327</td>
+  <td>IPsec tunnel &#x27;Site-B-Tunnel&#x27; uses weak hash algorithm in &#x27;des-md5&#x27;.</td>
+  <td>Use SHA-256 or SHA-512 hashing. Remove MD5.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-IPSEC-003</td>
+  <td>IPsec VPN</td>
+  <td>IPsec Phase 1 weak hash algorithm</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>tunnel=Site-B-Tunnel, proposal contains 3des-md5</code></td>
+  <td>CWE-327</td>
+  <td>IPsec tunnel &#x27;Site-B-Tunnel&#x27; uses weak hash algorithm in &#x27;3des-md5&#x27;.</td>
+  <td>Use SHA-256 or SHA-512 hashing. Remove MD5.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-IPSEC-004</td>
+  <td>IPsec VPN</td>
+  <td>IPsec Phase 1 weak DH group</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>tunnel=Site-B-Tunnel, dhgrp includes 1</code></td>
+  <td>CWE-326</td>
+  <td>IPsec tunnel &#x27;Site-B-Tunnel&#x27; uses weak Diffie-Hellman group 1.</td>
+  <td>Use DH group 14 (2048-bit) or higher. Remove groups 1, 2, and 5.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-IPSEC-004</td>
+  <td>IPsec VPN</td>
+  <td>IPsec Phase 1 weak DH group</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>tunnel=Site-B-Tunnel, dhgrp includes 2</code></td>
+  <td>CWE-326</td>
+  <td>IPsec tunnel &#x27;Site-B-Tunnel&#x27; uses weak Diffie-Hellman group 2.</td>
+  <td>Use DH group 14 (2048-bit) or higher. Remove groups 1, 2, and 5.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-IPSEC-004</td>
+  <td>IPsec VPN</td>
+  <td>IPsec Phase 1 weak DH group</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>tunnel=Cloud-VPN, dhgrp includes 5</code></td>
+  <td>CWE-326</td>
+  <td>IPsec tunnel &#x27;Cloud-VPN&#x27; uses weak Diffie-Hellman group 5.</td>
+  <td>Use DH group 14 (2048-bit) or higher. Remove groups 1, 2, and 5.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-IPSEC-006</td>
+  <td>IPsec VPN</td>
+  <td>IPsec Phase 2 PFS disabled</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>tunnel=Site-B-P2, pfs=disable</code></td>
+  <td>CWE-326</td>
+  <td>IPsec Phase 2 &#x27;Site-B-P2&#x27; has Perfect Forward Secrecy disabled. Compromised keys can decrypt past sessions.</td>
+  <td>Enable PFS: set pfs enable with DH group 14 or higher.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-IPSEC-006</td>
+  <td>IPsec VPN</td>
+  <td>IPsec Phase 2 PFS disabled</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>tunnel=Cloud-VPN-P2, pfs=disable</code></td>
+  <td>CWE-326</td>
+  <td>IPsec Phase 2 &#x27;Cloud-VPN-P2&#x27; has Perfect Forward Secrecy disabled. Compromised keys can decrypt past sessions.</td>
+  <td>Enable PFS: set pfs enable with DH group 14 or higher.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-IPSEC-010</td>
+  <td>IPsec VPN</td>
+  <td>IPsec Phase 2 weak encryption</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>tunnel=Site-B-P2, phase2 proposal contains des-md5</code></td>
+  <td>CWE-327</td>
+  <td>IPsec Phase 2 &#x27;Site-B-P2&#x27; uses weak encryption &#x27;des-md5&#x27;.</td>
+  <td>Use AES-256 or AES-128 for Phase 2 encryption. Remove DES, 3DES.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-IPSEC-010</td>
+  <td>IPsec VPN</td>
+  <td>IPsec Phase 2 weak encryption</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>tunnel=Cloud-VPN-P2, phase2 proposal contains 3des-sha256</code></td>
+  <td>CWE-327</td>
+  <td>IPsec Phase 2 &#x27;Cloud-VPN-P2&#x27; uses weak encryption &#x27;3des-sha256&#x27;.</td>
+  <td>Use AES-256 or AES-128 for Phase 2 encryption. Remove DES, 3DES.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-IPSEC-012</td>
+  <td>IPsec VPN</td>
+  <td>IPsec Phase 2 replay protection disabled</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>tunnel=Site-B-P2, replay=disable</code></td>
+  <td>CWE-294</td>
+  <td>IPsec Phase 2 &#x27;Site-B-P2&#x27; has anti-replay protection disabled, allowing packet replay attacks.</td>
+  <td>Enable anti-replay: set replay enable.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-CVE-009</td>
+  <td>Known CVEs</td>
+  <td>SSL VPN session hijacking</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>FortiOS 7.0.10 &lt; 7.0.13 (train 7.0)</code></td>
+  <td>CWE-384 | CVE-2023-50176</td>
+  <td>A session fixation vulnerability in FortiOS SSL VPN allows an attacker to hijack user sessions via phishing.</td>
+  <td>Upgrade to the fixed version. Enable MFA for all SSL VPN users.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-CVE-018</td>
+  <td>Known CVEs</td>
+  <td>Access control vulnerability in FortiOS REST API</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>FortiOS 7.0.10 &lt; 7.0.13 (train 7.0)</code></td>
+  <td>CWE-284 | CVE-2023-44249</td>
+  <td>An improper access control vulnerability in FortiOS allows an authenticated attacker to access resources beyond their intended permissions via crafted API requests.</td>
+  <td>Upgrade to the fixed version. Review API user permissions.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-CVE-020</td>
+  <td>Known CVEs</td>
+  <td>Stack-based buffer overflow in FortiOS IPS</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>FortiOS 7.0.10 &lt; 7.0.14 (train 7.0)</code></td>
+  <td>CWE-121 | CVE-2024-26010</td>
+  <td>A stack-based buffer overflow in FortiOS IPS engine allows a remote unauthenticated attacker to achieve denial of service via crafted packets.</td>
+  <td>Upgrade to the fixed version.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-CVE-021</td>
+  <td>Known CVEs</td>
+  <td>Path traversal in FortiOS httpd — file read</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>FortiOS 7.0.10 &lt; 7.0.16 (train 7.0)</code></td>
+  <td>CWE-22 | CVE-2024-48884</td>
+  <td>A path traversal vulnerability in FortiOS httpd allows a remote authenticated attacker with read-only admin privileges to read arbitrary files on the device.</td>
+  <td>Upgrade to FortiOS 7.4.5, 7.2.10, or 7.0.16. Restrict admin access to trusted IPs.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-CVE-026</td>
+  <td>Known CVEs</td>
+  <td>Weak authentication in FGFM protocol</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>FortiOS 7.0.10 &lt; 7.0.16 (train 7.0)</code></td>
+  <td>CWE-1390 | CVE-2024-50563</td>
+  <td>Weak authentication in the FGFM (FortiGate-FortiManager) protocol allows an attacker with network access to forge communications between FortiGate and FortiManager.</td>
+  <td>Upgrade to fixed version. Restrict FGFM port (541) access. Use certificate-based FortiManager auth.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-CVE-030</td>
+  <td>Known CVEs</td>
+  <td>Authenticated admin privilege escalation</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>FortiOS 7.0.10 &lt; 7.0.16 (train 7.0)</code></td>
+  <td>CWE-269 | CVE-2024-40591</td>
+  <td>Improper privilege management in FortiOS allows an authenticated administrator with limited privileges to escalate to super-admin via crafted configuration changes.</td>
+  <td>Upgrade to fixed version. Review admin accounts for least-privilege. Monitor config change logs.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-LOG-001</td>
+  <td>Logging &amp; Monitoring</td>
+  <td>FortiAnalyzer not configured</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>fortianalyzer status=disable</code></td>
+  <td>CWE-778</td>
+  <td>FortiAnalyzer is not enabled for centralized log management and analysis.</td>
+  <td>Configure FortiAnalyzer for centralized logging: config log fortianalyzer setting / set status enable.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-LOG-002</td>
+  <td>Logging &amp; Monitoring</td>
+  <td>Syslog forwarding not configured</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>syslogd status=disable</code></td>
+  <td>CWE-778</td>
+  <td>Syslog forwarding is not enabled. Logs stored only locally may be lost if the device is compromised.</td>
+  <td>Configure syslog forwarding to a SIEM or log management platform.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-LOG-004</td>
+  <td>Logging &amp; Monitoring</td>
+  <td>Implicit deny logging disabled</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>fwpolicy-implicit-log=disable</code></td>
+  <td>CWE-778</td>
+  <td>Traffic denied by the implicit deny rule is not logged, hiding potential attack attempts.</td>
+  <td>Enable implicit deny logging: set fwpolicy-implicit-log enable.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-LOG-011</td>
+  <td>Logging &amp; Monitoring</td>
+  <td>System event logging disabled</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>eventfilter event=disable</code></td>
+  <td>CWE-778</td>
+  <td>System event logging is disabled. Configuration changes, admin logins, and system alerts are not recorded.</td>
+  <td>Enable system event logging: config log eventfilter / set event enable.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-LOG-012</td>
+  <td>Logging &amp; Monitoring</td>
+  <td>VPN event logging disabled</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>eventfilter vpn=disable</code></td>
+  <td>CWE-778</td>
+  <td>VPN event logging is disabled. VPN login failures, tunnel status changes, and session events are not recorded.</td>
+  <td>Enable VPN event logging: set vpn enable.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-LOG-013</td>
+  <td>Logging &amp; Monitoring</td>
+  <td>User authentication event logging disabled</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>eventfilter user=disable</code></td>
+  <td>CWE-778</td>
+  <td>User authentication event logging is disabled. Login attempts and authentication failures are not recorded.</td>
+  <td>Enable user event logging: set user enable.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>MITRE-T1021-001</td>
+  <td>MITRE ATT&amp;CK Resilience</td>
+  <td>T1021 Remote Services — 1 any/any/any policies allow lateral movement</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>any-any-any policies=1</code></td>
+  <td>CWE-284</td>
+  <td>MITRE T1021: 1 firewall policies allow any source to any destination on any service. This permits unrestricted lateral movement (SMB, RDP, SSH, WMI) between network zones.</td>
+  <td>Replace any/any/any rules with specific source, destination, and service restrictions. Implement network segmentation.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>MITRE-T1027-001</td>
+  <td>MITRE ATT&amp;CK Resilience</td>
+  <td>T1027 Obfuscated Files — no sandbox/outbreak prevention</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>av_profiles=1, sandbox=disabled, outbreak=disabled</code></td>
+  <td>CWE-693</td>
+  <td>MITRE T1027: No AV profiles have sandbox analysis or outbreak prevention enabled. Obfuscated, packed, or zero-day malware will bypass signature-based detection.</td>
+  <td>Enable FortiGuard analytics (cloud sandbox) and outbreak prevention on AV profiles.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>MITRE-T1041-001</td>
+  <td>MITRE ATT&amp;CK Resilience</td>
+  <td>T1041 Exfiltration Over C2 — DNS botnet detection disabled</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>dns_profiles=1, botnet_domain_filter=disabled</code></td>
+  <td>CWE-693</td>
+  <td>MITRE T1041: DNS botnet/C2 domain filtering is not enabled. Malware can use known C2 domains for command and control and data exfiltration without being blocked.</td>
+  <td>Enable botnet C2 domain blocking in DNS Filter profiles: config dnsfilter profile / set block-botnet enable.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>MITRE-T1078-001</td>
+  <td>MITRE ATT&amp;CK Resilience</td>
+  <td>T1078 Valid Accounts — admin accounts without MFA</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>no_mfa: admin, backup-admin, api-readonly (3 accounts)</code></td>
+  <td>CWE-308</td>
+  <td>MITRE T1078: 3 admin account(s) lack two-factor authentication. Compromised credentials can grant full firewall control without additional verification.</td>
+  <td>Enable FortiToken or email-based 2FA for all admin accounts.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>MITRE-T1110-001</td>
+  <td>MITRE ATT&amp;CK Resilience</td>
+  <td>T1110 Brute Force — no admin account lockout</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>admin-lockout-threshold=0, duration=60</code></td>
+  <td>CWE-307</td>
+  <td>MITRE T1110: Admin account lockout is not configured. Adversaries can perform unlimited password guessing attempts against the management interface.</td>
+  <td>Set lockout: config system global / set admin-lockout-threshold 3 / set admin-lockout-duration 300.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>MITRE-T1189-001</td>
+  <td>MITRE ATT&amp;CK Resilience</td>
+  <td>T1189 Drive-by Compromise — Web Filter coverage insufficient</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>webfilter-profile on 0/4 policies (0%)</code></td>
+  <td>CWE-693</td>
+  <td>MITRE T1189: Web Filter profiles cover less than 50% of policies. Users visiting compromised websites (watering holes) will not have malicious URLs blocked by FortiGuard URL categorization.</td>
+  <td>Attach Web Filter profiles to all policies allowing user internet traffic. Enable FortiGuard URL rating.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>MITRE-T1190-001</td>
+  <td>MITRE ATT&amp;CK Resilience</td>
+  <td>T1190 Exploit Public-Facing Application — IPS coverage gap</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>ips-sensor attached to 0/4 policies (0%)</code></td>
+  <td>CWE-693</td>
+  <td>MITRE T1190: Less than 50% of active firewall policies have IPS sensors attached. Exploits targeting public-facing applications (web servers, VPN portals, mail gateways) will not be detected on unprotected policies.</td>
+  <td>Attach IPS sensors to all policies allowing inbound traffic, especially those for DMZ/public-facing services.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>MITRE-T1203-001</td>
+  <td>MITRE ATT&amp;CK Resilience</td>
+  <td>T1203 Exploitation for Client Execution — no deep SSL inspection</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>ssl-ssh-profile count=1, deep_inspection=false</code></td>
+  <td>CWE-693</td>
+  <td>MITRE T1203: No SSL deep inspection profile detected. Without HTTPS inspection, exploit kits, drive-by downloads, and malicious payloads in encrypted traffic are invisible to IPS/AV scanning.</td>
+  <td>Create an SSL deep inspection profile and apply to policies for user internet traffic. Install the FortiGate CA cert on endpoints.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>MITRE-T1210-001</td>
+  <td>MITRE ATT&amp;CK Resilience</td>
+  <td>T1210 Exploitation of Remote Services — east-west exploits undetected</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>No IPS on inter-zone policies for exploit detection</code></td>
+  <td>CWE-693</td>
+  <td>MITRE T1210: Without IPS on inter-zone policies, lateral exploitation (EternalBlue/MS17-010, PrintNightmare, Log4Shell targeting internal services) will not be detected as traffic passes between network zones.</td>
+  <td>Enable IPS with exploit signatures on all inter-zone policies to detect lateral exploitation attempts.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>MITRE-T1486-001</td>
+  <td>MITRE ATT&amp;CK Resilience</td>
+  <td>T1486 Data Encrypted for Impact — no ransomware sandbox detection</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>sandbox=disabled, outbreak_prevention=disabled</code></td>
+  <td>CWE-693</td>
+  <td>MITRE T1486: Cloud sandbox and outbreak prevention are disabled. Ransomware samples that evade signature detection (zero-day variants) will not be caught by behavioral analysis.</td>
+  <td>Enable FortiGuard sandbox analysis and outbreak prevention on all AV profiles protecting user traffic.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>MITRE-T1557-001</td>
+  <td>MITRE ATT&amp;CK Resilience</td>
+  <td>T1557 Adversary-in-the-Middle — HTTP on wan interface</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>interface=wan1, role=wan, allowaccess includes http</code></td>
+  <td>CWE-319</td>
+  <td>MITRE T1557: HTTP (unencrypted) is allowed on wan interface &#x27;wan1&#x27;. This enables MitM attacks, credential interception, and session hijacking.</td>
+  <td>Remove HTTP from allowaccess on wan interfaces. Use HTTPS only with admin-https-redirect.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>MITRE-T1566-001</td>
+  <td>MITRE ATT&amp;CK Resilience</td>
+  <td>T1566 Phishing — AV/WebFilter coverage gap</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>av=0/4, webfilter=0/4</code></td>
+  <td>CWE-693</td>
+  <td>MITRE T1566: Antivirus and/or Web Filter profiles are not attached to the majority of policies. Phishing emails with malicious attachments or links may pass through without inspection.</td>
+  <td>Attach both AV and Web Filter profiles to all policies that allow user internet traffic.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>MITRE-T1573-001</td>
+  <td>MITRE ATT&amp;CK Resilience</td>
+  <td>T1573 Encrypted Channel — encrypted C2 traffic invisible</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>ssl-deep-inspection=not-detected</code></td>
+  <td>CWE-693</td>
+  <td>MITRE T1573: Without SSL deep inspection, adversaries can establish encrypted C2 channels over HTTPS that are completely invisible to IPS, AV, and application control.</td>
+  <td>Deploy SSL deep inspection for outbound user traffic. Whitelist trusted financial/medical sites via SSL exemption lists.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-NET-005</td>
+  <td>Network Hardening</td>
+  <td>DHCP relay on WAN interface</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>interface=wan1, dhcp-relay-service=enable</code></td>
+  <td>CWE-284</td>
+  <td>WAN interface &#x27;wan1&#x27; has DHCP relay enabled, potentially exposing internal DHCP to the internet.</td>
+  <td>Disable DHCP relay on WAN interfaces unless explicitly required.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-NET-007</td>
+  <td>Network Hardening</td>
+  <td>Source IP check disabled on external interface</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>interface=wan1, role=wan, src-check=disable</code></td>
+  <td>CWE-290</td>
+  <td>Interface &#x27;wan1&#x27; has source IP check (RPF/anti-spoofing) disabled, allowing spoofed packets.</td>
+  <td>Enable src-check on all WAN and DMZ interfaces: set src-check enable.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-NET-007</td>
+  <td>Network Hardening</td>
+  <td>Source IP check disabled on external interface</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>interface=dmz, role=dmz, src-check=disable</code></td>
+  <td>CWE-290</td>
+  <td>Interface &#x27;dmz&#x27; has source IP check (RPF/anti-spoofing) disabled, allowing spoofed packets.</td>
+  <td>Enable src-check on all WAN and DMZ interfaces: set src-check enable.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-NET-008</td>
+  <td>Network Hardening</td>
+  <td>TCP sessions without SYN allowed</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>tcp-session-without-syn=enable</code></td>
+  <td>CWE-284</td>
+  <td>FortiGate accepts TCP sessions without SYN, which can bypass firewall stateful inspection.</td>
+  <td>Disable tcp-session-without-syn: config system global / set tcp-session-without-syn disable.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-NET-011</td>
+  <td>Network Hardening</td>
+  <td>BGP neighbour without authentication</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>bgp neighbour=10.0.0.1, password=none</code></td>
+  <td>CWE-306</td>
+  <td>BGP neighbour 10.0.0.1 has no MD5 authentication, allowing BGP hijacking.</td>
+  <td>Configure BGP MD5 authentication for all neighbours: set password &lt;key&gt;.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-NET-011</td>
+  <td>Network Hardening</td>
+  <td>BGP neighbour without authentication</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>bgp neighbour=10.0.0.2, password=none</code></td>
+  <td>CWE-306</td>
+  <td>BGP neighbour 10.0.0.2 has no MD5 authentication, allowing BGP hijacking.</td>
+  <td>Configure BGP MD5 authentication for all neighbours: set password &lt;key&gt;.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-NET-012</td>
+  <td>Network Hardening</td>
+  <td>OSPF interface without authentication</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>ospf-interface=lan-ospf, authentication=none</code></td>
+  <td>CWE-306</td>
+  <td>OSPF interface &#x27;lan-ospf&#x27; has no authentication, allowing rogue router injection.</td>
+  <td>Enable OSPF authentication: set authentication md5 or text.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-NET-012</td>
+  <td>Network Hardening</td>
+  <td>OSPF interface without authentication</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>ospf-interface=dmz-ospf, authentication=none</code></td>
+  <td>CWE-306</td>
+  <td>OSPF interface &#x27;dmz-ospf&#x27; has no authentication, allowing rogue router injection.</td>
+  <td>Enable OSPF authentication: set authentication md5 or text.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-NET-014</td>
+  <td>Network Hardening</td>
+  <td>SNMPv1 enabled</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>snmp community=public, query-v1-status=enable</code></td>
+  <td>CWE-319</td>
+  <td>SNMPv1 is enabled for community &#x27;public&#x27;. SNMPv1 transmits data in cleartext without authentication.</td>
+  <td>Disable SNMPv1 and migrate to SNMPv3 with authPriv.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-NET-015</td>
+  <td>Network Hardening</td>
+  <td>SNMPv3 user without authentication</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>snmpv3 user=monitor-user, security-level=no-auth-no-priv</code></td>
+  <td>CWE-306</td>
+  <td>SNMPv3 user &#x27;monitor-user&#x27; has no authentication or encryption.</td>
+  <td>Set SNMPv3 user security level to auth-priv with SHA and AES.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-NET-018</td>
+  <td>Network Hardening</td>
+  <td>Anti-spoofing disabled on wan interface: wan1</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>interface=wan1, src-check=disable</code></td>
+  <td>CWE-290</td>
+  <td>Source IP address validation (anti-spoofing) is disabled on wan interface &#x27;wan1&#x27;. This allows spoofed packets to traverse the firewall.</td>
+  <td>Enable anti-spoofing: config system interface / edit wan1 / set src-check enable.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-NET-018</td>
+  <td>Network Hardening</td>
+  <td>Anti-spoofing disabled on dmz interface: dmz</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>interface=dmz, src-check=disable</code></td>
+  <td>CWE-290</td>
+  <td>Source IP address validation (anti-spoofing) is disabled on dmz interface &#x27;dmz&#x27;. This allows spoofed packets to traverse the firewall.</td>
+  <td>Enable anti-spoofing: config system interface / edit dmz / set src-check enable.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-SSLVPN-001</td>
+  <td>SSL VPN</td>
+  <td>SSL VPN allows weak TLS version</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>ssl-min-proto-ver=tlsv1-0</code></td>
+  <td>CWE-326</td>
+  <td>SSL VPN minimum TLS version is set to tlsv1-0, which is deprecated and vulnerable.</td>
+  <td>Set ssl-min-proto-ver to tls1-2 or higher.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-SSLVPN-006</td>
+  <td>SSL VPN</td>
+  <td>VPN user group without MFA enforcement</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>user-group=VPN-Users, members=3, mfa=unverified</code></td>
+  <td>CWE-308</td>
+  <td>VPN user group &#x27;VPN-Users&#x27; with 3 member(s) does not have clear MFA enforcement. VPN access without MFA is a high-risk vector.</td>
+  <td>Enforce two-factor authentication for all VPN user groups using FortiToken or RADIUS MFA.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-SSLVPN-006</td>
+  <td>SSL VPN</td>
+  <td>VPN user group without MFA enforcement</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>user-group=SSL-Remote-Workers, members=2, mfa=unverified</code></td>
+  <td>CWE-308</td>
+  <td>VPN user group &#x27;SSL-Remote-Workers&#x27; with 2 member(s) does not have clear MFA enforcement. VPN access without MFA is a high-risk vector.</td>
+  <td>Enforce two-factor authentication for all VPN user groups using FortiToken or RADIUS MFA.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-SSLVPN-011</td>
+  <td>SSL VPN</td>
+  <td>SSL VPN portal without host check</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>portal=full-access, host-check=disable</code></td>
+  <td>CWE-287</td>
+  <td>SSL VPN portal &#x27;full-access&#x27; does not enforce host checking. Unmanaged/compromised endpoints can connect.</td>
+  <td>Enable host-check to verify endpoint compliance (AV, OS version, etc.): set host-check enable.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-APP-001</td>
+  <td>Security Profiles</td>
+  <td>High-risk app categories allowed</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>app-list=app-default, high-risk categories allowed (IDs: {25, 2, 15})</code></td>
+  <td>CWE-693</td>
+  <td>Application control &#x27;app-default&#x27; allows high-risk categories (P2P, proxy, botnet).</td>
+  <td>Block high-risk application categories including P2P, proxy bypass, and botnet tools.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-AV-001</td>
+  <td>Security Profiles</td>
+  <td>AV profile HTTP not in block mode</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>av-profile=default, http av-scan=monitor</code></td>
+  <td>CWE-693</td>
+  <td>AV profile &#x27;default&#x27; HTTP scanning is set to &#x27;monitor&#x27; instead of blocking infected files.</td>
+  <td>Set HTTP AV scanning to block mode to prevent malware delivery.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-DNS-001</td>
+  <td>Security Profiles</td>
+  <td>DNS filter botnet protection disabled</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>dnsfilter=dns-default, block-botnet=disable</code></td>
+  <td>CWE-693</td>
+  <td>DNS filter &#x27;dns-default&#x27; does not block botnet C2 domains.</td>
+  <td>Enable botnet domain blocking in DNS filter profiles.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-IPS-001</td>
+  <td>Security Profiles</td>
+  <td>IPS sensor in monitor-only mode</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>ips-sensor=default-ips, all entries action=pass/monitor</code></td>
+  <td>CWE-693</td>
+  <td>IPS sensor &#x27;default-ips&#x27; has all entries set to pass/monitor. No traffic is being blocked.</td>
+  <td>Set IPS entries to &#x27;block&#x27; for critical and high severity signatures.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-PROFILE-008</td>
+  <td>Security Profiles</td>
+  <td>SSL profile allows invalid server certificates</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>ssl-ssh-profile=custom-ssl-profile, invalid-server-cert=allow</code></td>
+  <td>CWE-295</td>
+  <td>SSL profile &#x27;custom-ssl-profile&#x27; allows connections to servers with invalid certificates, enabling MitM attacks.</td>
+  <td>Set invalid-server-cert action to &#x27;block&#x27; to prevent MitM attacks.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-WF-002</td>
+  <td>Security Profiles</td>
+  <td>Web filter has no category filters</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>webfilter=basic-filter, ftgd-wf filters=empty</code></td>
+  <td>CWE-693</td>
+  <td>Web filter &#x27;basic-filter&#x27; has no FortiGuard category filters configured.</td>
+  <td>Configure category-based filtering to block malware, phishing, and high-risk sites.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-SYS-009</td>
+  <td>System Settings</td>
+  <td>Strong crypto not enforced globally</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>strong-crypto=disable</code></td>
+  <td>CWE-326</td>
+  <td>Strong crypto is not enforced. Weak ciphers (DES, 3DES, RC4) and protocols (SSLv3, TLSv1.0) may be used for admin and VPN sessions.</td>
+  <td>Enable strong-crypto globally: config system global / set strong-crypto enable.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-SYS-010</td>
+  <td>System Settings</td>
+  <td>Admin account lockout not configured</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>admin-lockout-threshold=0</code></td>
+  <td>CWE-307</td>
+  <td>Admin account lockout is not configured. Unlimited failed login attempts enable brute-force attacks.</td>
+  <td>Set admin-lockout-threshold to 3-5 and admin-lockout-duration to 300+ seconds.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-SYS-012</td>
+  <td>System Settings</td>
+  <td>Admin HTTPS allows weak TLS versions</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>admin-https-ssl-versions=tlsv1-0 tlsv1-1 tlsv1-2</code></td>
+  <td>CWE-326</td>
+  <td>Admin HTTPS interface allows deprecated TLS version (tlsv1-0). These are vulnerable to POODLE, BEAST, and other attacks.</td>
+  <td>Restrict admin HTTPS to TLS 1.2+: set admin-https-ssl-versions tlsv1-2 tlsv1-3.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-WIRELESS-001</td>
+  <td>Wireless Security</td>
+  <td>Weak wireless security mode</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>VAP &#x27;Corp-Internal-WiFi&#x27; security=wpa-personal</code></td>
+  <td>CWE-326</td>
+  <td>Wireless SSID &#x27;Corp-Internal-WiFi&#x27; uses weak security mode &#x27;wpa-personal&#x27;. Open/WEP/basic-WPA are trivially broken.</td>
+  <td>Configure WPA2-Enterprise (802.1X) or WPA3-SAE for all SSIDs.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-WIRELESS-001</td>
+  <td>Wireless Security</td>
+  <td>Weak wireless security mode</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>VAP &#x27;Guest-WiFi&#x27; security=open</code></td>
+  <td>CWE-326</td>
+  <td>Wireless SSID &#x27;Guest-WiFi&#x27; uses weak security mode &#x27;open&#x27;. Open/WEP/basic-WPA are trivially broken.</td>
+  <td>Configure WPA2-Enterprise (802.1X) or WPA3-SAE for all SSIDs.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-WIRELESS-007</td>
+  <td>Wireless Security</td>
+  <td>CAPWAP tunnel using cleartext</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>WTP profile &#x27;default-wtp&#x27; dtls-policy=clear-text</code></td>
+  <td>CWE-319</td>
+  <td>WTP profile &#x27;default-wtp&#x27; allows cleartext CAPWAP tunnels. Wireless traffic between AP and controller is unencrypted.</td>
+  <td>Set dtls-policy to &#x27;dtls-enabled&#x27; to encrypt CAPWAP data tunnels between APs and the controller.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-ZTNA-003</td>
+  <td>ZTNA / SASE</td>
+  <td>ZTNA access proxy without client certificate</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>access-proxy=ztna-proxy-1, client-cert=disable</code></td>
+  <td>CWE-287</td>
+  <td>ZTNA access proxy &#x27;ztna-proxy-1&#x27; does not require client certificates for device identity verification.</td>
+  <td>Enable client certificate requirement: set client-cert enable.</td>
+</tr>
+<tr>
+  <td><span class="chip high">HIGH</span></td>
+  <td>FORTIOS-ZTNA-004</td>
+  <td>ZTNA / SASE</td>
+  <td>SD-WAN enabled without health checks</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>sd-wan status=enable, health-check=empty</code></td>
+  <td>CWE-754</td>
+  <td>SD-WAN is enabled but no health checks are configured. SD-WAN cannot detect link quality issues without health checks.</td>
+  <td>Configure SD-WAN health checks (ping, HTTP, DNS) for all WAN links.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-ADMIN-002</td>
+  <td>Admin Access</td>
+  <td>Admin idle timeout exceeds 5 minutes</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>admintimeout=30 minutes</code></td>
+  <td>CWE-613</td>
+  <td>Admin idle timeout is set to 30 minutes. CIS recommends 5 minutes or less.</td>
+  <td>Set admintimeout to 5 minutes: config system global / set admintimeout 5.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-ADMIN-024</td>
+  <td>Admin Access</td>
+  <td>Default &#x27;admin&#x27; account with super_admin profile</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>admin=admin, accprofile=super_admin</code></td>
+  <td>CWE-1188</td>
+  <td>The default &#x27;admin&#x27; account exists with super_admin privileges. Best practice is to create named admin accounts and disable the default.</td>
+  <td>Create named admin accounts with appropriate profiles. Disable or rename the default &#x27;admin&#x27; account.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-AUTH-005</td>
+  <td>Authentication</td>
+  <td>Local user without MFA</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>User &#x27;local-admin&#x27; two-factor=disable</code></td>
+  <td>CWE-308</td>
+  <td>Local user &#x27;local-admin&#x27; does not have two-factor authentication enabled.</td>
+  <td>Enable two-factor authentication (FortiToken, email, or SMS) for all local user accounts.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-AUTH-005</td>
+  <td>Authentication</td>
+  <td>Local user without MFA</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>User &#x27;local-user1&#x27; two-factor=disable</code></td>
+  <td>CWE-308</td>
+  <td>Local user &#x27;local-user1&#x27; does not have two-factor authentication enabled.</td>
+  <td>Enable two-factor authentication (FortiToken, email, or SMS) for all local user accounts.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-AUTH-006</td>
+  <td>Authentication</td>
+  <td>LDAP TLS without server identity check</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>LDAP &#x27;corp-ad&#x27; server-identity-check=disable</code></td>
+  <td>CWE-295</td>
+  <td>LDAP server &#x27;corp-ad&#x27; uses TLS but does not verify the server certificate identity, allowing MITM attacks.</td>
+  <td>Enable server-identity-check on the LDAP server configuration to validate the TLS certificate.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-BACKUP-001</td>
+  <td>Backup &amp; DR</td>
+  <td>No FortiManager for centralised backup</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>central-management mode=normal, fmg=not set</code></td>
+  <td>CWE-693</td>
+  <td>No FortiManager is configured for central configuration management and backup.</td>
+  <td>Register this FortiGate with FortiManager for automated config backups, change tracking, and disaster recovery.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-BACKUP-003</td>
+  <td>Backup &amp; DR</td>
+  <td>HA session pickup disabled</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>HA mode=a-p, session-pickup=disable</code></td>
+  <td>CWE-693</td>
+  <td>HA cluster does not have session pickup enabled. Active sessions will be dropped during failover.</td>
+  <td>Enable session-pickup in HA configuration to maintain sessions during failover events.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-BACKUP-005</td>
+  <td>Backup &amp; DR</td>
+  <td>USB auto-install config enabled</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>auto-install-config=enable</code></td>
+  <td>CWE-306</td>
+  <td>USB auto-install of configuration is enabled. A malicious USB device could overwrite the running configuration.</td>
+  <td>Disable auto-install-config and auto-install-image under system/global to prevent USB-based config tampering.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-CERT-004</td>
+  <td>Certificates</td>
+  <td>Self-signed certificate detected</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>certificate=internal-ca, issuer=subject (self-signed)</code></td>
+  <td>CWE-295</td>
+  <td>Certificate &#x27;internal-ca&#x27; is self-signed. Self-signed certificates cannot be verified by clients and are vulnerable to MitM attacks.</td>
+  <td>Replace with a CA-signed certificate from a trusted Certificate Authority.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-CERT-011</td>
+  <td>Certificates</td>
+  <td>Self-signed certificate in use: Fortinet_Factory_Self-Sign</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>cert=Fortinet_Factory_Self-Sign, source=self</code></td>
+  <td>CWE-295</td>
+  <td>Certificate &#x27;Fortinet_Factory_Self-Sign&#x27; is self-signed. Self-signed certificates are not trusted by clients and cannot be revoked.</td>
+  <td>Replace with a CA-signed certificate from a trusted Certificate Authority.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-CERT-011</td>
+  <td>Certificates</td>
+  <td>Self-signed certificate in use: internal-ca</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>cert=internal-ca, source=self-signed</code></td>
+  <td>CWE-295</td>
+  <td>Certificate &#x27;internal-ca&#x27; is self-signed. Self-signed certificates are not trusted by clients and cannot be revoked.</td>
+  <td>Replace with a CA-signed certificate from a trusted Certificate Authority.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-POLICY-008</td>
+  <td>Firewall Policies</td>
+  <td>Deny policy without logging</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>policy=Deny-Block (ID 5), action=deny, logtraffic=disable</code></td>
+  <td>CWE-778</td>
+  <td>Deny policy &#x27;Deny-Block&#x27; does not log blocked traffic. This hinders attack detection.</td>
+  <td>Enable logtraffic on deny policies to record blocked connection attempts.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-POLICY-010</td>
+  <td>Firewall Policies</td>
+  <td>Allow policy without SSL inspection</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>policy=Allow-All-Internet (ID 1), ssl-ssh-profile=none</code></td>
+  <td>CWE-693</td>
+  <td>Policy &#x27;Allow-All-Internet&#x27; has no SSL inspection profile. Encrypted threats may bypass security profiles.</td>
+  <td>Apply an ssl-ssh-profile to enable encrypted traffic inspection.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-POLICY-010</td>
+  <td>Firewall Policies</td>
+  <td>Allow policy without SSL inspection</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>policy=DMZ-Access (ID 2), ssl-ssh-profile=none</code></td>
+  <td>CWE-693</td>
+  <td>Policy &#x27;DMZ-Access&#x27; has no SSL inspection profile. Encrypted threats may bypass security profiles.</td>
+  <td>Apply an ssl-ssh-profile to enable encrypted traffic inspection.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-POLICY-010</td>
+  <td>Firewall Policies</td>
+  <td>Allow policy without SSL inspection</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>policy= (ID 3), ssl-ssh-profile=none</code></td>
+  <td>CWE-693</td>
+  <td>Policy &#x27;&#x27; has no SSL inspection profile. Encrypted threats may bypass security profiles.</td>
+  <td>Apply an ssl-ssh-profile to enable encrypted traffic inspection.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-POLICY-011</td>
+  <td>Firewall Policies</td>
+  <td>Broad allow policy with permanent schedule</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>policy=Allow-All-Internet (ID 1), schedule=always, broad rule</code></td>
+  <td>CWE-284</td>
+  <td>Policy &#x27;Allow-All-Internet&#x27; has a broad scope (all src/dst/svc) with an &#x27;always&#x27; schedule, suggesting a temporary rule made permanent.</td>
+  <td>Review if this policy should have a time-limited schedule. Apply least-privilege addressing.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-POLICY-011</td>
+  <td>Firewall Policies</td>
+  <td>Broad allow policy with permanent schedule</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>policy=DMZ-Access (ID 2), schedule=always, broad rule</code></td>
+  <td>CWE-284</td>
+  <td>Policy &#x27;DMZ-Access&#x27; has a broad scope (all src/dst/svc) with an &#x27;always&#x27; schedule, suggesting a temporary rule made permanent.</td>
+  <td>Review if this policy should have a time-limited schedule. Apply least-privilege addressing.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-POLICY-011</td>
+  <td>Firewall Policies</td>
+  <td>Broad allow policy with permanent schedule</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>policy= (ID 3), schedule=always, broad rule</code></td>
+  <td>CWE-284</td>
+  <td>Policy &#x27;&#x27; has a broad scope (all src/dst/svc) with an &#x27;always&#x27; schedule, suggesting a temporary rule made permanent.</td>
+  <td>Review if this policy should have a time-limited schedule. Apply least-privilege addressing.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-POLICY-014</td>
+  <td>Firewall Policies</td>
+  <td>No egress filtering policies detected</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>No LAN→WAN deny policies found</code></td>
+  <td>CWE-284</td>
+  <td>No egress filtering (outbound deny) policies detected. Without egress filtering, compromised hosts can freely exfiltrate data.</td>
+  <td>Implement egress filtering policies to restrict outbound traffic to only necessary services.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-POLICY-016</td>
+  <td>Firewall Policies</td>
+  <td>4 active policies with logging disabled</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>no_log=4/4</code></td>
+  <td>CWE-778</td>
+  <td>4 of 4 active policies have traffic logging disabled. This creates blind spots in security monitoring.</td>
+  <td>Enable logging on all policies: config firewall policy / edit &lt;id&gt; / set logtraffic all.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-UPDATE-003</td>
+  <td>FortiGuard &amp; Updates</td>
+  <td>FortiGuard ips licence expiring soon</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>ips expires=2026-04-10</code></td>
+  <td>CWE-1104</td>
+  <td>FortiGuard &#x27;ips&#x27; licence expires on 2026-04-10. Renewal is needed to maintain protection.</td>
+  <td>Renew the ips licence before it expires.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-UPDATE-005</td>
+  <td>FortiGuard &amp; Updates</td>
+  <td>FortiGuard app-ctrl not updated in 44 days</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>app-ctrl last_update=2026-02-15 00:00:00 (44 days ago)</code></td>
+  <td>CWE-1104</td>
+  <td>FortiGuard app-ctrl has not been updated in 44 days.</td>
+  <td>Verify FortiGuard update schedule and connectivity.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-HA-003</td>
+  <td>High Availability</td>
+  <td>HA session pickup disabled</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>session-pickup=disable</code></td>
+  <td>CWE-654</td>
+  <td>Session pickup is disabled. Active sessions will be dropped during HA failover.</td>
+  <td>Enable session-pickup for seamless failover: set session-pickup enable.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-HA-006</td>
+  <td>High Availability</td>
+  <td>No dedicated HA heartbeat interface</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>hbdev=(empty)</code></td>
+  <td>CWE-654</td>
+  <td>No dedicated heartbeat interface is configured. HA heartbeat shares bandwidth with data traffic.</td>
+  <td>Configure dedicated HA heartbeat interfaces: set hbdev &lt;interface&gt; &lt;priority&gt;.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-HA-007</td>
+  <td>High Availability</td>
+  <td>No HA monitored interfaces configured</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>ha monitor=(empty)</code></td>
+  <td>CWE-654</td>
+  <td>No interfaces are monitored for HA failover. Link failures on critical interfaces will not trigger failover.</td>
+  <td>Configure monitored interfaces: set monitor &lt;wan-interface&gt; &lt;lan-interface&gt;.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-IPSEC-005</td>
+  <td>IPsec VPN</td>
+  <td>IPsec Dead Peer Detection disabled</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>tunnel=Site-B-Tunnel, dpd=disable</code></td>
+  <td>CWE-400</td>
+  <td>IPsec tunnel &#x27;Site-B-Tunnel&#x27; has DPD disabled, which may leave stale tunnels consuming resources.</td>
+  <td>Enable DPD: set dpd on-demand or on-idle.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-IPSEC-007</td>
+  <td>IPsec VPN</td>
+  <td>IPsec using IKEv1 (legacy protocol)</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>tunnel=Site-B-Tunnel, ike-version=1</code></td>
+  <td>CWE-327</td>
+  <td>IPsec tunnel &#x27;Site-B-Tunnel&#x27; uses IKEv1. IKEv2 provides better security, performance, and NAT traversal.</td>
+  <td>Migrate to IKEv2: set ike-version 2.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-IPSEC-007</td>
+  <td>IPsec VPN</td>
+  <td>IPsec using IKEv1 (legacy protocol)</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>tunnel=Cloud-VPN, ike-version=1</code></td>
+  <td>CWE-327</td>
+  <td>IPsec tunnel &#x27;Cloud-VPN&#x27; uses IKEv1. IKEv2 provides better security, performance, and NAT traversal.</td>
+  <td>Migrate to IKEv2: set ike-version 2.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-IPSEC-008</td>
+  <td>IPsec VPN</td>
+  <td>IPsec Phase 1 keylife too long</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>tunnel=Site-B-Tunnel, keylife=172800s (48h)</code></td>
+  <td>CWE-326</td>
+  <td>IPsec tunnel &#x27;Site-B-Tunnel&#x27; Phase 1 keylife is 172800 seconds (48 hours). Long key lifetimes increase the window for key compromise.</td>
+  <td>Set Phase 1 keylife to 28800 seconds (8 hours) or less.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-IPSEC-009</td>
+  <td>IPsec VPN</td>
+  <td>IPsec using pre-shared key authentication</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>tunnel=Site-B-Tunnel, authmethod=psk</code></td>
+  <td>CWE-287</td>
+  <td>IPsec tunnel &#x27;Site-B-Tunnel&#x27; uses pre-shared key (PSK) authentication instead of certificates.</td>
+  <td>Use certificate-based authentication for stronger identity verification: set authmethod signature.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-IPSEC-009</td>
+  <td>IPsec VPN</td>
+  <td>IPsec using pre-shared key authentication</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>tunnel=Cloud-VPN, authmethod=psk</code></td>
+  <td>CWE-287</td>
+  <td>IPsec tunnel &#x27;Cloud-VPN&#x27; uses pre-shared key (PSK) authentication instead of certificates.</td>
+  <td>Use certificate-based authentication for stronger identity verification: set authmethod signature.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-IPSEC-011</td>
+  <td>IPsec VPN</td>
+  <td>IPsec Phase 2 keylife too long</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>tunnel=Site-B-P2, keylifeseconds=86400s</code></td>
+  <td>CWE-326</td>
+  <td>IPsec Phase 2 &#x27;Site-B-P2&#x27; keylife is 86400 seconds. Long key lifetimes increase compromise risk.</td>
+  <td>Set Phase 2 keylifeseconds to 3600-28800 seconds.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-IPSEC-011</td>
+  <td>IPsec VPN</td>
+  <td>IPsec Phase 2 keylife too long</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>tunnel=Cloud-VPN-P2, keylifeseconds=50000s</code></td>
+  <td>CWE-326</td>
+  <td>IPsec Phase 2 &#x27;Cloud-VPN-P2&#x27; keylife is 50000 seconds. Long key lifetimes increase compromise risk.</td>
+  <td>Set Phase 2 keylifeseconds to 3600-28800 seconds.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-CVE-017</td>
+  <td>Known CVEs</td>
+  <td>SSL VPN sensitive information disclosure</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>FortiOS 7.0.10 &lt; 7.0.17 (train 7.0)</code></td>
+  <td>CWE-200 | CVE-2025-25250</td>
+  <td>A sensitive information disclosure vulnerability in FortiOS SSL VPN may expose session or configuration data.</td>
+  <td>Upgrade to the fixed version.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-CVE-024</td>
+  <td>Known CVEs</td>
+  <td>Resource consumption via crafted HTTP/S requests</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>FortiOS 7.0.10 &lt; 7.0.16 (train 7.0)</code></td>
+  <td>CWE-400 | CVE-2024-46666</td>
+  <td>Uncontrolled resource consumption in FortiOS allows a remote unauthenticated attacker to cause denial of service via crafted HTTP/S requests consuming excessive memory.</td>
+  <td>Upgrade to the fixed version. Implement rate limiting on management interfaces.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-CVE-028</td>
+  <td>Known CVEs</td>
+  <td>SSL VPN improper access control — cross-user</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>FortiOS 7.0.10 &lt; 7.0.15 (train 7.0)</code></td>
+  <td>CWE-284 | CVE-2024-33510</td>
+  <td>Improper access control in FortiOS SSL VPN web portal allows an authenticated attacker to access bookmarks and resources of other SSL VPN users.</td>
+  <td>Upgrade to fixed version. Review SSL VPN portal access controls and user group assignments.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-LOG-003</td>
+  <td>Logging &amp; Monitoring</td>
+  <td>Log disk full action set to overwrite</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>diskfull=overwrite</code></td>
+  <td>CWE-778</td>
+  <td>When log disk is full, older logs are overwritten, potentially destroying forensic evidence.</td>
+  <td>Set diskfull action to &#x27;nolog&#x27; or configure log forwarding to prevent data loss.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-LOG-009</td>
+  <td>Logging &amp; Monitoring</td>
+  <td>Local-in traffic logging disabled</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>local-in-allow=disable</code></td>
+  <td>CWE-778</td>
+  <td>Traffic destined to the FortiGate itself (local-in) is not logged. Admin and management access attempts go unrecorded.</td>
+  <td>Enable local-in-allow logging: set local-in-allow enable.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-LOG-010</td>
+  <td>Logging &amp; Monitoring</td>
+  <td>Local-in deny logging disabled</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>local-in-deny-unicast=disable</code></td>
+  <td>CWE-778</td>
+  <td>Denied local-in unicast traffic is not logged. Reconnaissance and attack attempts on the firewall itself go undetected.</td>
+  <td>Enable local-in-deny-unicast logging: set local-in-deny-unicast enable.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-LOG-014</td>
+  <td>Logging &amp; Monitoring</td>
+  <td>Alert email not configured</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>alertemail mailto1=(empty)</code></td>
+  <td>CWE-778</td>
+  <td>No alert email recipients configured. Critical security events will not trigger email notifications.</td>
+  <td>Configure alert email recipients: config alertemail setting / set mailto1 &lt;email&gt;.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-LOG-017</td>
+  <td>Logging &amp; Monitoring</td>
+  <td>Log transport not encrypted</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>log-mode=udp</code></td>
+  <td>CWE-319</td>
+  <td>Logs are transported via unencrypted UDP. Log data may contain sensitive information visible to network eavesdroppers.</td>
+  <td>Use encrypted log transport (TCP with TLS) to FortiAnalyzer or syslog: config log fortianalyzer setting / set enc-algorithm high.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>MITRE-T1046-001</td>
+  <td>MITRE ATT&amp;CK Resilience</td>
+  <td>T1046 Network Service Discovery — no inter-zone IPS</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>No IPS sensor on inter-zone (east-west) policies</code></td>
+  <td>CWE-693</td>
+  <td>MITRE T1046: No IPS sensors are applied to inter-zone policies. Internal network scanning (Nmap, masscan) by a compromised host traversing the firewall between zones will not trigger IPS detection signatures.</td>
+  <td>Apply IPS sensors to inter-zone (east-west) policies, not just inbound/outbound. This detects lateral movement scanning.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>MITRE-T1048-001</td>
+  <td>MITRE ATT&amp;CK Resilience</td>
+  <td>T1048 Exfiltration Over Alternative Protocol — no DLP</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>dlp-sensor attached to 0/4 policies</code></td>
+  <td>CWE-200</td>
+  <td>MITRE T1048: No DLP (Data Loss Prevention) sensors are attached to any firewall policies. Sensitive data can be exfiltrated via DNS, ICMP, HTTP, or custom protocols without detection.</td>
+  <td>Create DLP sensors to detect sensitive data patterns (SSN, credit cards, PII) and attach to outbound policies.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>MITRE-T1059-001</td>
+  <td>MITRE ATT&amp;CK Resilience</td>
+  <td>T1059 Command &amp; Scripting — Application Control coverage gap</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>application-list attached to 0/4 policies</code></td>
+  <td>CWE-693</td>
+  <td>MITRE T1059: Application Control profiles are not widely deployed. Without Application Control, web shells, scripting engines, and malicious application traffic cannot be identified and blocked.</td>
+  <td>Create Application Control profiles that block high-risk categories and attach to all outbound/DMZ policies.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>MITRE-T1071-001</td>
+  <td>MITRE ATT&amp;CK Resilience</td>
+  <td>T1071 Application Layer Protocol — DNS filter coverage gap</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>dnsfilter-profile attached to 0/4 policies</code></td>
+  <td>CWE-693</td>
+  <td>MITRE T1071: DNS filtering is not widely deployed. Adversaries use DNS tunneling, DNS over HTTPS (DoH), and malicious domain resolution for C2 communication and data exfiltration.</td>
+  <td>Attach DNS Filter profiles (with botnet/C2 domain blocking) to all outbound policies.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>MITRE-T1090-001</td>
+  <td>MITRE ATT&amp;CK Resilience</td>
+  <td>T1090 Proxy — proxy/tunnel applications not blocked</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>app-control profiles=1, proxy-blocked=false</code></td>
+  <td>CWE-693</td>
+  <td>MITRE T1090: Application Control is not blocking proxy/tunnel applications (Tor, VPN tunnels, SOCKS proxies). Adversaries use these to disguise C2 traffic.</td>
+  <td>Block proxy/tunnel application categories in Application Control profiles.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>MITRE-T1133-001</td>
+  <td>MITRE ATT&amp;CK Resilience</td>
+  <td>T1133 External Remote Services — SSL VPN without client cert</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>sslvpn=enable, reqclientcert=disable</code></td>
+  <td>CWE-308</td>
+  <td>MITRE T1133: SSL VPN is enabled without client certificate requirement. Password-only VPN authentication is vulnerable to credential stuffing, phishing, and brute force attacks.</td>
+  <td>Enable client certificate verification: config vpn ssl settings / set reqclientcert enable.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>MITRE-T1219-001</td>
+  <td>MITRE ATT&amp;CK Resilience</td>
+  <td>T1219 Remote Access Software — RATs not blocked by AppCtrl</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>app-control profiles=1, remote-access-blocked=false</code></td>
+  <td>CWE-693</td>
+  <td>MITRE T1219: Application Control is not blocking remote access tool categories (TeamViewer, AnyDesk, ScreenConnect, RustDesk). Adversaries deploy these legitimate tools as C2 channels to evade detection.</td>
+  <td>Block unauthorized remote access applications in AppCtrl profiles. Whitelist only sanctioned tools.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>MITRE-T1568-001</td>
+  <td>MITRE ATT&amp;CK Resilience</td>
+  <td>T1568 Dynamic Resolution / DGA — DNS filter lacks category blocking</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>dnsfilter &#x27;dns-default&#x27; has no FTGD category filters</code></td>
+  <td>CWE-693</td>
+  <td>MITRE T1568: DNS filter profile exists but has no FortiGuard DNS category filters configured. DGA-generated domains and newly registered malicious domains will not be caught by reputation scoring.</td>
+  <td>Configure FortiGuard DNS category filters to block malicious, phishing, and newly-registered domain categories.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-NET-002</td>
+  <td>Network Hardening</td>
+  <td>DoS SYN flood threshold too high</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>dos-policy=1, syn_flood threshold=50000</code></td>
+  <td>CWE-400</td>
+  <td>DoS policy 1 SYN flood threshold is 50000 (&gt;10,000). High thresholds may not protect against moderate floods.</td>
+  <td>Lower the SYN flood threshold to 2,000-5,000 per second based on normal traffic baselines.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-NET-003</td>
+  <td>Network Hardening</td>
+  <td>DoS UDP flood threshold too high</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>dos-policy=1, udp_flood threshold=50000</code></td>
+  <td>CWE-400</td>
+  <td>DoS policy 1 UDP flood threshold is 50000. High thresholds reduce protection effectiveness.</td>
+  <td>Lower the UDP flood threshold based on traffic baselines.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-NET-009</td>
+  <td>Network Hardening</td>
+  <td>IPv6 enabled but no IPv6 firewall policies</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>gui-ipv6=enable, firewall/policy6: empty</code></td>
+  <td>CWE-284</td>
+  <td>IPv6 is enabled on the FortiGate but no IPv6 firewall policies exist, potentially allowing unfiltered IPv6 traffic.</td>
+  <td>Create IPv6 firewall policies or disable IPv6 if not required.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-NET-016</td>
+  <td>Network Hardening</td>
+  <td>NTP authentication not enabled</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>ntp authentication=disable</code></td>
+  <td>CWE-345</td>
+  <td>NTP authentication is not enabled. Attackers can inject false time via NTP spoofing, breaking log correlation and certificates.</td>
+  <td>Enable NTP authentication: config system ntp / set authentication enable.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-NET-017</td>
+  <td>Network Hardening</td>
+  <td>DNS queries not encrypted</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>dns-protocol=cleartext</code></td>
+  <td>CWE-319</td>
+  <td>DNS queries are sent in cleartext, exposing internal hostname lookups to eavesdropping and manipulation.</td>
+  <td>Enable DNS over TLS (DoT) or DNS over HTTPS (DoH): config system dns / set protocol dot.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-SSLVPN-002</td>
+  <td>SSL VPN</td>
+  <td>SSL VPN using default port</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>port=443</code></td>
+  <td>CWE-200</td>
+  <td>SSL VPN is running on default port 443, making it easily discoverable.</td>
+  <td>Change the SSL VPN port to a non-standard port.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-SSLVPN-003</td>
+  <td>SSL VPN</td>
+  <td>SSL VPN idle timeout too long</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>idle-timeout=3600s</code></td>
+  <td>CWE-613</td>
+  <td>SSL VPN idle timeout is 3600 seconds (60 min). Sessions left open increase hijacking risk.</td>
+  <td>Set idle-timeout to 300 seconds (5 minutes) or less.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-SSLVPN-004</td>
+  <td>SSL VPN</td>
+  <td>SSL VPN login attempt limit too high</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>login-attempt-limit=10</code></td>
+  <td>CWE-307</td>
+  <td>SSL VPN allows 10 failed login attempts, enabling brute-force attacks.</td>
+  <td>Set login-attempt-limit to 3 or fewer.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-SSLVPN-005</td>
+  <td>SSL VPN</td>
+  <td>SSL VPN split tunnelling enabled</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>portal=full-access, split-tunneling=enable</code></td>
+  <td>CWE-284</td>
+  <td>Portal &#x27;full-access&#x27; allows split tunnelling, sending only specific traffic through VPN. Users may access malicious sites via local internet.</td>
+  <td>Disable split tunnelling to route all traffic through the VPN: set split-tunneling disable.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-SSLVPN-005</td>
+  <td>SSL VPN</td>
+  <td>SSL VPN split tunnelling enabled</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>portal=guest-portal, split-tunneling=enable</code></td>
+  <td>CWE-284</td>
+  <td>Portal &#x27;guest-portal&#x27; allows split tunnelling, sending only specific traffic through VPN. Users may access malicious sites via local internet.</td>
+  <td>Disable split tunnelling to route all traffic through the VPN: set split-tunneling disable.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-SSLVPN-007</td>
+  <td>SSL VPN</td>
+  <td>No SSL VPN tunnel IP pool configured</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>tunnel-ip-pools=empty</code></td>
+  <td>CWE-284</td>
+  <td>No IP pool is configured for SSL VPN tunnel mode. Tunnel mode clients may not receive proper IP assignments.</td>
+  <td>Configure dedicated tunnel IP pools for SSL VPN clients.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-SSLVPN-008</td>
+  <td>SSL VPN</td>
+  <td>No DNS server configured for VPN clients</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>dns-server1=none, dns-server2=none</code></td>
+  <td>CWE-200</td>
+  <td>No DNS servers are pushed to SSL VPN clients. Clients may use their local DNS, causing DNS leaks.</td>
+  <td>Configure internal DNS servers for VPN clients: set dns-server1 &lt;IP&gt;.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-SSLVPN-010</td>
+  <td>SSL VPN</td>
+  <td>No SSL VPN banned cipher suites configured</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>banned-cipher=(empty)</code></td>
+  <td>CWE-326</td>
+  <td>No cipher suites are banned for SSL VPN. Weak ciphers (RC4, DES, NULL) may be negotiated.</td>
+  <td>Ban weak ciphers: set banned-cipher RSA DES-CBC-SHA RC4 NULL.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-SSLVPN-012</td>
+  <td>SSL VPN</td>
+  <td>SSL VPN portal allows FTP access</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>portal=full-access, allow-user-access includes ftp</code></td>
+  <td>CWE-284</td>
+  <td>SSL VPN portal &#x27;full-access&#x27; allows FTP access, enabling unmonitored file transfers.</td>
+  <td>Restrict user access to only necessary protocols. Remove FTP if not required.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-SSLVPN-013</td>
+  <td>SSL VPN</td>
+  <td>SSL VPN portal without concurrent login limit</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>portal=full-access, limit-user-logins=disable</code></td>
+  <td>CWE-307</td>
+  <td>SSL VPN portal &#x27;full-access&#x27; does not limit concurrent logins per user. Credential sharing goes undetected.</td>
+  <td>Enable concurrent login limits: set limit-user-logins enable.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-SSLVPN-013</td>
+  <td>SSL VPN</td>
+  <td>SSL VPN portal without concurrent login limit</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>portal=guest-portal, limit-user-logins=disable</code></td>
+  <td>CWE-307</td>
+  <td>SSL VPN portal &#x27;guest-portal&#x27; does not limit concurrent logins per user. Credential sharing goes undetected.</td>
+  <td>Enable concurrent login limits: set limit-user-logins enable.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-SSLVPN-014</td>
+  <td>SSL VPN</td>
+  <td>SSL VPN HTTP compression enabled (CRIME/BREACH risk)</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>http-compression=enable</code></td>
+  <td>CWE-326</td>
+  <td>HTTP compression over SSL VPN is enabled. Compression combined with TLS is vulnerable to CRIME/BREACH attacks.</td>
+  <td>Disable HTTP compression for SSL VPN: set http-compression disable.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-AV-002</td>
+  <td>Security Profiles</td>
+  <td>AV outbreak prevention disabled</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>av-profile=default, outbreak-prevention=disable</code></td>
+  <td>CWE-693</td>
+  <td>AV profile &#x27;default&#x27; does not have outbreak prevention enabled for zero-day malware detection.</td>
+  <td>Enable outbreak prevention to detect unknown threats via FortiGuard sandbox.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-AV-003</td>
+  <td>Security Profiles</td>
+  <td>AV cloud sandbox analysis disabled</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>av-profile=default, ftgd-analytics=disable</code></td>
+  <td>CWE-693</td>
+  <td>AV profile &#x27;default&#x27; does not submit suspicious files to FortiGuard cloud sandbox.</td>
+  <td>Enable FortiGuard analytics for sandbox-based zero-day detection.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-DLP-001</td>
+  <td>Security Profiles</td>
+  <td>DLP sensor in log-only mode</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>dlp-sensor=basic-dlp, all filters action=log-only</code></td>
+  <td>CWE-200</td>
+  <td>DLP sensor &#x27;basic-dlp&#x27; only logs data leaks without blocking. Sensitive data can still leave the network.</td>
+  <td>Set DLP filter actions to &#x27;block&#x27; for critical data patterns (PII, financial, healthcare).</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-IPS-002</td>
+  <td>Security Profiles</td>
+  <td>IPS sensor has IP exemptions</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>ips-sensor=default-ips, 1 entries with exempt-ip</code></td>
+  <td>CWE-693</td>
+  <td>IPS sensor &#x27;default-ips&#x27; has 1 entries with IP exemptions. Exempted IPs bypass IPS inspection.</td>
+  <td>Review and minimize IPS exemptions. Remove any that are no longer necessary.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-PROFILE-007</td>
+  <td>Security Profiles</td>
+  <td>SSL inspection profile not in deep inspection mode</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>ssl-ssh-profile=custom-ssl-profile, inspect-all=certificate-inspection</code></td>
+  <td>CWE-693</td>
+  <td>SSL inspection profile &#x27;custom-ssl-profile&#x27; does not perform deep content inspection. Encrypted malware may pass through undetected.</td>
+  <td>Enable deep SSL inspection for high-risk traffic. Use certificate inspection only where deep inspection causes compatibility issues.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-PROFILE-010</td>
+  <td>Security Profiles</td>
+  <td>File filter profile with no rules</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>file-filter=file-default, rules=empty</code></td>
+  <td>CWE-434</td>
+  <td>File filter profile &#x27;file-default&#x27; has no file type rules. No file types are being blocked.</td>
+  <td>Add rules to block dangerous file types (exe, bat, scr, dll, vbs, ps1).</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-SYS-001</td>
+  <td>System Settings</td>
+  <td>SIP ALG helper enabled</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>sip-helper=enable</code></td>
+  <td>CWE-284</td>
+  <td>SIP Application Layer Gateway (ALG) helper is enabled. SIP ALG can introduce VoIP issues and bypass firewall policies.</td>
+  <td>Disable SIP helper unless required for NAT traversal: set sip-helper disable.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-SYS-004</td>
+  <td>System Settings</td>
+  <td>Subnet overlap allowed</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>allow-subnet-overlap=enable</code></td>
+  <td>CWE-284</td>
+  <td>Subnet overlap is allowed, which can cause routing ambiguity and security policy bypass.</td>
+  <td>Disable subnet overlap: set allow-subnet-overlap disable.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-SYS-013</td>
+  <td>System Settings</td>
+  <td>TCP half-open session timer too long</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>tcp-halfopen-timer=120</code></td>
+  <td>CWE-400</td>
+  <td>TCP half-open timer is 120s (recommended &lt;=30). Long timers make the firewall vulnerable to SYN flood attacks.</td>
+  <td>Set tcp-halfopen-timer to 30 or less: config system global / set tcp-halfopen-timer 30.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-SYS-016</td>
+  <td>System Settings</td>
+  <td>FIPS 140-2 mode not enabled</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>fips-cc=disable</code></td>
+  <td>CWE-327</td>
+  <td>FIPS 140-2 validated cryptography mode is not enabled. Environments requiring FIPS compliance (government, financial) must enable this.</td>
+  <td>Enable FIPS mode: config system global / set fips-cc enable. NOTE: Requires reboot and restricts cipher suites.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-WIRELESS-002</td>
+  <td>Wireless Security</td>
+  <td>Guest SSID lacks client isolation</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>VAP &#x27;Guest-WiFi&#x27; intra-vap-privacy=disable</code></td>
+  <td>CWE-284</td>
+  <td>Guest SSID &#x27;Guest-WiFi&#x27; does not isolate wireless clients from each other.</td>
+  <td>Enable intra-vap-privacy (client isolation) on guest SSIDs to prevent lateral movement.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-WIRELESS-004</td>
+  <td>Wireless Security</td>
+  <td>WIDS rogue AP scanning disabled</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>WIDS profile &#x27;default-wids&#x27; ap-scan=disable</code></td>
+  <td>CWE-778</td>
+  <td>WIDS profile &#x27;default-wids&#x27; does not have rogue AP scanning enabled.</td>
+  <td>Enable ap-scan in the WIDS profile to detect unauthorized access points.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-WIRELESS-006</td>
+  <td>Wireless Security</td>
+  <td>Protected Management Frames disabled</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>VAP &#x27;Corp-Internal-WiFi&#x27; pmf=disable</code></td>
+  <td>CWE-345</td>
+  <td>SSID &#x27;Corp-Internal-WiFi&#x27; does not enforce 802.11w Protected Management Frames, leaving it vulnerable to deauthentication attacks.</td>
+  <td>Enable PMF (802.11w) — set to &#x27;optional&#x27; for compatibility or &#x27;required&#x27; for maximum protection.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-WIRELESS-006</td>
+  <td>Wireless Security</td>
+  <td>Protected Management Frames disabled</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>VAP &#x27;Guest-WiFi&#x27; pmf=disable</code></td>
+  <td>CWE-345</td>
+  <td>SSID &#x27;Guest-WiFi&#x27; does not enforce 802.11w Protected Management Frames, leaving it vulnerable to deauthentication attacks.</td>
+  <td>Enable PMF (802.11w) — set to &#x27;optional&#x27; for compatibility or &#x27;required&#x27; for maximum protection.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-ZTNA-002</td>
+  <td>ZTNA / SASE</td>
+  <td>ZTNA access proxy with no API gateway rules</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>access-proxy=ztna-proxy-1, api-gateway=empty</code></td>
+  <td>CWE-284</td>
+  <td>ZTNA access proxy &#x27;ztna-proxy-1&#x27; has no API gateway rules configured.</td>
+  <td>Configure API gateway rules to define application access policies.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-ZTNA-005</td>
+  <td>ZTNA / SASE</td>
+  <td>SD-WAN without service/SLA rules</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>sd-wan service=empty</code></td>
+  <td>CWE-693</td>
+  <td>SD-WAN has no service/SLA rules configured. Traffic will use default routing without quality-based path selection.</td>
+  <td>Configure SD-WAN service rules with SLA targets for critical applications.</td>
+</tr>
+<tr>
+  <td><span class="chip medium">MEDIUM</span></td>
+  <td>FORTIOS-ZTNA-006</td>
+  <td>ZTNA / SASE</td>
+  <td>SD-WAN enabled without health checks</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>sdwan=enable, health-check=0</code></td>
+  <td>CWE-693</td>
+  <td>SD-WAN is enabled but no health check probes are configured. Without health checks, failover between WAN links is blind to link quality.</td>
+  <td>Configure SD-WAN health checks with SLA targets: config system sdwan / config health-check.</td>
+</tr>
+<tr>
+  <td><span class="chip low">LOW</span></td>
+  <td>FORTIOS-ADMIN-011</td>
+  <td>Admin Access</td>
+  <td>PING enabled on WAN interface</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>interface=wan1, role=wan, allowaccess includes ping</code></td>
+  <td>CWE-200</td>
+  <td>WAN interface &#x27;wan1&#x27; responds to ICMP ping, aiding reconnaissance.</td>
+  <td>Remove ping from WAN interface allowaccess unless required for monitoring.</td>
+</tr>
+<tr>
+  <td><span class="chip low">LOW</span></td>
+  <td>FORTIOS-AUTH-003</td>
+  <td>Authentication</td>
+  <td>RADIUS timeout excessively long</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>RADIUS &#x27;radius-primary&#x27; timeout=60s</code></td>
+  <td>CWE-400</td>
+  <td>RADIUS server &#x27;radius-primary&#x27; has timeout of 60s. Excessive timeouts can cause authentication delays and DoS.</td>
+  <td>Set RADIUS timeout to 5-10 seconds and configure a secondary RADIUS server for redundancy.</td>
+</tr>
+<tr>
+  <td><span class="chip low">LOW</span></td>
+  <td>FORTIOS-AUTH-004</td>
+  <td>Authentication</td>
+  <td>No SSO/SAML integration configured</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>No user/saml or user/fsso entries</code></td>
+  <td>CWE-287</td>
+  <td>Neither SAML IdP nor Fortinet SSO (FSSO) is configured. Users rely solely on local or LDAP/RADIUS authentication.</td>
+  <td>Integrate SAML 2.0 SSO or FSSO for centralised identity management and conditional access.</td>
+</tr>
+<tr>
+  <td><span class="chip low">LOW</span></td>
+  <td>FORTIOS-BACKUP-002</td>
+  <td>Backup &amp; DR</td>
+  <td>Config revision on logout disabled</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>revision-backup-on-logout=disable</code></td>
+  <td>CWE-693</td>
+  <td>Automatic configuration revision backup on admin logout is disabled. Config changes may be lost.</td>
+  <td>Enable revision-backup-on-logout under system/global to maintain configuration history.</td>
+</tr>
+<tr>
+  <td><span class="chip low">LOW</span></td>
+  <td>FORTIOS-BACKUP-004</td>
+  <td>Backup &amp; DR</td>
+  <td>Automatic config save without review</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>cfg-save=automatic</code></td>
+  <td>CWE-693</td>
+  <td>Configuration changes are saved automatically without manual review, increasing risk of unintended changes persisting.</td>
+  <td>Consider setting cfg-save to &#x27;revert&#x27; with a timeout to allow rollback of unintended changes.</td>
+</tr>
+<tr>
+  <td><span class="chip low">LOW</span></td>
+  <td>FORTIOS-CERT-009</td>
+  <td>Certificates</td>
+  <td>Wildcard certificate in use</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>certificate=corp-wildcard, CN=*.corp.example.com</code></td>
+  <td>CWE-295</td>
+  <td>Certificate &#x27;corp-wildcard&#x27; is a wildcard certificate (*.corp.example.com). Wildcard certs increase blast radius if compromised.</td>
+  <td>Use specific certificates per service where possible. Monitor wildcard cert usage closely.</td>
+</tr>
+<tr>
+  <td><span class="chip low">LOW</span></td>
+  <td>FORTIOS-POLICY-001</td>
+  <td>Firewall Policies</td>
+  <td>Disabled firewall policy</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>policy=Old-Test-Policy (ID 4), status=disable</code></td>
+  <td>CWE-1078</td>
+  <td>Firewall policy &#x27;Old-Test-Policy&#x27; (ID 4) is disabled. Disabled policies add clutter and may be accidentally re-enabled.</td>
+  <td>Remove disabled policies or document the reason for keeping them disabled.</td>
+</tr>
+<tr>
+  <td><span class="chip low">LOW</span></td>
+  <td>FORTIOS-POLICY-001</td>
+  <td>Firewall Policies</td>
+  <td>Disabled firewall policy</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>policy=Old-Disabled-1 (ID 6), status=disable</code></td>
+  <td>CWE-1078</td>
+  <td>Firewall policy &#x27;Old-Disabled-1&#x27; (ID 6) is disabled. Disabled policies add clutter and may be accidentally re-enabled.</td>
+  <td>Remove disabled policies or document the reason for keeping them disabled.</td>
+</tr>
+<tr>
+  <td><span class="chip low">LOW</span></td>
+  <td>FORTIOS-POLICY-001</td>
+  <td>Firewall Policies</td>
+  <td>Disabled firewall policy</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>policy=Old-Disabled-2 (ID 7), status=disable</code></td>
+  <td>CWE-1078</td>
+  <td>Firewall policy &#x27;Old-Disabled-2&#x27; (ID 7) is disabled. Disabled policies add clutter and may be accidentally re-enabled.</td>
+  <td>Remove disabled policies or document the reason for keeping them disabled.</td>
+</tr>
+<tr>
+  <td><span class="chip low">LOW</span></td>
+  <td>FORTIOS-POLICY-001</td>
+  <td>Firewall Policies</td>
+  <td>Disabled firewall policy</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>policy=Old-Disabled-3 (ID 8), status=disable</code></td>
+  <td>CWE-1078</td>
+  <td>Firewall policy &#x27;Old-Disabled-3&#x27; (ID 8) is disabled. Disabled policies add clutter and may be accidentally re-enabled.</td>
+  <td>Remove disabled policies or document the reason for keeping them disabled.</td>
+</tr>
+<tr>
+  <td><span class="chip low">LOW</span></td>
+  <td>FORTIOS-POLICY-001</td>
+  <td>Firewall Policies</td>
+  <td>Disabled firewall policy</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>policy=Old-Disabled-4 (ID 9), status=disable</code></td>
+  <td>CWE-1078</td>
+  <td>Firewall policy &#x27;Old-Disabled-4&#x27; (ID 9) is disabled. Disabled policies add clutter and may be accidentally re-enabled.</td>
+  <td>Remove disabled policies or document the reason for keeping them disabled.</td>
+</tr>
+<tr>
+  <td><span class="chip low">LOW</span></td>
+  <td>FORTIOS-POLICY-001</td>
+  <td>Firewall Policies</td>
+  <td>Disabled firewall policy</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>policy=Old-Disabled-5 (ID 10), status=disable</code></td>
+  <td>CWE-1078</td>
+  <td>Firewall policy &#x27;Old-Disabled-5&#x27; (ID 10) is disabled. Disabled policies add clutter and may be accidentally re-enabled.</td>
+  <td>Remove disabled policies or document the reason for keeping them disabled.</td>
+</tr>
+<tr>
+  <td><span class="chip low">LOW</span></td>
+  <td>FORTIOS-POLICY-007</td>
+  <td>Firewall Policies</td>
+  <td>Unnamed firewall policy</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>policy ID 3, name=(empty)</code></td>
+  <td>CWE-1078</td>
+  <td>Firewall policy ID 3 has no name. Unnamed policies are difficult to audit and troubleshoot.</td>
+  <td>Assign descriptive names to all firewall policies.</td>
+</tr>
+<tr>
+  <td><span class="chip low">LOW</span></td>
+  <td>FORTIOS-POLICY-012</td>
+  <td>Firewall Policies</td>
+  <td>High ratio of disabled policies</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>disabled=6/10 (60%)</code></td>
+  <td>CWE-1078</td>
+  <td>6 of 10 policies (60%) are disabled. Excessive disabled policies indicate poor policy lifecycle management.</td>
+  <td>Review and remove disabled policies that are no longer needed.</td>
+</tr>
+<tr>
+  <td><span class="chip low">LOW</span></td>
+  <td>FORTIOS-HA-008</td>
+  <td>High Availability</td>
+  <td>HA override enabled (auto-failback)</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>ha override=enable</code></td>
+  <td>CWE-654</td>
+  <td>HA override is enabled. The primary unit will automatically reclaim the primary role after recovery, causing a second failover.</td>
+  <td>Consider disabling override to prevent unnecessary failover disruptions: set override disable.</td>
+</tr>
+<tr>
+  <td><span class="chip low">LOW</span></td>
+  <td>FORTIOS-LOG-015</td>
+  <td>Logging &amp; Monitoring</td>
+  <td>No automation triggers configured</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>system/automation-trigger: empty</code></td>
+  <td>CWE-778</td>
+  <td>No automation triggers are configured. Automated responses to security events (IPS alerts, admin logins, HA failover) are not set up.</td>
+  <td>Configure automation triggers and actions for critical security events.</td>
+</tr>
+<tr>
+  <td><span class="chip low">LOW</span></td>
+  <td>FORTIOS-LOG-018</td>
+  <td>Logging &amp; Monitoring</td>
+  <td>No automation stitches configured</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>automation-trigger count=0</code></td>
+  <td>CWE-778</td>
+  <td>No automation stitches are configured. Automation stitches enable automatic response to security events (e.g., quarantine compromised hosts, alert on config changes).</td>
+  <td>Configure automation stitches for critical events: config system automation-trigger / edit &lt;name&gt;.</td>
+</tr>
+<tr>
+  <td><span class="chip low">LOW</span></td>
+  <td>FORTIOS-NET-004</td>
+  <td>Network Hardening</td>
+  <td>DoS ICMP flood threshold too high</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>dos-policy=1, icmp_flood threshold=5000</code></td>
+  <td>CWE-400</td>
+  <td>DoS policy 1 ICMP flood threshold is 5000.</td>
+  <td>Lower ICMP flood threshold to 250-500 per second.</td>
+</tr>
+<tr>
+  <td><span class="chip low">LOW</span></td>
+  <td>FORTIOS-NET-006</td>
+  <td>Network Hardening</td>
+  <td>DNS server override disabled on WAN</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>interface=wan1, dns-server-override=disable</code></td>
+  <td>CWE-350</td>
+  <td>WAN interface &#x27;wan1&#x27; does not override DNS from ISP. ISP DNS may not filter malicious domains.</td>
+  <td>Use FortiGuard DNS or a reputable DNS service and enable dns-server-override.</td>
+</tr>
+<tr>
+  <td><span class="chip low">LOW</span></td>
+  <td>FORTIOS-NET-010</td>
+  <td>Network Hardening</td>
+  <td>LLDP reception enabled globally</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>lldp-reception=enable</code></td>
+  <td>CWE-200</td>
+  <td>LLDP reception is enabled globally. LLDP can leak network topology information to adjacent devices.</td>
+  <td>Disable LLDP on untrusted interfaces. Use per-interface LLDP settings.</td>
+</tr>
+<tr>
+  <td><span class="chip low">LOW</span></td>
+  <td>FORTIOS-PROFILE-009</td>
+  <td>Security Profiles</td>
+  <td>No email filter profiles configured</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>emailfilter/profile: empty</code></td>
+  <td>CWE-693</td>
+  <td>No email filter profiles are configured. Email-borne threats (phishing, malware) are not inspected.</td>
+  <td>Create email filter profiles if SMTP traffic passes through the FortiGate.</td>
+</tr>
+<tr>
+  <td><span class="chip low">LOW</span></td>
+  <td>FORTIOS-PROFILE-011</td>
+  <td>Security Profiles</td>
+  <td>ICAP profile without preview mode</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>icap-profile=icap-server, preview=disable</code></td>
+  <td>CWE-693</td>
+  <td>ICAP profile &#x27;icap-server&#x27; does not use preview mode. All traffic is sent to the ICAP server, increasing latency.</td>
+  <td>Enable preview mode for ICAP to send only the initial bytes for faster content decisions.</td>
+</tr>
+<tr>
+  <td><span class="chip low">LOW</span></td>
+  <td>FORTIOS-WF-001</td>
+  <td>Security Profiles</td>
+  <td>Web filter safe search not enforced</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>webfilter=basic-filter, safe-search=disable</code></td>
+  <td>CWE-693</td>
+  <td>Web filter &#x27;basic-filter&#x27; does not enforce safe search on search engines.</td>
+  <td>Enable safe search enforcement to filter explicit content from search results.</td>
+</tr>
+<tr>
+  <td><span class="chip low">LOW</span></td>
+  <td>FORTIOS-SYS-002</td>
+  <td>System Settings</td>
+  <td>ECMP max paths excessively high</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>ecmp-max-paths=32</code></td>
+  <td>CWE-400</td>
+  <td>ECMP max paths is 32. Excessively high values can cause unpredictable routing.</td>
+  <td>Set ecmp-max-paths to a value appropriate for your network topology (typically 4-8).</td>
+</tr>
+<tr>
+  <td><span class="chip low">LOW</span></td>
+  <td>FORTIOS-SYS-003</td>
+  <td>System Settings</td>
+  <td>Multicast forwarding enabled</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>multicast-forward=enable</code></td>
+  <td>CWE-284</td>
+  <td>Multicast forwarding is enabled. Unless required, it increases the attack surface.</td>
+  <td>Disable multicast forwarding if not required: set multicast-forward disable.</td>
+</tr>
+<tr>
+  <td><span class="chip low">LOW</span></td>
+  <td>FORTIOS-SYS-006</td>
+  <td>System Settings</td>
+  <td>Unnamed firewall policies allowed</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>gui-allow-unnamed-policy=enable</code></td>
+  <td>CWE-1078</td>
+  <td>Unnamed policies are allowed. Unnamed policies make audit trails and change management difficult.</td>
+  <td>Require named policies: set gui-allow-unnamed-policy disable.</td>
+</tr>
+<tr>
+  <td><span class="chip low">LOW</span></td>
+  <td>FORTIOS-SYS-007</td>
+  <td>System Settings</td>
+  <td>No pre-login banner configured</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>pre-login-banner=disable</code></td>
+  <td>CWE-1078</td>
+  <td>No pre-login banner is displayed before admin authentication. Legal banners may be required for compliance.</td>
+  <td>Enable pre-login banner with an appropriate legal warning: set pre-login-banner enable.</td>
+</tr>
+<tr>
+  <td><span class="chip low">LOW</span></td>
+  <td>FORTIOS-SYS-014</td>
+  <td>System Settings</td>
+  <td>SCP admin access disabled</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>admin-scp=disable</code></td>
+  <td>CWE-319</td>
+  <td>SCP (Secure Copy Protocol) access for admin file transfer is disabled. SCP provides encrypted file transfer for config backup/restore.</td>
+  <td>Enable SCP access: config system global / set admin-scp enable.</td>
+</tr>
+<tr>
+  <td><span class="chip low">LOW</span></td>
+  <td>FORTIOS-SYS-015</td>
+  <td>System Settings</td>
+  <td>SSH grace time exceeds 120 seconds</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>admin-ssh-grace-time=300</code></td>
+  <td>CWE-400</td>
+  <td>SSH grace time is 300s. This allows unauthenticated SSH sessions to remain open, consuming resources.</td>
+  <td>Set admin-ssh-grace-time to 60: config system global / set admin-ssh-grace-time 60.</td>
+</tr>
+<tr>
+  <td><span class="chip low">LOW</span></td>
+  <td>FORTIOS-SYS-017</td>
+  <td>System Settings</td>
+  <td>TCP half-close session timer too long</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>tcp-halfclose-timer=600</code></td>
+  <td>CWE-400</td>
+  <td>TCP half-close timer is 600s (recommended &lt;=120). Excessive timers waste session table resources.</td>
+  <td>Set tcp-halfclose-timer to 120: config system global / set tcp-halfclose-timer 120.</td>
+</tr>
+<tr>
+  <td><span class="chip low">LOW</span></td>
+  <td>FORTIOS-WIRELESS-003</td>
+  <td>Wireless Security</td>
+  <td>Internal SSID broadcast enabled</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>VAP &#x27;Corp-Internal-WiFi&#x27; broadcast-ssid=enable</code></td>
+  <td>CWE-200</td>
+  <td>Internal/management SSID &#x27;Corp-Internal-WiFi&#x27; broadcasts its SSID. This aids discovery by attackers.</td>
+  <td>Disable SSID broadcast for management and internal wireless networks.</td>
+</tr>
+<tr>
+  <td><span class="chip low">LOW</span></td>
+  <td>FORTIOS-WIRELESS-005</td>
+  <td>Wireless Security</td>
+  <td>No maximum client limit on SSID</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>VAP &#x27;Corp-Internal-WiFi&#x27; max-clients=0 (unlimited)</code></td>
+  <td>CWE-770</td>
+  <td>SSID &#x27;Corp-Internal-WiFi&#x27; has no maximum client limit, allowing resource exhaustion via mass association.</td>
+  <td>Set a reasonable max-clients limit per SSID to prevent DoS via excessive client connections.</td>
+</tr>
+<tr>
+  <td><span class="chip low">LOW</span></td>
+  <td>FORTIOS-WIRELESS-005</td>
+  <td>Wireless Security</td>
+  <td>No maximum client limit on SSID</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>VAP &#x27;Guest-WiFi&#x27; max-clients=0 (unlimited)</code></td>
+  <td>CWE-770</td>
+  <td>SSID &#x27;Guest-WiFi&#x27; has no maximum client limit, allowing resource exhaustion via mass association.</td>
+  <td>Set a reasonable max-clients limit per SSID to prevent DoS via excessive client connections.</td>
+</tr>
+<tr>
+  <td><span class="chip low">LOW</span></td>
+  <td>FORTIOS-WIRELESS-008</td>
+  <td>Wireless Security</td>
+  <td>802.11r FT-over-DS enabled</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>VAP &#x27;Corp-Internal-WiFi&#x27; ft-over-ds=enable</code></td>
+  <td>CWE-327</td>
+  <td>SSID &#x27;Corp-Internal-WiFi&#x27; has 802.11r Fast Transition over DS enabled, which has known vulnerabilities (CVE-2017-13082).</td>
+  <td>Disable ft-over-ds and use FT-over-Air instead for fast roaming.</td>
+</tr>
+<tr>
+  <td><span class="chip info">INFO</span></td>
+  <td>MITRE-SUMMARY-SCORE</td>
+  <td>MITRE ATT&amp;CK Resilience</td>
+  <td>MITRE ATT&amp;CK Resilience Score: 23%</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>score=23%, gaps=23/30</code></td>
+  <td></td>
+  <td>MITRE ATT&amp;CK resilience score: 23% (7/30 controls properly configured, 23 gaps identified). Higher score = better defense against real-world attack techniques.</td>
+  <td>Address the 23 MITRE ATT&amp;CK finding(s) above to improve resilience. Prioritize CRITICAL and HIGH findings first.</td>
+</tr>
+<tr>
+  <td><span class="chip info">INFO</span></td>
+  <td>FORTIOS-SSLVPN-009</td>
+  <td>SSL VPN</td>
+  <td>DTLS tunnel disabled</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>dtls-tunnel=disable</code></td>
+  <td>CWE-693</td>
+  <td>DTLS (Datagram TLS) tunnel is disabled. DTLS provides better VPN performance for latency-sensitive applications.</td>
+  <td>Enable dtls-tunnel for improved VPN throughput on UDP-based traffic.</td>
+</tr>
+<tr>
+  <td><span class="chip info">INFO</span></td>
+  <td>FORTIOS-SYS-005</td>
+  <td>System Settings</td>
+  <td>Central NAT not enabled</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>central-nat=disable</code></td>
+  <td>CWE-1078</td>
+  <td>Central NAT is not enabled. Per-policy NAT can be harder to audit and maintain consistently.</td>
+  <td>Consider enabling central NAT for easier management: set central-nat enable.</td>
+</tr>
+<tr>
+  <td><span class="chip info">INFO</span></td>
+  <td>FORTIOS-SYS-008</td>
+  <td>System Settings</td>
+  <td>No post-login banner configured</td>
+  <td class="loc">FGT-TEST-LAB</td>
+  <td><code>post-login-banner=disable</code></td>
+  <td>CWE-1078</td>
+  <td>No post-login banner is displayed after admin authentication.</td>
+  <td>Enable post-login banner for compliance: set post-login-banner enable.</td>
+</tr>
+
+</tbody>
+</table>
+</div>
+</div>
+<script>
+(function(){
+  const tbl=document.getElementById('tbl'),rows=[...tbl.querySelectorAll('tbody tr')];
+  const fSev=document.getElementById('fSev'),fCat=document.getElementById('fCat'),fSearch=document.getElementById('fSearch');
+  const cats=[...new Set(rows.map(r=>r.children[2].textContent))].sort();
+  cats.forEach(c=>{const o=document.createElement('option');o.textContent=c;fCat.appendChild(o)});
+  function apply(){
+    const s=fSev.value.toLowerCase(),c=fCat.value,q=fSearch.value.toLowerCase();
+    rows.forEach(r=>{
+      const sv=r.children[0].textContent.trim().toLowerCase(),ct=r.children[2].textContent,txt=r.textContent.toLowerCase();
+      r.style.display=((!s||sv===s)&&(!c||ct===c)&&(!q||txt.includes(q)))?'':'none';
+    });
+  }
+  fSev.onchange=fCat.onchange=apply;fSearch.oninput=apply;
+})();
+</script>
+</body></html>

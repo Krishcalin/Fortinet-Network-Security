@@ -1,0 +1,4674 @@
+{
+  "scanner": "Fortinet FortiOS Security Scanner v4.0.0",
+  "generated": "2026-03-31T08:17:25.690653",
+  "target": "https://10.0.0.1",
+  "system_info": {
+    "version": "v7.0.10",
+    "hostname": "FGT-TEST-LAB",
+    "model_name": "FortiGate-60F",
+    "model": "FGT60F",
+    "serial": "FGT60FTK21000001",
+    "build": 1234
+  },
+  "total_findings": 239,
+  "summary": {
+    "CRITICAL": 19,
+    "HIGH": 99,
+    "MEDIUM": 83,
+    "LOW": 34,
+    "INFO": 4
+  },
+  "findings": [
+    {
+      "rule_id": "FORTIOS-CVE-001",
+      "name": "Authentication bypass via Node.js websocket module",
+      "category": "Known CVEs",
+      "severity": "CRITICAL",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "FortiOS 7.0.10 < 7.0.17 (train 7.0)",
+      "description": "An authentication bypass using an alternate path (CWE-288) in FortiOS allows a remote unauthenticated attacker to gain super-admin privileges via crafted requests to the Node.js websocket module. Actively exploited in the wild since November 2024.",
+      "recommendation": "Upgrade to FortiOS 7.0.17 or later. Restrict management interface access to trusted IPs. Disable HTTP/HTTPS admin access on WAN interfaces.",
+      "cwe": "CWE-288",
+      "cve": "CVE-2024-55591",
+      "compliance": {
+        "PCI-DSS": [
+          "6.2"
+        ],
+        "NIST": [
+          "SI-2",
+          "RA-5"
+        ],
+        "SOC2": [
+          "CC7.1"
+        ],
+        "HIPAA": [
+          "164.308(a)(5)(ii)(B)"
+        ]
+      },
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-CVE-002",
+      "name": "SSL VPN out-of-bounds write (RCE)",
+      "category": "Known CVEs",
+      "severity": "CRITICAL",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "FortiOS 7.0.10 < 7.0.14 (train 7.0)",
+      "description": "An out-of-bounds write vulnerability in FortiOS SSL VPN (sslvpnd) allows a remote unauthenticated attacker to execute arbitrary code or commands via specially crafted HTTP requests. Added to CISA Known Exploited Vulnerabilities (KEV) catalogue.",
+      "recommendation": "Upgrade to the fixed version for your branch. If immediate patching is not possible, disable SSL VPN as a workaround.",
+      "cwe": "CWE-787",
+      "cve": "CVE-2024-21762",
+      "compliance": {
+        "PCI-DSS": [
+          "6.2"
+        ],
+        "NIST": [
+          "SI-2",
+          "RA-5"
+        ],
+        "SOC2": [
+          "CC7.1"
+        ],
+        "HIPAA": [
+          "164.308(a)(5)(ii)(B)"
+        ]
+      },
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-CVE-003",
+      "name": "Format string vulnerability in fgfmd daemon",
+      "category": "Known CVEs",
+      "severity": "CRITICAL",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "FortiOS 7.0.10 < 7.0.14 (train 7.0)",
+      "description": "A format string vulnerability (CWE-134) in the FortiOS fgfmd daemon allows a remote unauthenticated attacker to execute arbitrary code or commands via specially crafted requests.",
+      "recommendation": "Upgrade to the fixed version. Restrict access to the FGFM port (tcp/541) to trusted FortiManager IPs only.",
+      "cwe": "CWE-134",
+      "cve": "CVE-2024-23113",
+      "compliance": {
+        "PCI-DSS": [
+          "6.2"
+        ],
+        "NIST": [
+          "SI-2",
+          "RA-5"
+        ],
+        "SOC2": [
+          "CC7.1"
+        ],
+        "HIPAA": [
+          "164.308(a)(5)(ii)(B)"
+        ]
+      },
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-CVE-004",
+      "name": "SSL VPN heap buffer overflow (xortigate)",
+      "category": "Known CVEs",
+      "severity": "CRITICAL",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "FortiOS 7.0.10 < 7.0.12 (train 7.0)",
+      "description": "A heap-based buffer overflow vulnerability in FortiOS SSL VPN allows a remote attacker to execute arbitrary code via specially crafted requests. Publicly known as 'xortigate'.",
+      "recommendation": "Upgrade to the fixed version for your branch. Disable SSL VPN if not required.",
+      "cwe": "CWE-122",
+      "cve": "CVE-2023-27997",
+      "compliance": {
+        "PCI-DSS": [
+          "6.2"
+        ],
+        "NIST": [
+          "SI-2",
+          "RA-5"
+        ],
+        "SOC2": [
+          "CC7.1"
+        ],
+        "HIPAA": [
+          "164.308(a)(5)(ii)(B)"
+        ]
+      },
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-CVE-006",
+      "name": "FortiManager missing authentication (FortiJump)",
+      "category": "Known CVEs",
+      "severity": "CRITICAL",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "FortiOS 7.0.10 < 7.0.13 (train 7.0)",
+      "description": "A missing authentication for critical function vulnerability (CWE-306) in FortiManager fgfmsd daemon allows a remote unauthenticated attacker to execute arbitrary code via specially crafted requests. Known as 'FortiJump'.",
+      "recommendation": "Upgrade FortiManager to the fixed version. Restrict FGFM access to known FortiGate IP addresses.",
+      "cwe": "CWE-306",
+      "cve": "CVE-2024-47575",
+      "compliance": {
+        "PCI-DSS": [
+          "6.2"
+        ],
+        "NIST": [
+          "SI-2",
+          "RA-5"
+        ],
+        "SOC2": [
+          "CC7.1"
+        ],
+        "HIPAA": [
+          "164.308(a)(5)(ii)(B)"
+        ]
+      },
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-CVE-007",
+      "name": "FortiClient EMS SQL injection",
+      "category": "Known CVEs",
+      "severity": "CRITICAL",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "FortiOS 7.0.10 < 7.0.11 (train 7.0)",
+      "description": "An SQL injection vulnerability in FortiClient EMS allows an unauthenticated attacker to execute commands via specially crafted requests to the DAS component.",
+      "recommendation": "Upgrade FortiClient EMS to the fixed version.",
+      "cwe": "CWE-89",
+      "cve": "CVE-2023-48788",
+      "compliance": {
+        "PCI-DSS": [
+          "6.2"
+        ],
+        "NIST": [
+          "SI-2",
+          "RA-5"
+        ],
+        "SOC2": [
+          "CC7.1"
+        ],
+        "HIPAA": [
+          "164.308(a)(5)(ii)(B)"
+        ]
+      },
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-CVE-008",
+      "name": "Management interface authentication bypass",
+      "category": "Known CVEs",
+      "severity": "CRITICAL",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "FortiOS 7.0.10 < 7.0.17 (train 7.0)",
+      "description": "An authentication bypass in the FortiOS management interface allows a remote unauthenticated attacker to gain super-admin privileges.",
+      "recommendation": "Upgrade to FortiOS 7.0.17+. Restrict management access to trusted internal networks only.",
+      "cwe": "CWE-288",
+      "cve": "CVE-2024-0012",
+      "compliance": {
+        "PCI-DSS": [
+          "6.2"
+        ],
+        "NIST": [
+          "SI-2",
+          "RA-5"
+        ],
+        "SOC2": [
+          "CC7.1"
+        ],
+        "HIPAA": [
+          "164.308(a)(5)(ii)(B)"
+        ]
+      },
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-CVE-009",
+      "name": "SSL VPN session hijacking",
+      "category": "Known CVEs",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "FortiOS 7.0.10 < 7.0.13 (train 7.0)",
+      "description": "A session fixation vulnerability in FortiOS SSL VPN allows an attacker to hijack user sessions via phishing.",
+      "recommendation": "Upgrade to the fixed version. Enable MFA for all SSL VPN users.",
+      "cwe": "CWE-384",
+      "cve": "CVE-2023-50176",
+      "compliance": {
+        "PCI-DSS": [
+          "6.2"
+        ],
+        "NIST": [
+          "SI-2",
+          "RA-5"
+        ],
+        "SOC2": [
+          "CC7.1"
+        ],
+        "HIPAA": [
+          "164.308(a)(5)(ii)(B)"
+        ]
+      },
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-CVE-017",
+      "name": "SSL VPN sensitive information disclosure",
+      "category": "Known CVEs",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "FortiOS 7.0.10 < 7.0.17 (train 7.0)",
+      "description": "A sensitive information disclosure vulnerability in FortiOS SSL VPN may expose session or configuration data.",
+      "recommendation": "Upgrade to the fixed version.",
+      "cwe": "CWE-200",
+      "cve": "CVE-2025-25250",
+      "compliance": {
+        "PCI-DSS": [
+          "6.2"
+        ],
+        "NIST": [
+          "SI-2",
+          "RA-5"
+        ],
+        "SOC2": [
+          "CC7.1"
+        ],
+        "HIPAA": [
+          "164.308(a)(5)(ii)(B)"
+        ]
+      },
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-CVE-018",
+      "name": "Access control vulnerability in FortiOS REST API",
+      "category": "Known CVEs",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "FortiOS 7.0.10 < 7.0.13 (train 7.0)",
+      "description": "An improper access control vulnerability in FortiOS allows an authenticated attacker to access resources beyond their intended permissions via crafted API requests.",
+      "recommendation": "Upgrade to the fixed version. Review API user permissions.",
+      "cwe": "CWE-284",
+      "cve": "CVE-2023-44249",
+      "compliance": {
+        "PCI-DSS": [
+          "6.2"
+        ],
+        "NIST": [
+          "SI-2",
+          "RA-5"
+        ],
+        "SOC2": [
+          "CC7.1"
+        ],
+        "HIPAA": [
+          "164.308(a)(5)(ii)(B)"
+        ]
+      },
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-CVE-019",
+      "name": "Captive portal buffer overflow",
+      "category": "Known CVEs",
+      "severity": "CRITICAL",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "FortiOS 7.0.10 < 7.0.13 (train 7.0)",
+      "description": "A heap-based buffer overflow in the FortiOS captive portal may allow an attacker with access to the captive portal to execute arbitrary code via specially crafted HTTP requests.",
+      "recommendation": "Upgrade to the fixed version. Restrict captive portal access.",
+      "cwe": "CWE-122",
+      "cve": "CVE-2023-42789",
+      "compliance": {
+        "PCI-DSS": [
+          "6.2"
+        ],
+        "NIST": [
+          "SI-2",
+          "RA-5"
+        ],
+        "SOC2": [
+          "CC7.1"
+        ],
+        "HIPAA": [
+          "164.308(a)(5)(ii)(B)"
+        ]
+      },
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-CVE-020",
+      "name": "Stack-based buffer overflow in FortiOS IPS",
+      "category": "Known CVEs",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "FortiOS 7.0.10 < 7.0.14 (train 7.0)",
+      "description": "A stack-based buffer overflow in FortiOS IPS engine allows a remote unauthenticated attacker to achieve denial of service via crafted packets.",
+      "recommendation": "Upgrade to the fixed version.",
+      "cwe": "CWE-121",
+      "cve": "CVE-2024-26010",
+      "compliance": {
+        "PCI-DSS": [
+          "6.2"
+        ],
+        "NIST": [
+          "SI-2",
+          "RA-5"
+        ],
+        "SOC2": [
+          "CC7.1"
+        ],
+        "HIPAA": [
+          "164.308(a)(5)(ii)(B)"
+        ]
+      },
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-CVE-021",
+      "name": "Path traversal in FortiOS httpd — file read",
+      "category": "Known CVEs",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "FortiOS 7.0.10 < 7.0.16 (train 7.0)",
+      "description": "A path traversal vulnerability in FortiOS httpd allows a remote authenticated attacker with read-only admin privileges to read arbitrary files on the device.",
+      "recommendation": "Upgrade to FortiOS 7.4.5, 7.2.10, or 7.0.16. Restrict admin access to trusted IPs.",
+      "cwe": "CWE-22",
+      "cve": "CVE-2024-48884",
+      "compliance": {
+        "PCI-DSS": [
+          "6.2"
+        ],
+        "NIST": [
+          "SI-2",
+          "RA-5"
+        ],
+        "SOC2": [
+          "CC7.1"
+        ],
+        "HIPAA": [
+          "164.308(a)(5)(ii)(B)"
+        ]
+      },
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-CVE-023",
+      "name": "CSF proxy authentication bypass — super-admin",
+      "category": "Known CVEs",
+      "severity": "CRITICAL",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "FortiOS 7.0.10 < 7.0.17 (train 7.0)",
+      "description": "An authentication bypass in FortiOS CSF proxy allows a remote unauthenticated attacker to gain super-admin privileges via crafted CSF proxy requests. Related to CVE-2024-55591, actively exploited.",
+      "recommendation": "Upgrade to FortiOS 7.0.17+. Disable HTTP/HTTPS management on WAN interfaces. Restrict management to trusted IPs.",
+      "cwe": "CWE-288",
+      "cve": "CVE-2025-24472",
+      "compliance": {
+        "PCI-DSS": [
+          "6.2"
+        ],
+        "NIST": [
+          "SI-2",
+          "RA-5"
+        ],
+        "SOC2": [
+          "CC7.1"
+        ],
+        "HIPAA": [
+          "164.308(a)(5)(ii)(B)"
+        ]
+      },
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-CVE-024",
+      "name": "Resource consumption via crafted HTTP/S requests",
+      "category": "Known CVEs",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "FortiOS 7.0.10 < 7.0.16 (train 7.0)",
+      "description": "Uncontrolled resource consumption in FortiOS allows a remote unauthenticated attacker to cause denial of service via crafted HTTP/S requests consuming excessive memory.",
+      "recommendation": "Upgrade to the fixed version. Implement rate limiting on management interfaces.",
+      "cwe": "CWE-400",
+      "cve": "CVE-2024-46666",
+      "compliance": {
+        "PCI-DSS": [
+          "6.2"
+        ],
+        "NIST": [
+          "SI-2",
+          "RA-5"
+        ],
+        "SOC2": [
+          "CC7.1"
+        ],
+        "HIPAA": [
+          "164.308(a)(5)(ii)(B)"
+        ]
+      },
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-CVE-026",
+      "name": "Weak authentication in FGFM protocol",
+      "category": "Known CVEs",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "FortiOS 7.0.10 < 7.0.16 (train 7.0)",
+      "description": "Weak authentication in the FGFM (FortiGate-FortiManager) protocol allows an attacker with network access to forge communications between FortiGate and FortiManager.",
+      "recommendation": "Upgrade to fixed version. Restrict FGFM port (541) access. Use certificate-based FortiManager auth.",
+      "cwe": "CWE-1390",
+      "cve": "CVE-2024-50563",
+      "compliance": {
+        "PCI-DSS": [
+          "6.2"
+        ],
+        "NIST": [
+          "SI-2",
+          "RA-5"
+        ],
+        "SOC2": [
+          "CC7.1"
+        ],
+        "HIPAA": [
+          "164.308(a)(5)(ii)(B)"
+        ]
+      },
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-CVE-028",
+      "name": "SSL VPN improper access control — cross-user",
+      "category": "Known CVEs",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "FortiOS 7.0.10 < 7.0.15 (train 7.0)",
+      "description": "Improper access control in FortiOS SSL VPN web portal allows an authenticated attacker to access bookmarks and resources of other SSL VPN users.",
+      "recommendation": "Upgrade to fixed version. Review SSL VPN portal access controls and user group assignments.",
+      "cwe": "CWE-284",
+      "cve": "CVE-2024-33510",
+      "compliance": {
+        "PCI-DSS": [
+          "6.2"
+        ],
+        "NIST": [
+          "SI-2",
+          "RA-5"
+        ],
+        "SOC2": [
+          "CC7.1"
+        ],
+        "HIPAA": [
+          "164.308(a)(5)(ii)(B)"
+        ]
+      },
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-CVE-030",
+      "name": "Authenticated admin privilege escalation",
+      "category": "Known CVEs",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "FortiOS 7.0.10 < 7.0.16 (train 7.0)",
+      "description": "Improper privilege management in FortiOS allows an authenticated administrator with limited privileges to escalate to super-admin via crafted configuration changes.",
+      "recommendation": "Upgrade to fixed version. Review admin accounts for least-privilege. Monitor config change logs.",
+      "cwe": "CWE-269",
+      "cve": "CVE-2024-40591",
+      "compliance": {
+        "PCI-DSS": [
+          "6.2"
+        ],
+        "NIST": [
+          "SI-2",
+          "RA-5"
+        ],
+        "SOC2": [
+          "CC7.1"
+        ],
+        "HIPAA": [
+          "164.308(a)(5)(ii)(B)"
+        ]
+      },
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-ADMIN-001",
+      "name": "HTTP admin access may be enabled",
+      "category": "Admin Access",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "admin-https-redirect=disable",
+      "description": "Administrative access via HTTP exposes credentials in cleartext.",
+      "recommendation": "Disable HTTP admin access. Use HTTPS only with admin-https-redirect enabled.",
+      "cwe": "CWE-319",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "2.1.1"
+        ],
+        "PCI-DSS": [
+          "2.2.2",
+          "8.2.1"
+        ],
+        "NIST": [
+          "AC-17",
+          "SC-8"
+        ],
+        "SOC2": [
+          "CC6.1"
+        ],
+        "HIPAA": [
+          "164.312(d)"
+        ]
+      },
+      "remediation_cmd": "config system global\n  set admin-https-redirect enable\nend"
+    },
+    {
+      "rule_id": "FORTIOS-ADMIN-002",
+      "name": "Admin idle timeout exceeds 5 minutes",
+      "category": "Admin Access",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "admintimeout=30 minutes",
+      "description": "Admin idle timeout is set to 30 minutes. CIS recommends 5 minutes or less.",
+      "recommendation": "Set admintimeout to 5 minutes: config system global / set admintimeout 5.",
+      "cwe": "CWE-613",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "2.1.2"
+        ],
+        "PCI-DSS": [
+          "8.1.8"
+        ],
+        "NIST": [
+          "AC-11"
+        ],
+        "SOC2": [
+          "CC6.1"
+        ],
+        "HIPAA": [
+          "164.312(a)(2)(iii)"
+        ]
+      },
+      "remediation_cmd": "config system global\n  set admintimeout 5\nend"
+    },
+    {
+      "rule_id": "FORTIOS-SYS-001",
+      "name": "SIP ALG helper enabled",
+      "category": "System Settings",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "sip-helper=enable",
+      "description": "SIP Application Layer Gateway (ALG) helper is enabled. SIP ALG can introduce VoIP issues and bypass firewall policies.",
+      "recommendation": "Disable SIP helper unless required for NAT traversal: set sip-helper disable.",
+      "cwe": "CWE-284",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "3.1.1"
+        ],
+        "PCI-DSS": [
+          "2.2.4"
+        ],
+        "NIST": [
+          "SC-13"
+        ],
+        "SOC2": [
+          "CC6.1"
+        ]
+      },
+      "remediation_cmd": "config system global\n  set strong-crypto enable\nend"
+    },
+    {
+      "rule_id": "FORTIOS-SYS-002",
+      "name": "ECMP max paths excessively high",
+      "category": "System Settings",
+      "severity": "LOW",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "ecmp-max-paths=32",
+      "description": "ECMP max paths is 32. Excessively high values can cause unpredictable routing.",
+      "recommendation": "Set ecmp-max-paths to a value appropriate for your network topology (typically 4-8).",
+      "cwe": "CWE-400",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "3.1.2"
+        ],
+        "PCI-DSS": [
+          "2.2.4"
+        ],
+        "NIST": [
+          "SC-13"
+        ]
+      },
+      "remediation_cmd": "config system global\n  set fds-statistics disable\nend"
+    },
+    {
+      "rule_id": "FORTIOS-SYS-003",
+      "name": "Multicast forwarding enabled",
+      "category": "System Settings",
+      "severity": "LOW",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "multicast-forward=enable",
+      "description": "Multicast forwarding is enabled. Unless required, it increases the attack surface.",
+      "recommendation": "Disable multicast forwarding if not required: set multicast-forward disable.",
+      "cwe": "CWE-284",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "3.1.3"
+        ],
+        "PCI-DSS": [
+          "2.2.2"
+        ],
+        "NIST": [
+          "AC-8"
+        ],
+        "SOC2": [
+          "CC6.1"
+        ]
+      },
+      "remediation_cmd": "config system global\n  set pre-login-banner enable\nend"
+    },
+    {
+      "rule_id": "FORTIOS-SYS-004",
+      "name": "Subnet overlap allowed",
+      "category": "System Settings",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "allow-subnet-overlap=enable",
+      "description": "Subnet overlap is allowed, which can cause routing ambiguity and security policy bypass.",
+      "recommendation": "Disable subnet overlap: set allow-subnet-overlap disable.",
+      "cwe": "CWE-284",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "3.1.4"
+        ],
+        "PCI-DSS": [
+          "2.2.2"
+        ],
+        "NIST": [
+          "AC-8"
+        ]
+      },
+      "remediation_cmd": "config system global\n  set post-login-banner enable\nend"
+    },
+    {
+      "rule_id": "FORTIOS-SYS-005",
+      "name": "Central NAT not enabled",
+      "category": "System Settings",
+      "severity": "INFO",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "central-nat=disable",
+      "description": "Central NAT is not enabled. Per-policy NAT can be harder to audit and maintain consistently.",
+      "recommendation": "Consider enabling central NAT for easier management: set central-nat enable.",
+      "cwe": "CWE-1078",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "3.1.5"
+        ],
+        "PCI-DSS": [
+          "8.1.6"
+        ],
+        "NIST": [
+          "AC-7"
+        ],
+        "HIPAA": [
+          "164.312(a)(2)(i)"
+        ]
+      },
+      "remediation_cmd": "config system global\n  set admin-lockout-threshold 3\n  set admin-lockout-duration 300\nend"
+    },
+    {
+      "rule_id": "FORTIOS-SYS-006",
+      "name": "Unnamed firewall policies allowed",
+      "category": "System Settings",
+      "severity": "LOW",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "gui-allow-unnamed-policy=enable",
+      "description": "Unnamed policies are allowed. Unnamed policies make audit trails and change management difficult.",
+      "recommendation": "Require named policies: set gui-allow-unnamed-policy disable.",
+      "cwe": "CWE-1078",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-SYS-007",
+      "name": "No pre-login banner configured",
+      "category": "System Settings",
+      "severity": "LOW",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "pre-login-banner=disable",
+      "description": "No pre-login banner is displayed before admin authentication. Legal banners may be required for compliance.",
+      "recommendation": "Enable pre-login banner with an appropriate legal warning: set pre-login-banner enable.",
+      "cwe": "CWE-1078",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-SYS-008",
+      "name": "No post-login banner configured",
+      "category": "System Settings",
+      "severity": "INFO",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "post-login-banner=disable",
+      "description": "No post-login banner is displayed after admin authentication.",
+      "recommendation": "Enable post-login banner for compliance: set post-login-banner enable.",
+      "cwe": "CWE-1078",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-SYS-009",
+      "name": "Strong crypto not enforced globally",
+      "category": "System Settings",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "strong-crypto=disable",
+      "description": "Strong crypto is not enforced. Weak ciphers (DES, 3DES, RC4) and protocols (SSLv3, TLSv1.0) may be used for admin and VPN sessions.",
+      "recommendation": "Enable strong-crypto globally: config system global / set strong-crypto enable.",
+      "cwe": "CWE-326",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-SYS-010",
+      "name": "Admin account lockout not configured",
+      "category": "System Settings",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "admin-lockout-threshold=0",
+      "description": "Admin account lockout is not configured. Unlimited failed login attempts enable brute-force attacks.",
+      "recommendation": "Set admin-lockout-threshold to 3-5 and admin-lockout-duration to 300+ seconds.",
+      "cwe": "CWE-307",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-SYS-012",
+      "name": "Admin HTTPS allows weak TLS versions",
+      "category": "System Settings",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "admin-https-ssl-versions=tlsv1-0 tlsv1-1 tlsv1-2",
+      "description": "Admin HTTPS interface allows deprecated TLS version (tlsv1-0). These are vulnerable to POODLE, BEAST, and other attacks.",
+      "recommendation": "Restrict admin HTTPS to TLS 1.2+: set admin-https-ssl-versions tlsv1-2 tlsv1-3.",
+      "cwe": "CWE-326",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-ADMIN-009",
+      "name": "HTTP admin access on interface",
+      "category": "Admin Access",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "interface=wan1, allowaccess=https ssh http telnet ping snmp fgfm",
+      "description": "Interface 'wan1' allows HTTP management access.",
+      "recommendation": "Remove HTTP from allowaccess. Use HTTPS only.",
+      "cwe": "CWE-319",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-ADMIN-010",
+      "name": "Telnet access on interface",
+      "category": "Admin Access",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "interface=wan1, allowaccess=https ssh http telnet ping snmp fgfm",
+      "description": "Interface 'wan1' allows Telnet access (unencrypted).",
+      "recommendation": "Remove telnet from allowaccess. Use SSH only.",
+      "cwe": "CWE-319",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-ADMIN-011",
+      "name": "PING enabled on WAN interface",
+      "category": "Admin Access",
+      "severity": "LOW",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "interface=wan1, role=wan, allowaccess includes ping",
+      "description": "WAN interface 'wan1' responds to ICMP ping, aiding reconnaissance.",
+      "recommendation": "Remove ping from WAN interface allowaccess unless required for monitoring.",
+      "cwe": "CWE-200",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-ADMIN-012",
+      "name": "Management protocols on WAN interface",
+      "category": "Admin Access",
+      "severity": "CRITICAL",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "interface=wan1, role=wan, mgmt_access=snmp,fgfm,https,ssh",
+      "description": "WAN interface 'wan1' allows management protocols (snmp, fgfm, https, ssh). This exposes the management plane to the internet.",
+      "recommendation": "Remove all management protocols from WAN interfaces. Use a dedicated management interface or VPN for admin access.",
+      "cwe": "CWE-284",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-ADMIN-009",
+      "name": "HTTP admin access on interface",
+      "category": "Admin Access",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "interface=dmz, allowaccess=http ping",
+      "description": "Interface 'dmz' allows HTTP management access.",
+      "recommendation": "Remove HTTP from allowaccess. Use HTTPS only.",
+      "cwe": "CWE-319",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-POLICY-002",
+      "name": "Any-to-any allow policy",
+      "category": "Firewall Policies",
+      "severity": "CRITICAL",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "policy=Allow-All-Internet (ID 1), src=all, dst=all",
+      "description": "Policy 'Allow-All-Internet' allows traffic from any source to any destination, bypassing segmentation.",
+      "recommendation": "Replace with specific source and destination address objects.",
+      "cwe": "CWE-284",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "4.1.2"
+        ],
+        "PCI-DSS": [
+          "1.2.1"
+        ],
+        "NIST": [
+          "AC-4",
+          "SC-7"
+        ],
+        "SOC2": [
+          "CC6.6"
+        ]
+      },
+      "remediation_cmd": "config firewall policy\n  edit <policy-id>\n    set srcaddr <specific-address>\n    set dstaddr <specific-address>\n    set service <specific-service>\n  next\nend"
+    },
+    {
+      "rule_id": "FORTIOS-POLICY-004",
+      "name": "Allow policy with ALL services",
+      "category": "Firewall Policies",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "policy=Allow-All-Internet (ID 1), service=ALL",
+      "description": "Policy 'Allow-All-Internet' allows all services/ports.",
+      "recommendation": "Restrict services to only those required.",
+      "cwe": "CWE-284",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "4.1.4"
+        ],
+        "PCI-DSS": [
+          "1.2.1"
+        ],
+        "NIST": [
+          "SC-7"
+        ],
+        "SOC2": [
+          "CC6.6"
+        ]
+      },
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-POLICY-005",
+      "name": "No traffic logging on allow policy",
+      "category": "Firewall Policies",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "policy=Allow-All-Internet (ID 1), logtraffic=disable",
+      "description": "Policy 'Allow-All-Internet' does not log traffic, hindering forensic investigation.",
+      "recommendation": "Enable logtraffic=all or logtraffic=utm on all allow policies.",
+      "cwe": "CWE-778",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-POLICY-006",
+      "name": "Allow policy without security profiles",
+      "category": "Firewall Policies",
+      "severity": "CRITICAL",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "policy=Allow-All-Internet (ID 1), utm_profiles=none",
+      "description": "Policy 'Allow-All-Internet' allows traffic without any UTM security profiles (AV, IPS, WebFilter, AppControl).",
+      "recommendation": "Apply security profiles (antivirus, IPS, web filter, application control) to all allow policies.",
+      "cwe": "CWE-693",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-POLICY-010",
+      "name": "Allow policy without SSL inspection",
+      "category": "Firewall Policies",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "policy=Allow-All-Internet (ID 1), ssl-ssh-profile=none",
+      "description": "Policy 'Allow-All-Internet' has no SSL inspection profile. Encrypted threats may bypass security profiles.",
+      "recommendation": "Apply an ssl-ssh-profile to enable encrypted traffic inspection.",
+      "cwe": "CWE-693",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-POLICY-011",
+      "name": "Broad allow policy with permanent schedule",
+      "category": "Firewall Policies",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "policy=Allow-All-Internet (ID 1), schedule=always, broad rule",
+      "description": "Policy 'Allow-All-Internet' has a broad scope (all src/dst/svc) with an 'always' schedule, suggesting a temporary rule made permanent.",
+      "recommendation": "Review if this policy should have a time-limited schedule. Apply least-privilege addressing.",
+      "cwe": "CWE-284",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-POLICY-003",
+      "name": "Allow policy with 'all' source",
+      "category": "Firewall Policies",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "policy=DMZ-Access (ID 2), srcaddr=all",
+      "description": "Policy 'DMZ-Access' allows traffic from any source address.",
+      "recommendation": "Restrict the source to specific address objects or groups.",
+      "cwe": "CWE-284",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "4.1.3"
+        ],
+        "PCI-DSS": [
+          "1.1.7"
+        ],
+        "NIST": [
+          "AU-3"
+        ],
+        "SOC2": [
+          "CC7.2"
+        ]
+      },
+      "remediation_cmd": "config firewall policy\n  edit <policy-id>\n    set logtraffic all\n  next\nend"
+    },
+    {
+      "rule_id": "FORTIOS-POLICY-005",
+      "name": "No traffic logging on allow policy",
+      "category": "Firewall Policies",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "policy=DMZ-Access (ID 2), logtraffic=disable",
+      "description": "Policy 'DMZ-Access' does not log traffic, hindering forensic investigation.",
+      "recommendation": "Enable logtraffic=all or logtraffic=utm on all allow policies.",
+      "cwe": "CWE-778",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-POLICY-006",
+      "name": "Allow policy without security profiles",
+      "category": "Firewall Policies",
+      "severity": "CRITICAL",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "policy=DMZ-Access (ID 2), utm_profiles=none",
+      "description": "Policy 'DMZ-Access' allows traffic without any UTM security profiles (AV, IPS, WebFilter, AppControl).",
+      "recommendation": "Apply security profiles (antivirus, IPS, web filter, application control) to all allow policies.",
+      "cwe": "CWE-693",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-POLICY-010",
+      "name": "Allow policy without SSL inspection",
+      "category": "Firewall Policies",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "policy=DMZ-Access (ID 2), ssl-ssh-profile=none",
+      "description": "Policy 'DMZ-Access' has no SSL inspection profile. Encrypted threats may bypass security profiles.",
+      "recommendation": "Apply an ssl-ssh-profile to enable encrypted traffic inspection.",
+      "cwe": "CWE-693",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-POLICY-011",
+      "name": "Broad allow policy with permanent schedule",
+      "category": "Firewall Policies",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "policy=DMZ-Access (ID 2), schedule=always, broad rule",
+      "description": "Policy 'DMZ-Access' has a broad scope (all src/dst/svc) with an 'always' schedule, suggesting a temporary rule made permanent.",
+      "recommendation": "Review if this policy should have a time-limited schedule. Apply least-privilege addressing.",
+      "cwe": "CWE-284",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-POLICY-007",
+      "name": "Unnamed firewall policy",
+      "category": "Firewall Policies",
+      "severity": "LOW",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "policy ID 3, name=(empty)",
+      "description": "Firewall policy ID 3 has no name. Unnamed policies are difficult to audit and troubleshoot.",
+      "recommendation": "Assign descriptive names to all firewall policies.",
+      "cwe": "CWE-1078",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-POLICY-009",
+      "name": "Allow policy with 'all' destination",
+      "category": "Firewall Policies",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "policy= (ID 3), dstaddr=all",
+      "description": "Policy '' allows traffic to any destination address.",
+      "recommendation": "Restrict the destination to specific address objects or groups.",
+      "cwe": "CWE-284",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-POLICY-004",
+      "name": "Allow policy with ALL services",
+      "category": "Firewall Policies",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "policy= (ID 3), service=ALL",
+      "description": "Policy '' allows all services/ports.",
+      "recommendation": "Restrict services to only those required.",
+      "cwe": "CWE-284",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "4.1.4"
+        ],
+        "PCI-DSS": [
+          "1.2.1"
+        ],
+        "NIST": [
+          "SC-7"
+        ],
+        "SOC2": [
+          "CC6.6"
+        ]
+      },
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-POLICY-005",
+      "name": "No traffic logging on allow policy",
+      "category": "Firewall Policies",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "policy= (ID 3), logtraffic=disable",
+      "description": "Policy '' does not log traffic, hindering forensic investigation.",
+      "recommendation": "Enable logtraffic=all or logtraffic=utm on all allow policies.",
+      "cwe": "CWE-778",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-POLICY-006",
+      "name": "Allow policy without security profiles",
+      "category": "Firewall Policies",
+      "severity": "CRITICAL",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "policy= (ID 3), utm_profiles=none",
+      "description": "Policy '' allows traffic without any UTM security profiles (AV, IPS, WebFilter, AppControl).",
+      "recommendation": "Apply security profiles (antivirus, IPS, web filter, application control) to all allow policies.",
+      "cwe": "CWE-693",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-POLICY-010",
+      "name": "Allow policy without SSL inspection",
+      "category": "Firewall Policies",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "policy= (ID 3), ssl-ssh-profile=none",
+      "description": "Policy '' has no SSL inspection profile. Encrypted threats may bypass security profiles.",
+      "recommendation": "Apply an ssl-ssh-profile to enable encrypted traffic inspection.",
+      "cwe": "CWE-693",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-POLICY-011",
+      "name": "Broad allow policy with permanent schedule",
+      "category": "Firewall Policies",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "policy= (ID 3), schedule=always, broad rule",
+      "description": "Policy '' has a broad scope (all src/dst/svc) with an 'always' schedule, suggesting a temporary rule made permanent.",
+      "recommendation": "Review if this policy should have a time-limited schedule. Apply least-privilege addressing.",
+      "cwe": "CWE-284",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-POLICY-001",
+      "name": "Disabled firewall policy",
+      "category": "Firewall Policies",
+      "severity": "LOW",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "policy=Old-Test-Policy (ID 4), status=disable",
+      "description": "Firewall policy 'Old-Test-Policy' (ID 4) is disabled. Disabled policies add clutter and may be accidentally re-enabled.",
+      "recommendation": "Remove disabled policies or document the reason for keeping them disabled.",
+      "cwe": "CWE-1078",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "4.1.1"
+        ],
+        "PCI-DSS": [
+          "1.2.1"
+        ],
+        "NIST": [
+          "AC-4"
+        ],
+        "SOC2": [
+          "CC6.6"
+        ]
+      },
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-POLICY-008",
+      "name": "Deny policy without logging",
+      "category": "Firewall Policies",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "policy=Deny-Block (ID 5), action=deny, logtraffic=disable",
+      "description": "Deny policy 'Deny-Block' does not log blocked traffic. This hinders attack detection.",
+      "recommendation": "Enable logtraffic on deny policies to record blocked connection attempts.",
+      "cwe": "CWE-778",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-POLICY-001",
+      "name": "Disabled firewall policy",
+      "category": "Firewall Policies",
+      "severity": "LOW",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "policy=Old-Disabled-1 (ID 6), status=disable",
+      "description": "Firewall policy 'Old-Disabled-1' (ID 6) is disabled. Disabled policies add clutter and may be accidentally re-enabled.",
+      "recommendation": "Remove disabled policies or document the reason for keeping them disabled.",
+      "cwe": "CWE-1078",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "4.1.1"
+        ],
+        "PCI-DSS": [
+          "1.2.1"
+        ],
+        "NIST": [
+          "AC-4"
+        ],
+        "SOC2": [
+          "CC6.6"
+        ]
+      },
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-POLICY-001",
+      "name": "Disabled firewall policy",
+      "category": "Firewall Policies",
+      "severity": "LOW",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "policy=Old-Disabled-2 (ID 7), status=disable",
+      "description": "Firewall policy 'Old-Disabled-2' (ID 7) is disabled. Disabled policies add clutter and may be accidentally re-enabled.",
+      "recommendation": "Remove disabled policies or document the reason for keeping them disabled.",
+      "cwe": "CWE-1078",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "4.1.1"
+        ],
+        "PCI-DSS": [
+          "1.2.1"
+        ],
+        "NIST": [
+          "AC-4"
+        ],
+        "SOC2": [
+          "CC6.6"
+        ]
+      },
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-POLICY-001",
+      "name": "Disabled firewall policy",
+      "category": "Firewall Policies",
+      "severity": "LOW",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "policy=Old-Disabled-3 (ID 8), status=disable",
+      "description": "Firewall policy 'Old-Disabled-3' (ID 8) is disabled. Disabled policies add clutter and may be accidentally re-enabled.",
+      "recommendation": "Remove disabled policies or document the reason for keeping them disabled.",
+      "cwe": "CWE-1078",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "4.1.1"
+        ],
+        "PCI-DSS": [
+          "1.2.1"
+        ],
+        "NIST": [
+          "AC-4"
+        ],
+        "SOC2": [
+          "CC6.6"
+        ]
+      },
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-POLICY-001",
+      "name": "Disabled firewall policy",
+      "category": "Firewall Policies",
+      "severity": "LOW",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "policy=Old-Disabled-4 (ID 9), status=disable",
+      "description": "Firewall policy 'Old-Disabled-4' (ID 9) is disabled. Disabled policies add clutter and may be accidentally re-enabled.",
+      "recommendation": "Remove disabled policies or document the reason for keeping them disabled.",
+      "cwe": "CWE-1078",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "4.1.1"
+        ],
+        "PCI-DSS": [
+          "1.2.1"
+        ],
+        "NIST": [
+          "AC-4"
+        ],
+        "SOC2": [
+          "CC6.6"
+        ]
+      },
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-POLICY-001",
+      "name": "Disabled firewall policy",
+      "category": "Firewall Policies",
+      "severity": "LOW",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "policy=Old-Disabled-5 (ID 10), status=disable",
+      "description": "Firewall policy 'Old-Disabled-5' (ID 10) is disabled. Disabled policies add clutter and may be accidentally re-enabled.",
+      "recommendation": "Remove disabled policies or document the reason for keeping them disabled.",
+      "cwe": "CWE-1078",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "4.1.1"
+        ],
+        "PCI-DSS": [
+          "1.2.1"
+        ],
+        "NIST": [
+          "AC-4"
+        ],
+        "SOC2": [
+          "CC6.6"
+        ]
+      },
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-POLICY-012",
+      "name": "High ratio of disabled policies",
+      "category": "Firewall Policies",
+      "severity": "LOW",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "disabled=6/10 (60%)",
+      "description": "6 of 10 policies (60%) are disabled. Excessive disabled policies indicate poor policy lifecycle management.",
+      "recommendation": "Review and remove disabled policies that are no longer needed.",
+      "cwe": "CWE-1078",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-POLICY-013",
+      "name": "VIP without port forwarding restriction",
+      "category": "Firewall Policies",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "vip=WebServer-VIP, portforward=disable",
+      "description": "VIP 'WebServer-VIP' maps all ports from 203.0.113.10 to the internal server. This exposes all services on the target.",
+      "recommendation": "Enable port forwarding and restrict to only required ports: set portforward enable.",
+      "cwe": "CWE-284",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-POLICY-014",
+      "name": "No egress filtering policies detected",
+      "category": "Firewall Policies",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "No LAN→WAN deny policies found",
+      "description": "No egress filtering (outbound deny) policies detected. Without egress filtering, compromised hosts can freely exfiltrate data.",
+      "recommendation": "Implement egress filtering policies to restrict outbound traffic to only necessary services.",
+      "cwe": "CWE-284",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-SSLVPN-001",
+      "name": "SSL VPN allows weak TLS version",
+      "category": "SSL VPN",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "ssl-min-proto-ver=tlsv1-0",
+      "description": "SSL VPN minimum TLS version is set to tlsv1-0, which is deprecated and vulnerable.",
+      "recommendation": "Set ssl-min-proto-ver to tls1-2 or higher.",
+      "cwe": "CWE-326",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "5.1.1"
+        ],
+        "PCI-DSS": [
+          "4.1"
+        ],
+        "NIST": [
+          "SC-8"
+        ],
+        "SOC2": [
+          "CC6.7"
+        ],
+        "HIPAA": [
+          "164.312(e)(1)"
+        ]
+      },
+      "remediation_cmd": "config vpn ssl settings\n  set sslv3 disable\n  set tlsv1-0 disable\n  set tlsv1-1 disable\n  set tlsv1-2 enable\n  set tlsv1-3 enable\nend"
+    },
+    {
+      "rule_id": "FORTIOS-SSLVPN-002",
+      "name": "SSL VPN using default port",
+      "category": "SSL VPN",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "port=443",
+      "description": "SSL VPN is running on default port 443, making it easily discoverable.",
+      "recommendation": "Change the SSL VPN port to a non-standard port.",
+      "cwe": "CWE-200",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "5.1.2"
+        ],
+        "PCI-DSS": [
+          "4.1"
+        ],
+        "NIST": [
+          "SC-8",
+          "SC-13"
+        ]
+      },
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-SSLVPN-003",
+      "name": "SSL VPN idle timeout too long",
+      "category": "SSL VPN",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "idle-timeout=3600s",
+      "description": "SSL VPN idle timeout is 3600 seconds (60 min). Sessions left open increase hijacking risk.",
+      "recommendation": "Set idle-timeout to 300 seconds (5 minutes) or less.",
+      "cwe": "CWE-613",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "5.1.3"
+        ],
+        "PCI-DSS": [
+          "8.3.1"
+        ],
+        "NIST": [
+          "IA-2"
+        ],
+        "HIPAA": [
+          "164.312(d)"
+        ]
+      },
+      "remediation_cmd": "config vpn ssl settings\n  set reqclientcert enable\nend"
+    },
+    {
+      "rule_id": "FORTIOS-SSLVPN-004",
+      "name": "SSL VPN login attempt limit too high",
+      "category": "SSL VPN",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "login-attempt-limit=10",
+      "description": "SSL VPN allows 10 failed login attempts, enabling brute-force attacks.",
+      "recommendation": "Set login-attempt-limit to 3 or fewer.",
+      "cwe": "CWE-307",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-SSLVPN-005",
+      "name": "SSL VPN split tunnelling enabled",
+      "category": "SSL VPN",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "portal=full-access, split-tunneling=enable",
+      "description": "Portal 'full-access' allows split tunnelling, sending only specific traffic through VPN. Users may access malicious sites via local internet.",
+      "recommendation": "Disable split tunnelling to route all traffic through the VPN: set split-tunneling disable.",
+      "cwe": "CWE-284",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-SSLVPN-005",
+      "name": "SSL VPN split tunnelling enabled",
+      "category": "SSL VPN",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "portal=guest-portal, split-tunneling=enable",
+      "description": "Portal 'guest-portal' allows split tunnelling, sending only specific traffic through VPN. Users may access malicious sites via local internet.",
+      "recommendation": "Disable split tunnelling to route all traffic through the VPN: set split-tunneling disable.",
+      "cwe": "CWE-284",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-SSLVPN-006",
+      "name": "VPN user group without MFA enforcement",
+      "category": "SSL VPN",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "user-group=VPN-Users, members=3, mfa=unverified",
+      "description": "VPN user group 'VPN-Users' with 3 member(s) does not have clear MFA enforcement. VPN access without MFA is a high-risk vector.",
+      "recommendation": "Enforce two-factor authentication for all VPN user groups using FortiToken or RADIUS MFA.",
+      "cwe": "CWE-308",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-SSLVPN-006",
+      "name": "VPN user group without MFA enforcement",
+      "category": "SSL VPN",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "user-group=SSL-Remote-Workers, members=2, mfa=unverified",
+      "description": "VPN user group 'SSL-Remote-Workers' with 2 member(s) does not have clear MFA enforcement. VPN access without MFA is a high-risk vector.",
+      "recommendation": "Enforce two-factor authentication for all VPN user groups using FortiToken or RADIUS MFA.",
+      "cwe": "CWE-308",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-SSLVPN-007",
+      "name": "No SSL VPN tunnel IP pool configured",
+      "category": "SSL VPN",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "tunnel-ip-pools=empty",
+      "description": "No IP pool is configured for SSL VPN tunnel mode. Tunnel mode clients may not receive proper IP assignments.",
+      "recommendation": "Configure dedicated tunnel IP pools for SSL VPN clients.",
+      "cwe": "CWE-284",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-SSLVPN-008",
+      "name": "No DNS server configured for VPN clients",
+      "category": "SSL VPN",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "dns-server1=none, dns-server2=none",
+      "description": "No DNS servers are pushed to SSL VPN clients. Clients may use their local DNS, causing DNS leaks.",
+      "recommendation": "Configure internal DNS servers for VPN clients: set dns-server1 <IP>.",
+      "cwe": "CWE-200",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-SSLVPN-009",
+      "name": "DTLS tunnel disabled",
+      "category": "SSL VPN",
+      "severity": "INFO",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "dtls-tunnel=disable",
+      "description": "DTLS (Datagram TLS) tunnel is disabled. DTLS provides better VPN performance for latency-sensitive applications.",
+      "recommendation": "Enable dtls-tunnel for improved VPN throughput on UDP-based traffic.",
+      "cwe": "CWE-693",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-SSLVPN-010",
+      "name": "No SSL VPN banned cipher suites configured",
+      "category": "SSL VPN",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "banned-cipher=(empty)",
+      "description": "No cipher suites are banned for SSL VPN. Weak ciphers (RC4, DES, NULL) may be negotiated.",
+      "recommendation": "Ban weak ciphers: set banned-cipher RSA DES-CBC-SHA RC4 NULL.",
+      "cwe": "CWE-326",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-SSLVPN-011",
+      "name": "SSL VPN portal without host check",
+      "category": "SSL VPN",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "portal=full-access, host-check=disable",
+      "description": "SSL VPN portal 'full-access' does not enforce host checking. Unmanaged/compromised endpoints can connect.",
+      "recommendation": "Enable host-check to verify endpoint compliance (AV, OS version, etc.): set host-check enable.",
+      "cwe": "CWE-287",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-SSLVPN-012",
+      "name": "SSL VPN portal allows FTP access",
+      "category": "SSL VPN",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "portal=full-access, allow-user-access includes ftp",
+      "description": "SSL VPN portal 'full-access' allows FTP access, enabling unmonitored file transfers.",
+      "recommendation": "Restrict user access to only necessary protocols. Remove FTP if not required.",
+      "cwe": "CWE-284",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-SSLVPN-013",
+      "name": "SSL VPN portal without concurrent login limit",
+      "category": "SSL VPN",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "portal=full-access, limit-user-logins=disable",
+      "description": "SSL VPN portal 'full-access' does not limit concurrent logins per user. Credential sharing goes undetected.",
+      "recommendation": "Enable concurrent login limits: set limit-user-logins enable.",
+      "cwe": "CWE-307",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-SSLVPN-013",
+      "name": "SSL VPN portal without concurrent login limit",
+      "category": "SSL VPN",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "portal=guest-portal, limit-user-logins=disable",
+      "description": "SSL VPN portal 'guest-portal' does not limit concurrent logins per user. Credential sharing goes undetected.",
+      "recommendation": "Enable concurrent login limits: set limit-user-logins enable.",
+      "cwe": "CWE-307",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-SSLVPN-014",
+      "name": "SSL VPN HTTP compression enabled (CRIME/BREACH risk)",
+      "category": "SSL VPN",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "http-compression=enable",
+      "description": "HTTP compression over SSL VPN is enabled. Compression combined with TLS is vulnerable to CRIME/BREACH attacks.",
+      "recommendation": "Disable HTTP compression for SSL VPN: set http-compression disable.",
+      "cwe": "CWE-326",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-IPSEC-001",
+      "name": "IPsec Phase 1 aggressive mode",
+      "category": "IPsec VPN",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "tunnel=Site-B-Tunnel, mode=aggressive",
+      "description": "IPsec tunnel 'Site-B-Tunnel' uses aggressive mode, which sends identity in cleartext and is susceptible to offline brute-force attacks.",
+      "recommendation": "Use main mode (IKEv1) or IKEv2 instead of aggressive mode.",
+      "cwe": "CWE-319",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "5.2.1"
+        ],
+        "PCI-DSS": [
+          "4.1"
+        ],
+        "NIST": [
+          "SC-8",
+          "SC-13"
+        ],
+        "SOC2": [
+          "CC6.7"
+        ]
+      },
+      "remediation_cmd": "config vpn ipsec phase1-interface\n  edit <vpn-name>\n    set proposal aes256-sha256 aes256gcm-prfsha384\n  next\nend"
+    },
+    {
+      "rule_id": "FORTIOS-IPSEC-002",
+      "name": "IPsec Phase 1 weak encryption",
+      "category": "IPsec VPN",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "tunnel=Site-B-Tunnel, proposal contains des-md5",
+      "description": "IPsec tunnel 'Site-B-Tunnel' uses weak encryption algorithm 'des-md5'.",
+      "recommendation": "Use AES-256 or AES-128 encryption. Remove DES, 3DES, RC4.",
+      "cwe": "CWE-327",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "5.2.2"
+        ],
+        "PCI-DSS": [
+          "4.1"
+        ],
+        "NIST": [
+          "SC-12"
+        ]
+      },
+      "remediation_cmd": "config vpn ipsec phase1-interface\n  edit <vpn-name>\n    set dhgrp 14 20 21\n  next\nend"
+    },
+    {
+      "rule_id": "FORTIOS-IPSEC-003",
+      "name": "IPsec Phase 1 weak hash algorithm",
+      "category": "IPsec VPN",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "tunnel=Site-B-Tunnel, proposal contains des-md5",
+      "description": "IPsec tunnel 'Site-B-Tunnel' uses weak hash algorithm in 'des-md5'.",
+      "recommendation": "Use SHA-256 or SHA-512 hashing. Remove MD5.",
+      "cwe": "CWE-327",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "5.2.3"
+        ],
+        "PCI-DSS": [
+          "4.1"
+        ],
+        "NIST": [
+          "SC-13"
+        ]
+      },
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-IPSEC-002",
+      "name": "IPsec Phase 1 weak encryption",
+      "category": "IPsec VPN",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "tunnel=Site-B-Tunnel, proposal contains 3des-md5",
+      "description": "IPsec tunnel 'Site-B-Tunnel' uses weak encryption algorithm '3des-md5'.",
+      "recommendation": "Use AES-256 or AES-128 encryption. Remove DES, 3DES, RC4.",
+      "cwe": "CWE-327",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "5.2.2"
+        ],
+        "PCI-DSS": [
+          "4.1"
+        ],
+        "NIST": [
+          "SC-12"
+        ]
+      },
+      "remediation_cmd": "config vpn ipsec phase1-interface\n  edit <vpn-name>\n    set dhgrp 14 20 21\n  next\nend"
+    },
+    {
+      "rule_id": "FORTIOS-IPSEC-003",
+      "name": "IPsec Phase 1 weak hash algorithm",
+      "category": "IPsec VPN",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "tunnel=Site-B-Tunnel, proposal contains 3des-md5",
+      "description": "IPsec tunnel 'Site-B-Tunnel' uses weak hash algorithm in '3des-md5'.",
+      "recommendation": "Use SHA-256 or SHA-512 hashing. Remove MD5.",
+      "cwe": "CWE-327",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "5.2.3"
+        ],
+        "PCI-DSS": [
+          "4.1"
+        ],
+        "NIST": [
+          "SC-13"
+        ]
+      },
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-IPSEC-004",
+      "name": "IPsec Phase 1 weak DH group",
+      "category": "IPsec VPN",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "tunnel=Site-B-Tunnel, dhgrp includes 1",
+      "description": "IPsec tunnel 'Site-B-Tunnel' uses weak Diffie-Hellman group 1.",
+      "recommendation": "Use DH group 14 (2048-bit) or higher. Remove groups 1, 2, and 5.",
+      "cwe": "CWE-326",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-IPSEC-004",
+      "name": "IPsec Phase 1 weak DH group",
+      "category": "IPsec VPN",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "tunnel=Site-B-Tunnel, dhgrp includes 2",
+      "description": "IPsec tunnel 'Site-B-Tunnel' uses weak Diffie-Hellman group 2.",
+      "recommendation": "Use DH group 14 (2048-bit) or higher. Remove groups 1, 2, and 5.",
+      "cwe": "CWE-326",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-IPSEC-005",
+      "name": "IPsec Dead Peer Detection disabled",
+      "category": "IPsec VPN",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "tunnel=Site-B-Tunnel, dpd=disable",
+      "description": "IPsec tunnel 'Site-B-Tunnel' has DPD disabled, which may leave stale tunnels consuming resources.",
+      "recommendation": "Enable DPD: set dpd on-demand or on-idle.",
+      "cwe": "CWE-400",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-IPSEC-007",
+      "name": "IPsec using IKEv1 (legacy protocol)",
+      "category": "IPsec VPN",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "tunnel=Site-B-Tunnel, ike-version=1",
+      "description": "IPsec tunnel 'Site-B-Tunnel' uses IKEv1. IKEv2 provides better security, performance, and NAT traversal.",
+      "recommendation": "Migrate to IKEv2: set ike-version 2.",
+      "cwe": "CWE-327",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-IPSEC-008",
+      "name": "IPsec Phase 1 keylife too long",
+      "category": "IPsec VPN",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "tunnel=Site-B-Tunnel, keylife=172800s (48h)",
+      "description": "IPsec tunnel 'Site-B-Tunnel' Phase 1 keylife is 172800 seconds (48 hours). Long key lifetimes increase the window for key compromise.",
+      "recommendation": "Set Phase 1 keylife to 28800 seconds (8 hours) or less.",
+      "cwe": "CWE-326",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-IPSEC-009",
+      "name": "IPsec using pre-shared key authentication",
+      "category": "IPsec VPN",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "tunnel=Site-B-Tunnel, authmethod=psk",
+      "description": "IPsec tunnel 'Site-B-Tunnel' uses pre-shared key (PSK) authentication instead of certificates.",
+      "recommendation": "Use certificate-based authentication for stronger identity verification: set authmethod signature.",
+      "cwe": "CWE-287",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-IPSEC-002",
+      "name": "IPsec Phase 1 weak encryption",
+      "category": "IPsec VPN",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "tunnel=Cloud-VPN, proposal contains 3des-sha256",
+      "description": "IPsec tunnel 'Cloud-VPN' uses weak encryption algorithm '3des-sha256'.",
+      "recommendation": "Use AES-256 or AES-128 encryption. Remove DES, 3DES, RC4.",
+      "cwe": "CWE-327",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "5.2.2"
+        ],
+        "PCI-DSS": [
+          "4.1"
+        ],
+        "NIST": [
+          "SC-12"
+        ]
+      },
+      "remediation_cmd": "config vpn ipsec phase1-interface\n  edit <vpn-name>\n    set dhgrp 14 20 21\n  next\nend"
+    },
+    {
+      "rule_id": "FORTIOS-IPSEC-004",
+      "name": "IPsec Phase 1 weak DH group",
+      "category": "IPsec VPN",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "tunnel=Cloud-VPN, dhgrp includes 5",
+      "description": "IPsec tunnel 'Cloud-VPN' uses weak Diffie-Hellman group 5.",
+      "recommendation": "Use DH group 14 (2048-bit) or higher. Remove groups 1, 2, and 5.",
+      "cwe": "CWE-326",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-IPSEC-007",
+      "name": "IPsec using IKEv1 (legacy protocol)",
+      "category": "IPsec VPN",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "tunnel=Cloud-VPN, ike-version=1",
+      "description": "IPsec tunnel 'Cloud-VPN' uses IKEv1. IKEv2 provides better security, performance, and NAT traversal.",
+      "recommendation": "Migrate to IKEv2: set ike-version 2.",
+      "cwe": "CWE-327",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-IPSEC-009",
+      "name": "IPsec using pre-shared key authentication",
+      "category": "IPsec VPN",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "tunnel=Cloud-VPN, authmethod=psk",
+      "description": "IPsec tunnel 'Cloud-VPN' uses pre-shared key (PSK) authentication instead of certificates.",
+      "recommendation": "Use certificate-based authentication for stronger identity verification: set authmethod signature.",
+      "cwe": "CWE-287",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-IPSEC-006",
+      "name": "IPsec Phase 2 PFS disabled",
+      "category": "IPsec VPN",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "tunnel=Site-B-P2, pfs=disable",
+      "description": "IPsec Phase 2 'Site-B-P2' has Perfect Forward Secrecy disabled. Compromised keys can decrypt past sessions.",
+      "recommendation": "Enable PFS: set pfs enable with DH group 14 or higher.",
+      "cwe": "CWE-326",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-IPSEC-010",
+      "name": "IPsec Phase 2 weak encryption",
+      "category": "IPsec VPN",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "tunnel=Site-B-P2, phase2 proposal contains des-md5",
+      "description": "IPsec Phase 2 'Site-B-P2' uses weak encryption 'des-md5'.",
+      "recommendation": "Use AES-256 or AES-128 for Phase 2 encryption. Remove DES, 3DES.",
+      "cwe": "CWE-327",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-IPSEC-011",
+      "name": "IPsec Phase 2 keylife too long",
+      "category": "IPsec VPN",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "tunnel=Site-B-P2, keylifeseconds=86400s",
+      "description": "IPsec Phase 2 'Site-B-P2' keylife is 86400 seconds. Long key lifetimes increase compromise risk.",
+      "recommendation": "Set Phase 2 keylifeseconds to 3600-28800 seconds.",
+      "cwe": "CWE-326",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-IPSEC-012",
+      "name": "IPsec Phase 2 replay protection disabled",
+      "category": "IPsec VPN",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "tunnel=Site-B-P2, replay=disable",
+      "description": "IPsec Phase 2 'Site-B-P2' has anti-replay protection disabled, allowing packet replay attacks.",
+      "recommendation": "Enable anti-replay: set replay enable.",
+      "cwe": "CWE-294",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-IPSEC-006",
+      "name": "IPsec Phase 2 PFS disabled",
+      "category": "IPsec VPN",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "tunnel=Cloud-VPN-P2, pfs=disable",
+      "description": "IPsec Phase 2 'Cloud-VPN-P2' has Perfect Forward Secrecy disabled. Compromised keys can decrypt past sessions.",
+      "recommendation": "Enable PFS: set pfs enable with DH group 14 or higher.",
+      "cwe": "CWE-326",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-IPSEC-010",
+      "name": "IPsec Phase 2 weak encryption",
+      "category": "IPsec VPN",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "tunnel=Cloud-VPN-P2, phase2 proposal contains 3des-sha256",
+      "description": "IPsec Phase 2 'Cloud-VPN-P2' uses weak encryption '3des-sha256'.",
+      "recommendation": "Use AES-256 or AES-128 for Phase 2 encryption. Remove DES, 3DES.",
+      "cwe": "CWE-327",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-IPSEC-011",
+      "name": "IPsec Phase 2 keylife too long",
+      "category": "IPsec VPN",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "tunnel=Cloud-VPN-P2, keylifeseconds=50000s",
+      "description": "IPsec Phase 2 'Cloud-VPN-P2' keylife is 50000 seconds. Long key lifetimes increase compromise risk.",
+      "recommendation": "Set Phase 2 keylifeseconds to 3600-28800 seconds.",
+      "cwe": "CWE-326",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-AV-001",
+      "name": "AV profile HTTP not in block mode",
+      "category": "Security Profiles",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "av-profile=default, http av-scan=monitor",
+      "description": "AV profile 'default' HTTP scanning is set to 'monitor' instead of blocking infected files.",
+      "recommendation": "Set HTTP AV scanning to block mode to prevent malware delivery.",
+      "cwe": "CWE-693",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-AV-002",
+      "name": "AV outbreak prevention disabled",
+      "category": "Security Profiles",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "av-profile=default, outbreak-prevention=disable",
+      "description": "AV profile 'default' does not have outbreak prevention enabled for zero-day malware detection.",
+      "recommendation": "Enable outbreak prevention to detect unknown threats via FortiGuard sandbox.",
+      "cwe": "CWE-693",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-AV-003",
+      "name": "AV cloud sandbox analysis disabled",
+      "category": "Security Profiles",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "av-profile=default, ftgd-analytics=disable",
+      "description": "AV profile 'default' does not submit suspicious files to FortiGuard cloud sandbox.",
+      "recommendation": "Enable FortiGuard analytics for sandbox-based zero-day detection.",
+      "cwe": "CWE-693",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-IPS-001",
+      "name": "IPS sensor in monitor-only mode",
+      "category": "Security Profiles",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "ips-sensor=default-ips, all entries action=pass/monitor",
+      "description": "IPS sensor 'default-ips' has all entries set to pass/monitor. No traffic is being blocked.",
+      "recommendation": "Set IPS entries to 'block' for critical and high severity signatures.",
+      "cwe": "CWE-693",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-IPS-002",
+      "name": "IPS sensor has IP exemptions",
+      "category": "Security Profiles",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "ips-sensor=default-ips, 1 entries with exempt-ip",
+      "description": "IPS sensor 'default-ips' has 1 entries with IP exemptions. Exempted IPs bypass IPS inspection.",
+      "recommendation": "Review and minimize IPS exemptions. Remove any that are no longer necessary.",
+      "cwe": "CWE-693",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-WF-001",
+      "name": "Web filter safe search not enforced",
+      "category": "Security Profiles",
+      "severity": "LOW",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "webfilter=basic-filter, safe-search=disable",
+      "description": "Web filter 'basic-filter' does not enforce safe search on search engines.",
+      "recommendation": "Enable safe search enforcement to filter explicit content from search results.",
+      "cwe": "CWE-693",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-WF-002",
+      "name": "Web filter has no category filters",
+      "category": "Security Profiles",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "webfilter=basic-filter, ftgd-wf filters=empty",
+      "description": "Web filter 'basic-filter' has no FortiGuard category filters configured.",
+      "recommendation": "Configure category-based filtering to block malware, phishing, and high-risk sites.",
+      "cwe": "CWE-693",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-APP-001",
+      "name": "High-risk app categories allowed",
+      "category": "Security Profiles",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "app-list=app-default, high-risk categories allowed (IDs: {25, 2, 15})",
+      "description": "Application control 'app-default' allows high-risk categories (P2P, proxy, botnet).",
+      "recommendation": "Block high-risk application categories including P2P, proxy bypass, and botnet tools.",
+      "cwe": "CWE-693",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-DLP-001",
+      "name": "DLP sensor in log-only mode",
+      "category": "Security Profiles",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "dlp-sensor=basic-dlp, all filters action=log-only",
+      "description": "DLP sensor 'basic-dlp' only logs data leaks without blocking. Sensitive data can still leave the network.",
+      "recommendation": "Set DLP filter actions to 'block' for critical data patterns (PII, financial, healthcare).",
+      "cwe": "CWE-200",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-DNS-001",
+      "name": "DNS filter botnet protection disabled",
+      "category": "Security Profiles",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "dnsfilter=dns-default, block-botnet=disable",
+      "description": "DNS filter 'dns-default' does not block botnet C2 domains.",
+      "recommendation": "Enable botnet domain blocking in DNS filter profiles.",
+      "cwe": "CWE-693",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-PROFILE-007",
+      "name": "SSL inspection profile not in deep inspection mode",
+      "category": "Security Profiles",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "ssl-ssh-profile=custom-ssl-profile, inspect-all=certificate-inspection",
+      "description": "SSL inspection profile 'custom-ssl-profile' does not perform deep content inspection. Encrypted malware may pass through undetected.",
+      "recommendation": "Enable deep SSL inspection for high-risk traffic. Use certificate inspection only where deep inspection causes compatibility issues.",
+      "cwe": "CWE-693",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-PROFILE-008",
+      "name": "SSL profile allows invalid server certificates",
+      "category": "Security Profiles",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "ssl-ssh-profile=custom-ssl-profile, invalid-server-cert=allow",
+      "description": "SSL profile 'custom-ssl-profile' allows connections to servers with invalid certificates, enabling MitM attacks.",
+      "recommendation": "Set invalid-server-cert action to 'block' to prevent MitM attacks.",
+      "cwe": "CWE-295",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-PROFILE-009",
+      "name": "No email filter profiles configured",
+      "category": "Security Profiles",
+      "severity": "LOW",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "emailfilter/profile: empty",
+      "description": "No email filter profiles are configured. Email-borne threats (phishing, malware) are not inspected.",
+      "recommendation": "Create email filter profiles if SMTP traffic passes through the FortiGate.",
+      "cwe": "CWE-693",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-PROFILE-010",
+      "name": "File filter profile with no rules",
+      "category": "Security Profiles",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "file-filter=file-default, rules=empty",
+      "description": "File filter profile 'file-default' has no file type rules. No file types are being blocked.",
+      "recommendation": "Add rules to block dangerous file types (exe, bat, scr, dll, vbs, ps1).",
+      "cwe": "CWE-434",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-PROFILE-011",
+      "name": "ICAP profile without preview mode",
+      "category": "Security Profiles",
+      "severity": "LOW",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "icap-profile=icap-server, preview=disable",
+      "description": "ICAP profile 'icap-server' does not use preview mode. All traffic is sent to the ICAP server, increasing latency.",
+      "recommendation": "Enable preview mode for ICAP to send only the initial bytes for faster content decisions.",
+      "cwe": "CWE-693",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-LOG-001",
+      "name": "FortiAnalyzer not configured",
+      "category": "Logging & Monitoring",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "fortianalyzer status=disable",
+      "description": "FortiAnalyzer is not enabled for centralized log management and analysis.",
+      "recommendation": "Configure FortiAnalyzer for centralized logging: config log fortianalyzer setting / set status enable.",
+      "cwe": "CWE-778",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "6.1.1"
+        ],
+        "PCI-DSS": [
+          "10.1",
+          "10.2"
+        ],
+        "NIST": [
+          "AU-2",
+          "AU-3"
+        ],
+        "SOC2": [
+          "CC7.2"
+        ],
+        "HIPAA": [
+          "164.312(b)"
+        ]
+      },
+      "remediation_cmd": "config log fortianalyzer setting\n  set status enable\n  set server <FAZ-IP>\nend"
+    },
+    {
+      "rule_id": "FORTIOS-LOG-002",
+      "name": "Syslog forwarding not configured",
+      "category": "Logging & Monitoring",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "syslogd status=disable",
+      "description": "Syslog forwarding is not enabled. Logs stored only locally may be lost if the device is compromised.",
+      "recommendation": "Configure syslog forwarding to a SIEM or log management platform.",
+      "cwe": "CWE-778",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "6.1.2"
+        ],
+        "PCI-DSS": [
+          "10.5.3"
+        ],
+        "NIST": [
+          "AU-9"
+        ],
+        "SOC2": [
+          "CC7.2"
+        ]
+      },
+      "remediation_cmd": "config log syslogd setting\n  set status enable\n  set server <syslog-IP>\nend"
+    },
+    {
+      "rule_id": "FORTIOS-LOG-003",
+      "name": "Log disk full action set to overwrite",
+      "category": "Logging & Monitoring",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "diskfull=overwrite",
+      "description": "When log disk is full, older logs are overwritten, potentially destroying forensic evidence.",
+      "recommendation": "Set diskfull action to 'nolog' or configure log forwarding to prevent data loss.",
+      "cwe": "CWE-778",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "6.1.3"
+        ],
+        "PCI-DSS": [
+          "10.2"
+        ],
+        "NIST": [
+          "AU-12"
+        ],
+        "SOC2": [
+          "CC7.2"
+        ]
+      },
+      "remediation_cmd": "config log setting\n  set fwpolicy-implicit-log enable\nend"
+    },
+    {
+      "rule_id": "FORTIOS-LOG-004",
+      "name": "Implicit deny logging disabled",
+      "category": "Logging & Monitoring",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "fwpolicy-implicit-log=disable",
+      "description": "Traffic denied by the implicit deny rule is not logged, hiding potential attack attempts.",
+      "recommendation": "Enable implicit deny logging: set fwpolicy-implicit-log enable.",
+      "cwe": "CWE-778",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "6.1.4"
+        ],
+        "PCI-DSS": [
+          "10.5.1"
+        ],
+        "NIST": [
+          "AU-9"
+        ]
+      },
+      "remediation_cmd": "config log fortianalyzer setting\n  set enc-algorithm high\nend"
+    },
+    {
+      "rule_id": "FORTIOS-LOG-009",
+      "name": "Local-in traffic logging disabled",
+      "category": "Logging & Monitoring",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "local-in-allow=disable",
+      "description": "Traffic destined to the FortiGate itself (local-in) is not logged. Admin and management access attempts go unrecorded.",
+      "recommendation": "Enable local-in-allow logging: set local-in-allow enable.",
+      "cwe": "CWE-778",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-LOG-010",
+      "name": "Local-in deny logging disabled",
+      "category": "Logging & Monitoring",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "local-in-deny-unicast=disable",
+      "description": "Denied local-in unicast traffic is not logged. Reconnaissance and attack attempts on the firewall itself go undetected.",
+      "recommendation": "Enable local-in-deny-unicast logging: set local-in-deny-unicast enable.",
+      "cwe": "CWE-778",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-LOG-011",
+      "name": "System event logging disabled",
+      "category": "Logging & Monitoring",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "eventfilter event=disable",
+      "description": "System event logging is disabled. Configuration changes, admin logins, and system alerts are not recorded.",
+      "recommendation": "Enable system event logging: config log eventfilter / set event enable.",
+      "cwe": "CWE-778",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-LOG-012",
+      "name": "VPN event logging disabled",
+      "category": "Logging & Monitoring",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "eventfilter vpn=disable",
+      "description": "VPN event logging is disabled. VPN login failures, tunnel status changes, and session events are not recorded.",
+      "recommendation": "Enable VPN event logging: set vpn enable.",
+      "cwe": "CWE-778",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-LOG-013",
+      "name": "User authentication event logging disabled",
+      "category": "Logging & Monitoring",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "eventfilter user=disable",
+      "description": "User authentication event logging is disabled. Login attempts and authentication failures are not recorded.",
+      "recommendation": "Enable user event logging: set user enable.",
+      "cwe": "CWE-778",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-LOG-014",
+      "name": "Alert email not configured",
+      "category": "Logging & Monitoring",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "alertemail mailto1=(empty)",
+      "description": "No alert email recipients configured. Critical security events will not trigger email notifications.",
+      "recommendation": "Configure alert email recipients: config alertemail setting / set mailto1 <email>.",
+      "cwe": "CWE-778",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-LOG-015",
+      "name": "No automation triggers configured",
+      "category": "Logging & Monitoring",
+      "severity": "LOW",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "system/automation-trigger: empty",
+      "description": "No automation triggers are configured. Automated responses to security events (IPS alerts, admin logins, HA failover) are not set up.",
+      "recommendation": "Configure automation triggers and actions for critical security events.",
+      "cwe": "CWE-778",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-HA-002",
+      "name": "HA heartbeat not authenticated",
+      "category": "High Availability",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "ha authentication=disable",
+      "description": "HA heartbeat communication is not authenticated, allowing potential cluster hijacking.",
+      "recommendation": "Enable HA authentication: set authentication enable / set password <strong-password>.",
+      "cwe": "CWE-306",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-HA-003",
+      "name": "HA session pickup disabled",
+      "category": "High Availability",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "session-pickup=disable",
+      "description": "Session pickup is disabled. Active sessions will be dropped during HA failover.",
+      "recommendation": "Enable session-pickup for seamless failover: set session-pickup enable.",
+      "cwe": "CWE-654",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-HA-005",
+      "name": "HA cluster communication not encrypted",
+      "category": "High Availability",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "ha encryption=disable",
+      "description": "HA cluster communication is not encrypted. Configuration and session data exchanged between peers may be intercepted.",
+      "recommendation": "Enable HA encryption: config system ha / set encryption enable.",
+      "cwe": "CWE-319",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-HA-006",
+      "name": "No dedicated HA heartbeat interface",
+      "category": "High Availability",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "hbdev=(empty)",
+      "description": "No dedicated heartbeat interface is configured. HA heartbeat shares bandwidth with data traffic.",
+      "recommendation": "Configure dedicated HA heartbeat interfaces: set hbdev <interface> <priority>.",
+      "cwe": "CWE-654",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-HA-007",
+      "name": "No HA monitored interfaces configured",
+      "category": "High Availability",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "ha monitor=(empty)",
+      "description": "No interfaces are monitored for HA failover. Link failures on critical interfaces will not trigger failover.",
+      "recommendation": "Configure monitored interfaces: set monitor <wan-interface> <lan-interface>.",
+      "cwe": "CWE-654",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-HA-008",
+      "name": "HA override enabled (auto-failback)",
+      "category": "High Availability",
+      "severity": "LOW",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "ha override=enable",
+      "description": "HA override is enabled. The primary unit will automatically reclaim the primary role after recovery, causing a second failover.",
+      "recommendation": "Consider disabling override to prevent unnecessary failover disruptions: set override disable.",
+      "cwe": "CWE-654",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-HA-004",
+      "name": "HA cluster firmware version mismatch",
+      "category": "High Availability",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "versions=v7.0.8, v7.0.10",
+      "description": "HA cluster members are running different firmware versions: v7.0.8, v7.0.10.",
+      "recommendation": "Upgrade all HA cluster members to the same firmware version.",
+      "cwe": "CWE-1104",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-CERT-001",
+      "name": "Default Fortinet factory certificate in use",
+      "category": "Certificates",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "certificate=Fortinet_Factory_Self-Sign",
+      "description": "The default Fortinet factory certificate 'Fortinet_Factory_Self-Sign' is in use. This is a known, shared certificate.",
+      "recommendation": "Replace the factory certificate with a CA-signed certificate specific to your organisation.",
+      "cwe": "CWE-295",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "8.1.1"
+        ],
+        "PCI-DSS": [
+          "4.1"
+        ],
+        "NIST": [
+          "SC-17"
+        ],
+        "SOC2": [
+          "CC6.7"
+        ]
+      },
+      "remediation_cmd": "config vpn certificate local\n  Generate or import a CA-signed certificate to replace the default self-signed certificate.\nend"
+    },
+    {
+      "rule_id": "FORTIOS-CERT-005",
+      "name": "Certificate with weak key size",
+      "category": "Certificates",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "certificate=Fortinet_Factory_Self-Sign, key-size=1024",
+      "description": "Certificate 'Fortinet_Factory_Self-Sign' uses a 1024-bit key. Keys shorter than 2048 bits are considered weak.",
+      "recommendation": "Replace with a certificate using at least 2048-bit RSA or 256-bit ECDSA key.",
+      "cwe": "CWE-326",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-CERT-006",
+      "name": "Certificate using SHA-1 signature algorithm",
+      "category": "Certificates",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "certificate=Fortinet_Factory_Self-Sign, signature-algorithm=sha1WithRSAEncryption",
+      "description": "Certificate 'Fortinet_Factory_Self-Sign' uses SHA-1 signature algorithm, which is deprecated and vulnerable to collision attacks.",
+      "recommendation": "Replace with a certificate using SHA-256 or SHA-384 signature algorithm.",
+      "cwe": "CWE-328",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-CERT-002",
+      "name": "Expired certificate",
+      "category": "Certificates",
+      "severity": "CRITICAL",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "certificate=Fortinet_Factory_Self-Sign, expired=2020-01-01 00:00:00",
+      "description": "Certificate 'Fortinet_Factory_Self-Sign' expired on 2020-01-01 00:00:00.",
+      "recommendation": "Replace the expired certificate immediately.",
+      "cwe": "CWE-295",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "8.1.2"
+        ],
+        "PCI-DSS": [
+          "4.1"
+        ],
+        "NIST": [
+          "SC-17"
+        ]
+      },
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-CERT-003",
+      "name": "Certificate expiring within 30 days",
+      "category": "Certificates",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "certificate=corp-wildcard, expires=2026-04-15 00:00:00",
+      "description": "Certificate 'corp-wildcard' will expire on 2026-04-15 00:00:00.",
+      "recommendation": "Renew the certificate before expiry.",
+      "cwe": "CWE-295",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-CERT-009",
+      "name": "Wildcard certificate in use",
+      "category": "Certificates",
+      "severity": "LOW",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "certificate=corp-wildcard, CN=*.corp.example.com",
+      "description": "Certificate 'corp-wildcard' is a wildcard certificate (*.corp.example.com). Wildcard certs increase blast radius if compromised.",
+      "recommendation": "Use specific certificates per service where possible. Monitor wildcard cert usage closely.",
+      "cwe": "CWE-295",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-CERT-004",
+      "name": "Self-signed certificate detected",
+      "category": "Certificates",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "certificate=internal-ca, issuer=subject (self-signed)",
+      "description": "Certificate 'internal-ca' is self-signed. Self-signed certificates cannot be verified by clients and are vulnerable to MitM attacks.",
+      "recommendation": "Replace with a CA-signed certificate from a trusted Certificate Authority.",
+      "cwe": "CWE-295",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-CERT-010",
+      "name": "No certificate revocation checking configured",
+      "category": "Certificates",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "crl=empty, ocsp-server=empty",
+      "description": "No CRL or OCSP servers are configured. Revoked certificates will still be accepted as valid.",
+      "recommendation": "Configure CRL distribution points or OCSP servers for certificate revocation checking.",
+      "cwe": "CWE-299",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-NET-002",
+      "name": "DoS SYN flood threshold too high",
+      "category": "Network Hardening",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "dos-policy=1, syn_flood threshold=50000",
+      "description": "DoS policy 1 SYN flood threshold is 50000 (>10,000). High thresholds may not protect against moderate floods.",
+      "recommendation": "Lower the SYN flood threshold to 2,000-5,000 per second based on normal traffic baselines.",
+      "cwe": "CWE-400",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "9.1.2"
+        ],
+        "PCI-DSS": [
+          "2.2.2"
+        ],
+        "NIST": [
+          "CM-7"
+        ]
+      },
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-NET-003",
+      "name": "DoS UDP flood threshold too high",
+      "category": "Network Hardening",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "dos-policy=1, udp_flood threshold=50000",
+      "description": "DoS policy 1 UDP flood threshold is 50000. High thresholds reduce protection effectiveness.",
+      "recommendation": "Lower the UDP flood threshold based on traffic baselines.",
+      "cwe": "CWE-400",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "9.1.3"
+        ],
+        "PCI-DSS": [
+          "2.2.2",
+          "10.6"
+        ],
+        "NIST": [
+          "AU-8"
+        ],
+        "SOC2": [
+          "CC7.2"
+        ]
+      },
+      "remediation_cmd": "config system ntp\n  set ntpsync enable\n  set type custom\n  config ntpserver\n    edit 1\n      set server <ntp-server>\n    next\n  end\nend"
+    },
+    {
+      "rule_id": "FORTIOS-NET-004",
+      "name": "DoS ICMP flood threshold too high",
+      "category": "Network Hardening",
+      "severity": "LOW",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "dos-policy=1, icmp_flood threshold=5000",
+      "description": "DoS policy 1 ICMP flood threshold is 5000.",
+      "recommendation": "Lower ICMP flood threshold to 250-500 per second.",
+      "cwe": "CWE-400",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-NET-005",
+      "name": "DHCP relay on WAN interface",
+      "category": "Network Hardening",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "interface=wan1, dhcp-relay-service=enable",
+      "description": "WAN interface 'wan1' has DHCP relay enabled, potentially exposing internal DHCP to the internet.",
+      "recommendation": "Disable DHCP relay on WAN interfaces unless explicitly required.",
+      "cwe": "CWE-284",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-NET-006",
+      "name": "DNS server override disabled on WAN",
+      "category": "Network Hardening",
+      "severity": "LOW",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "interface=wan1, dns-server-override=disable",
+      "description": "WAN interface 'wan1' does not override DNS from ISP. ISP DNS may not filter malicious domains.",
+      "recommendation": "Use FortiGuard DNS or a reputable DNS service and enable dns-server-override.",
+      "cwe": "CWE-350",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-NET-007",
+      "name": "Source IP check disabled on external interface",
+      "category": "Network Hardening",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "interface=wan1, role=wan, src-check=disable",
+      "description": "Interface 'wan1' has source IP check (RPF/anti-spoofing) disabled, allowing spoofed packets.",
+      "recommendation": "Enable src-check on all WAN and DMZ interfaces: set src-check enable.",
+      "cwe": "CWE-290",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-NET-007",
+      "name": "Source IP check disabled on external interface",
+      "category": "Network Hardening",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "interface=dmz, role=dmz, src-check=disable",
+      "description": "Interface 'dmz' has source IP check (RPF/anti-spoofing) disabled, allowing spoofed packets.",
+      "recommendation": "Enable src-check on all WAN and DMZ interfaces: set src-check enable.",
+      "cwe": "CWE-290",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-NET-008",
+      "name": "TCP sessions without SYN allowed",
+      "category": "Network Hardening",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "tcp-session-without-syn=enable",
+      "description": "FortiGate accepts TCP sessions without SYN, which can bypass firewall stateful inspection.",
+      "recommendation": "Disable tcp-session-without-syn: config system global / set tcp-session-without-syn disable.",
+      "cwe": "CWE-284",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-NET-009",
+      "name": "IPv6 enabled but no IPv6 firewall policies",
+      "category": "Network Hardening",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "gui-ipv6=enable, firewall/policy6: empty",
+      "description": "IPv6 is enabled on the FortiGate but no IPv6 firewall policies exist, potentially allowing unfiltered IPv6 traffic.",
+      "recommendation": "Create IPv6 firewall policies or disable IPv6 if not required.",
+      "cwe": "CWE-284",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-NET-010",
+      "name": "LLDP reception enabled globally",
+      "category": "Network Hardening",
+      "severity": "LOW",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "lldp-reception=enable",
+      "description": "LLDP reception is enabled globally. LLDP can leak network topology information to adjacent devices.",
+      "recommendation": "Disable LLDP on untrusted interfaces. Use per-interface LLDP settings.",
+      "cwe": "CWE-200",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-NET-011",
+      "name": "BGP neighbour without authentication",
+      "category": "Network Hardening",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "bgp neighbour=10.0.0.1, password=none",
+      "description": "BGP neighbour 10.0.0.1 has no MD5 authentication, allowing BGP hijacking.",
+      "recommendation": "Configure BGP MD5 authentication for all neighbours: set password <key>.",
+      "cwe": "CWE-306",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-NET-011",
+      "name": "BGP neighbour without authentication",
+      "category": "Network Hardening",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "bgp neighbour=10.0.0.2, password=none",
+      "description": "BGP neighbour 10.0.0.2 has no MD5 authentication, allowing BGP hijacking.",
+      "recommendation": "Configure BGP MD5 authentication for all neighbours: set password <key>.",
+      "cwe": "CWE-306",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-NET-012",
+      "name": "OSPF interface without authentication",
+      "category": "Network Hardening",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "ospf-interface=lan-ospf, authentication=none",
+      "description": "OSPF interface 'lan-ospf' has no authentication, allowing rogue router injection.",
+      "recommendation": "Enable OSPF authentication: set authentication md5 or text.",
+      "cwe": "CWE-306",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-NET-012",
+      "name": "OSPF interface without authentication",
+      "category": "Network Hardening",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "ospf-interface=dmz-ospf, authentication=none",
+      "description": "OSPF interface 'dmz-ospf' has no authentication, allowing rogue router injection.",
+      "recommendation": "Enable OSPF authentication: set authentication md5 or text.",
+      "cwe": "CWE-306",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-NET-013",
+      "name": "SNMP default community string",
+      "category": "Network Hardening",
+      "severity": "CRITICAL",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "snmp community=public (ID 1)",
+      "description": "SNMP community string 'public' is a well-known default. Attackers can read device configuration.",
+      "recommendation": "Change SNMP community strings to complex values or migrate to SNMPv3 with authentication.",
+      "cwe": "CWE-1188",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-NET-014",
+      "name": "SNMPv1 enabled",
+      "category": "Network Hardening",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "snmp community=public, query-v1-status=enable",
+      "description": "SNMPv1 is enabled for community 'public'. SNMPv1 transmits data in cleartext without authentication.",
+      "recommendation": "Disable SNMPv1 and migrate to SNMPv3 with authPriv.",
+      "cwe": "CWE-319",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-NET-013",
+      "name": "SNMP default community string",
+      "category": "Network Hardening",
+      "severity": "CRITICAL",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "snmp community=private (ID 2)",
+      "description": "SNMP community string 'private' is a well-known default. Attackers can read device configuration.",
+      "recommendation": "Change SNMP community strings to complex values or migrate to SNMPv3 with authentication.",
+      "cwe": "CWE-1188",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-NET-015",
+      "name": "SNMPv3 user without authentication",
+      "category": "Network Hardening",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "snmpv3 user=monitor-user, security-level=no-auth-no-priv",
+      "description": "SNMPv3 user 'monitor-user' has no authentication or encryption.",
+      "recommendation": "Set SNMPv3 user security level to auth-priv with SHA and AES.",
+      "cwe": "CWE-306",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-NET-016",
+      "name": "NTP authentication not enabled",
+      "category": "Network Hardening",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "ntp authentication=disable",
+      "description": "NTP authentication is not enabled. Attackers can inject false time via NTP spoofing, breaking log correlation and certificates.",
+      "recommendation": "Enable NTP authentication: config system ntp / set authentication enable.",
+      "cwe": "CWE-345",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-ZTNA-002",
+      "name": "ZTNA access proxy with no API gateway rules",
+      "category": "ZTNA / SASE",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "access-proxy=ztna-proxy-1, api-gateway=empty",
+      "description": "ZTNA access proxy 'ztna-proxy-1' has no API gateway rules configured.",
+      "recommendation": "Configure API gateway rules to define application access policies.",
+      "cwe": "CWE-284",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-ZTNA-003",
+      "name": "ZTNA access proxy without client certificate",
+      "category": "ZTNA / SASE",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "access-proxy=ztna-proxy-1, client-cert=disable",
+      "description": "ZTNA access proxy 'ztna-proxy-1' does not require client certificates for device identity verification.",
+      "recommendation": "Enable client certificate requirement: set client-cert enable.",
+      "cwe": "CWE-287",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-ZTNA-004",
+      "name": "SD-WAN enabled without health checks",
+      "category": "ZTNA / SASE",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "sd-wan status=enable, health-check=empty",
+      "description": "SD-WAN is enabled but no health checks are configured. SD-WAN cannot detect link quality issues without health checks.",
+      "recommendation": "Configure SD-WAN health checks (ping, HTTP, DNS) for all WAN links.",
+      "cwe": "CWE-754",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-ZTNA-005",
+      "name": "SD-WAN without service/SLA rules",
+      "category": "ZTNA / SASE",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "sd-wan service=empty",
+      "description": "SD-WAN has no service/SLA rules configured. Traffic will use default routing without quality-based path selection.",
+      "recommendation": "Configure SD-WAN service rules with SLA targets for critical applications.",
+      "cwe": "CWE-693",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-UPDATE-001",
+      "name": "FortiGuard antivirus service expired",
+      "category": "FortiGuard & Updates",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "antivirus=expired",
+      "description": "FortiGuard service 'antivirus' is expired. Security signatures may be outdated.",
+      "recommendation": "Renew the FortiGuard antivirus license to ensure up-to-date threat protection.",
+      "cwe": "CWE-1104",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "10.1.1"
+        ],
+        "PCI-DSS": [
+          "6.2"
+        ],
+        "NIST": [
+          "SI-2",
+          "SI-3"
+        ],
+        "SOC2": [
+          "CC7.1"
+        ]
+      },
+      "remediation_cmd": "Upgrade FortiOS firmware via System > Firmware. Download from https://support.fortinet.com"
+    },
+    {
+      "rule_id": "FORTIOS-UPDATE-003",
+      "name": "FortiGuard ips licence expiring soon",
+      "category": "FortiGuard & Updates",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "ips expires=2026-04-10",
+      "description": "FortiGuard 'ips' licence expires on 2026-04-10. Renewal is needed to maintain protection.",
+      "recommendation": "Renew the ips licence before it expires.",
+      "cwe": "CWE-1104",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-UPDATE-004",
+      "name": "FortiGuard ips signatures outdated",
+      "category": "FortiGuard & Updates",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "ips last_update=2025-12-01 00:00:00 (120 days ago)",
+      "description": "FortiGuard ips signatures are 120 days old. AV/IPS signatures should update daily.",
+      "recommendation": "Check FortiGuard connectivity and automatic update schedule. Signatures should update at least daily.",
+      "cwe": "CWE-1104",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-UPDATE-001",
+      "name": "FortiGuard webfilter service disabled",
+      "category": "FortiGuard & Updates",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "webfilter=disabled",
+      "description": "FortiGuard service 'webfilter' is disabled. Security signatures may be outdated.",
+      "recommendation": "Renew the FortiGuard webfilter license to ensure up-to-date threat protection.",
+      "cwe": "CWE-1104",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "10.1.1"
+        ],
+        "PCI-DSS": [
+          "6.2"
+        ],
+        "NIST": [
+          "SI-2",
+          "SI-3"
+        ],
+        "SOC2": [
+          "CC7.1"
+        ]
+      },
+      "remediation_cmd": "Upgrade FortiOS firmware via System > Firmware. Download from https://support.fortinet.com"
+    },
+    {
+      "rule_id": "FORTIOS-UPDATE-005",
+      "name": "FortiGuard app-ctrl not updated in 44 days",
+      "category": "FortiGuard & Updates",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "app-ctrl last_update=2026-02-15 00:00:00 (44 days ago)",
+      "description": "FortiGuard app-ctrl has not been updated in 44 days.",
+      "recommendation": "Verify FortiGuard update schedule and connectivity.",
+      "cwe": "CWE-1104",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-UPDATE-002",
+      "name": "FortiGuard not connected",
+      "category": "FortiGuard & Updates",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "fortiguard=disconnected",
+      "description": "FortiGuard Distribution Network is not connected. Security updates cannot be downloaded.",
+      "recommendation": "Verify FortiGuard connectivity. Check DNS, proxy, and firewall rules for FortiGuard servers.",
+      "cwe": "CWE-1104",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "10.1.2"
+        ],
+        "PCI-DSS": [
+          "6.2"
+        ],
+        "NIST": [
+          "SI-2"
+        ]
+      },
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-UPDATE-006",
+      "name": "Automatic updates disabled",
+      "category": "FortiGuard & Updates",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "autoupdate status=disable",
+      "description": "Automatic signature updates are disabled. The FortiGate will not receive the latest threat definitions.",
+      "recommendation": "Enable automatic updates: config system autoupdate schedule / set status enable.",
+      "cwe": "CWE-1104",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-WIRELESS-001",
+      "name": "Weak wireless security mode",
+      "category": "Wireless Security",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "VAP 'Corp-Internal-WiFi' security=wpa-personal",
+      "description": "Wireless SSID 'Corp-Internal-WiFi' uses weak security mode 'wpa-personal'. Open/WEP/basic-WPA are trivially broken.",
+      "recommendation": "Configure WPA2-Enterprise (802.1X) or WPA3-SAE for all SSIDs.",
+      "cwe": "CWE-326",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "11.1.1"
+        ],
+        "PCI-DSS": [
+          "4.1.1"
+        ],
+        "NIST": [
+          "SC-8",
+          "AC-18"
+        ]
+      },
+      "remediation_cmd": "config wireless-controller vap\n  edit <ssid-name>\n    set security wpa2-only-enterprise\n  next\nend"
+    },
+    {
+      "rule_id": "FORTIOS-WIRELESS-001",
+      "name": "Weak wireless security mode",
+      "category": "Wireless Security",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "VAP 'Guest-WiFi' security=open",
+      "description": "Wireless SSID 'Guest-WiFi' uses weak security mode 'open'. Open/WEP/basic-WPA are trivially broken.",
+      "recommendation": "Configure WPA2-Enterprise (802.1X) or WPA3-SAE for all SSIDs.",
+      "cwe": "CWE-326",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "11.1.1"
+        ],
+        "PCI-DSS": [
+          "4.1.1"
+        ],
+        "NIST": [
+          "SC-8",
+          "AC-18"
+        ]
+      },
+      "remediation_cmd": "config wireless-controller vap\n  edit <ssid-name>\n    set security wpa2-only-enterprise\n  next\nend"
+    },
+    {
+      "rule_id": "FORTIOS-WIRELESS-002",
+      "name": "Guest SSID lacks client isolation",
+      "category": "Wireless Security",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "VAP 'Guest-WiFi' intra-vap-privacy=disable",
+      "description": "Guest SSID 'Guest-WiFi' does not isolate wireless clients from each other.",
+      "recommendation": "Enable intra-vap-privacy (client isolation) on guest SSIDs to prevent lateral movement.",
+      "cwe": "CWE-284",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "11.1.2"
+        ],
+        "PCI-DSS": [
+          "11.1"
+        ],
+        "NIST": [
+          "AC-18"
+        ]
+      },
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-WIRELESS-003",
+      "name": "Internal SSID broadcast enabled",
+      "category": "Wireless Security",
+      "severity": "LOW",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "VAP 'Corp-Internal-WiFi' broadcast-ssid=enable",
+      "description": "Internal/management SSID 'Corp-Internal-WiFi' broadcasts its SSID. This aids discovery by attackers.",
+      "recommendation": "Disable SSID broadcast for management and internal wireless networks.",
+      "cwe": "CWE-200",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-WIRELESS-004",
+      "name": "WIDS rogue AP scanning disabled",
+      "category": "Wireless Security",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "WIDS profile 'default-wids' ap-scan=disable",
+      "description": "WIDS profile 'default-wids' does not have rogue AP scanning enabled.",
+      "recommendation": "Enable ap-scan in the WIDS profile to detect unauthorized access points.",
+      "cwe": "CWE-778",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-WIRELESS-005",
+      "name": "No maximum client limit on SSID",
+      "category": "Wireless Security",
+      "severity": "LOW",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "VAP 'Corp-Internal-WiFi' max-clients=0 (unlimited)",
+      "description": "SSID 'Corp-Internal-WiFi' has no maximum client limit, allowing resource exhaustion via mass association.",
+      "recommendation": "Set a reasonable max-clients limit per SSID to prevent DoS via excessive client connections.",
+      "cwe": "CWE-770",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-WIRELESS-005",
+      "name": "No maximum client limit on SSID",
+      "category": "Wireless Security",
+      "severity": "LOW",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "VAP 'Guest-WiFi' max-clients=0 (unlimited)",
+      "description": "SSID 'Guest-WiFi' has no maximum client limit, allowing resource exhaustion via mass association.",
+      "recommendation": "Set a reasonable max-clients limit per SSID to prevent DoS via excessive client connections.",
+      "cwe": "CWE-770",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-WIRELESS-006",
+      "name": "Protected Management Frames disabled",
+      "category": "Wireless Security",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "VAP 'Corp-Internal-WiFi' pmf=disable",
+      "description": "SSID 'Corp-Internal-WiFi' does not enforce 802.11w Protected Management Frames, leaving it vulnerable to deauthentication attacks.",
+      "recommendation": "Enable PMF (802.11w) — set to 'optional' for compatibility or 'required' for maximum protection.",
+      "cwe": "CWE-345",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-WIRELESS-006",
+      "name": "Protected Management Frames disabled",
+      "category": "Wireless Security",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "VAP 'Guest-WiFi' pmf=disable",
+      "description": "SSID 'Guest-WiFi' does not enforce 802.11w Protected Management Frames, leaving it vulnerable to deauthentication attacks.",
+      "recommendation": "Enable PMF (802.11w) — set to 'optional' for compatibility or 'required' for maximum protection.",
+      "cwe": "CWE-345",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-WIRELESS-007",
+      "name": "CAPWAP tunnel using cleartext",
+      "category": "Wireless Security",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "WTP profile 'default-wtp' dtls-policy=clear-text",
+      "description": "WTP profile 'default-wtp' allows cleartext CAPWAP tunnels. Wireless traffic between AP and controller is unencrypted.",
+      "recommendation": "Set dtls-policy to 'dtls-enabled' to encrypt CAPWAP data tunnels between APs and the controller.",
+      "cwe": "CWE-319",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-WIRELESS-008",
+      "name": "802.11r FT-over-DS enabled",
+      "category": "Wireless Security",
+      "severity": "LOW",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "VAP 'Corp-Internal-WiFi' ft-over-ds=enable",
+      "description": "SSID 'Corp-Internal-WiFi' has 802.11r Fast Transition over DS enabled, which has known vulnerabilities (CVE-2017-13082).",
+      "recommendation": "Disable ft-over-ds and use FT-over-Air instead for fast roaming.",
+      "cwe": "CWE-327",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-BACKUP-001",
+      "name": "No FortiManager for centralised backup",
+      "category": "Backup & DR",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "central-management mode=normal, fmg=not set",
+      "description": "No FortiManager is configured for central configuration management and backup.",
+      "recommendation": "Register this FortiGate with FortiManager for automated config backups, change tracking, and disaster recovery.",
+      "cwe": "CWE-693",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "12.1.1"
+        ],
+        "PCI-DSS": [
+          "12.10.1"
+        ],
+        "NIST": [
+          "CP-9"
+        ],
+        "SOC2": [
+          "CC7.5"
+        ]
+      },
+      "remediation_cmd": "config system central-management\n  set type fortimanager\n  set fmg <fmg-ip>\nend"
+    },
+    {
+      "rule_id": "FORTIOS-BACKUP-002",
+      "name": "Config revision on logout disabled",
+      "category": "Backup & DR",
+      "severity": "LOW",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "revision-backup-on-logout=disable",
+      "description": "Automatic configuration revision backup on admin logout is disabled. Config changes may be lost.",
+      "recommendation": "Enable revision-backup-on-logout under system/global to maintain configuration history.",
+      "cwe": "CWE-693",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-BACKUP-003",
+      "name": "HA session pickup disabled",
+      "category": "Backup & DR",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "HA mode=a-p, session-pickup=disable",
+      "description": "HA cluster does not have session pickup enabled. Active sessions will be dropped during failover.",
+      "recommendation": "Enable session-pickup in HA configuration to maintain sessions during failover events.",
+      "cwe": "CWE-693",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-BACKUP-004",
+      "name": "Automatic config save without review",
+      "category": "Backup & DR",
+      "severity": "LOW",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "cfg-save=automatic",
+      "description": "Configuration changes are saved automatically without manual review, increasing risk of unintended changes persisting.",
+      "recommendation": "Consider setting cfg-save to 'revert' with a timeout to allow rollback of unintended changes.",
+      "cwe": "CWE-693",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-BACKUP-005",
+      "name": "USB auto-install config enabled",
+      "category": "Backup & DR",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "auto-install-config=enable",
+      "description": "USB auto-install of configuration is enabled. A malicious USB device could overwrite the running configuration.",
+      "recommendation": "Disable auto-install-config and auto-install-image under system/global to prevent USB-based config tampering.",
+      "cwe": "CWE-306",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-AUTH-001",
+      "name": "LDAP server without TLS encryption",
+      "category": "Authentication",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "LDAP 'legacy-ldap' secure=disable, port=389",
+      "description": "LDAP server 'legacy-ldap' communicates in cleartext. Credentials and directory data are exposed on the network.",
+      "recommendation": "Enable LDAPS (port 636) or STARTTLS by setting secure to 'ldaps' or 'starttls'.",
+      "cwe": "CWE-319",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "13.1.1"
+        ],
+        "PCI-DSS": [
+          "8.3.1"
+        ],
+        "NIST": [
+          "IA-2(1)"
+        ],
+        "SOC2": [
+          "CC6.1"
+        ],
+        "HIPAA": [
+          "164.312(d)"
+        ]
+      },
+      "remediation_cmd": "config system admin\n  edit <admin-name>\n    set two-factor fortitoken\n  next\nend"
+    },
+    {
+      "rule_id": "FORTIOS-AUTH-002",
+      "name": "RADIUS shared secret too short",
+      "category": "Authentication",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "RADIUS 'radius-primary' secret length < 16 chars",
+      "description": "RADIUS server 'radius-primary' shared secret is less than 16 characters, making it vulnerable to brute-force attacks.",
+      "recommendation": "Use a RADIUS shared secret of at least 22 characters with mixed character types.",
+      "cwe": "CWE-521",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "13.1.2"
+        ],
+        "PCI-DSS": [
+          "8.2.1"
+        ],
+        "NIST": [
+          "IA-5(1)"
+        ],
+        "SOC2": [
+          "CC6.1"
+        ]
+      },
+      "remediation_cmd": "config user ldap\n  edit <ldap-server>\n    set secure ldaps\n    set server-identity-check enable\n  next\nend"
+    },
+    {
+      "rule_id": "FORTIOS-AUTH-002",
+      "name": "RADIUS shared secret too short",
+      "category": "Authentication",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "RADIUS 'radius-secondary' secret length < 16 chars",
+      "description": "RADIUS server 'radius-secondary' shared secret is less than 16 characters, making it vulnerable to brute-force attacks.",
+      "recommendation": "Use a RADIUS shared secret of at least 22 characters with mixed character types.",
+      "cwe": "CWE-521",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "13.1.2"
+        ],
+        "PCI-DSS": [
+          "8.2.1"
+        ],
+        "NIST": [
+          "IA-5(1)"
+        ],
+        "SOC2": [
+          "CC6.1"
+        ]
+      },
+      "remediation_cmd": "config user ldap\n  edit <ldap-server>\n    set secure ldaps\n    set server-identity-check enable\n  next\nend"
+    },
+    {
+      "rule_id": "FORTIOS-AUTH-003",
+      "name": "RADIUS timeout excessively long",
+      "category": "Authentication",
+      "severity": "LOW",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "RADIUS 'radius-primary' timeout=60s",
+      "description": "RADIUS server 'radius-primary' has timeout of 60s. Excessive timeouts can cause authentication delays and DoS.",
+      "recommendation": "Set RADIUS timeout to 5-10 seconds and configure a secondary RADIUS server for redundancy.",
+      "cwe": "CWE-400",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-AUTH-004",
+      "name": "No SSO/SAML integration configured",
+      "category": "Authentication",
+      "severity": "LOW",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "No user/saml or user/fsso entries",
+      "description": "Neither SAML IdP nor Fortinet SSO (FSSO) is configured. Users rely solely on local or LDAP/RADIUS authentication.",
+      "recommendation": "Integrate SAML 2.0 SSO or FSSO for centralised identity management and conditional access.",
+      "cwe": "CWE-287",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-AUTH-005",
+      "name": "Local user without MFA",
+      "category": "Authentication",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "User 'local-admin' two-factor=disable",
+      "description": "Local user 'local-admin' does not have two-factor authentication enabled.",
+      "recommendation": "Enable two-factor authentication (FortiToken, email, or SMS) for all local user accounts.",
+      "cwe": "CWE-308",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-AUTH-005",
+      "name": "Local user without MFA",
+      "category": "Authentication",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "User 'local-user1' two-factor=disable",
+      "description": "Local user 'local-user1' does not have two-factor authentication enabled.",
+      "recommendation": "Enable two-factor authentication (FortiToken, email, or SMS) for all local user accounts.",
+      "cwe": "CWE-308",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-AUTH-006",
+      "name": "LDAP TLS without server identity check",
+      "category": "Authentication",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "LDAP 'corp-ad' server-identity-check=disable",
+      "description": "LDAP server 'corp-ad' uses TLS but does not verify the server certificate identity, allowing MITM attacks.",
+      "recommendation": "Enable server-identity-check on the LDAP server configuration to validate the TLS certificate.",
+      "cwe": "CWE-295",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-SYS-016",
+      "name": "FIPS 140-2 mode not enabled",
+      "category": "System Settings",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "fips-cc=disable",
+      "description": "FIPS 140-2 validated cryptography mode is not enabled. Environments requiring FIPS compliance (government, financial) must enable this.",
+      "recommendation": "Enable FIPS mode: config system global / set fips-cc enable. NOTE: Requires reboot and restricts cipher suites.",
+      "cwe": "CWE-327",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": "config system global\n  set fips-cc enable\nend\n# NOTE: Enabling FIPS mode requires reboot and restricts cipher suites."
+    },
+    {
+      "rule_id": "FORTIOS-SYS-014",
+      "name": "SCP admin access disabled",
+      "category": "System Settings",
+      "severity": "LOW",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "admin-scp=disable",
+      "description": "SCP (Secure Copy Protocol) access for admin file transfer is disabled. SCP provides encrypted file transfer for config backup/restore.",
+      "recommendation": "Enable SCP access: config system global / set admin-scp enable.",
+      "cwe": "CWE-319",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": "config system global\n  set admin-scp enable\nend"
+    },
+    {
+      "rule_id": "FORTIOS-SYS-013",
+      "name": "TCP half-open session timer too long",
+      "category": "System Settings",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "tcp-halfopen-timer=120",
+      "description": "TCP half-open timer is 120s (recommended <=30). Long timers make the firewall vulnerable to SYN flood attacks.",
+      "recommendation": "Set tcp-halfopen-timer to 30 or less: config system global / set tcp-halfopen-timer 30.",
+      "cwe": "CWE-400",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": "config system global\n  set tcp-halfclose-timer 120\n  set tcp-halfopen-timer 30\nend"
+    },
+    {
+      "rule_id": "FORTIOS-SYS-017",
+      "name": "TCP half-close session timer too long",
+      "category": "System Settings",
+      "severity": "LOW",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "tcp-halfclose-timer=600",
+      "description": "TCP half-close timer is 600s (recommended <=120). Excessive timers waste session table resources.",
+      "recommendation": "Set tcp-halfclose-timer to 120: config system global / set tcp-halfclose-timer 120.",
+      "cwe": "CWE-400",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-SYS-015",
+      "name": "SSH grace time exceeds 120 seconds",
+      "category": "System Settings",
+      "severity": "LOW",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "admin-ssh-grace-time=300",
+      "description": "SSH grace time is 300s. This allows unauthenticated SSH sessions to remain open, consuming resources.",
+      "recommendation": "Set admin-ssh-grace-time to 60: config system global / set admin-ssh-grace-time 60.",
+      "cwe": "CWE-400",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": "config system global\n  set admin-ssh-grace-time 60\nend"
+    },
+    {
+      "rule_id": "FORTIOS-NET-017",
+      "name": "DNS queries not encrypted",
+      "category": "Network Hardening",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "dns-protocol=cleartext",
+      "description": "DNS queries are sent in cleartext, exposing internal hostname lookups to eavesdropping and manipulation.",
+      "recommendation": "Enable DNS over TLS (DoT) or DNS over HTTPS (DoH): config system dns / set protocol dot.",
+      "cwe": "CWE-319",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-ADMIN-023",
+      "name": "MFA coverage: 0% of admin accounts",
+      "category": "Admin Access",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "mfa_enabled=0/3 (0%)",
+      "description": "Only 0 of 3 admin accounts (0%) have two-factor authentication enabled. All admin accounts should require MFA.",
+      "recommendation": "Enable FortiToken or email-based 2FA for all admin accounts: config system admin / edit <name> / set two-factor fortitoken.",
+      "cwe": "CWE-308",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-ADMIN-024",
+      "name": "Default 'admin' account with super_admin profile",
+      "category": "Admin Access",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "admin=admin, accprofile=super_admin",
+      "description": "The default 'admin' account exists with super_admin privileges. Best practice is to create named admin accounts and disable the default.",
+      "recommendation": "Create named admin accounts with appropriate profiles. Disable or rename the default 'admin' account.",
+      "cwe": "CWE-1188",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-POLICY-015",
+      "name": "4 active policies without security profiles",
+      "category": "Firewall Policies",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "no_profile=4/4 (100%)",
+      "description": "4 of 4 active policies (100%) have no AV, IPS, WebFilter, or other security profile attached. Traffic matching these rules bypasses all security inspection.",
+      "recommendation": "Attach security profiles (AV, IPS, Web Filter, Application Control) to all allow policies.",
+      "cwe": "CWE-693",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-POLICY-016",
+      "name": "4 active policies with logging disabled",
+      "category": "Firewall Policies",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "no_log=4/4",
+      "description": "4 of 4 active policies have traffic logging disabled. This creates blind spots in security monitoring.",
+      "recommendation": "Enable logging on all policies: config firewall policy / edit <id> / set logtraffic all.",
+      "cwe": "CWE-778",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-LOG-017",
+      "name": "Log transport not encrypted",
+      "category": "Logging & Monitoring",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "log-mode=udp",
+      "description": "Logs are transported via unencrypted UDP. Log data may contain sensitive information visible to network eavesdroppers.",
+      "recommendation": "Use encrypted log transport (TCP with TLS) to FortiAnalyzer or syslog: config log fortianalyzer setting / set enc-algorithm high.",
+      "cwe": "CWE-319",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": "config log setting\n  set log-file-size <size-MB>\nend\nAlternatively, configure FortiAnalyzer retention policies."
+    },
+    {
+      "rule_id": "FORTIOS-CERT-011",
+      "name": "Self-signed certificate in use: Fortinet_Factory_Self-Sign",
+      "category": "Certificates",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "cert=Fortinet_Factory_Self-Sign, source=self",
+      "description": "Certificate 'Fortinet_Factory_Self-Sign' is self-signed. Self-signed certificates are not trusted by clients and cannot be revoked.",
+      "recommendation": "Replace with a CA-signed certificate from a trusted Certificate Authority.",
+      "cwe": "CWE-295",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-CERT-011",
+      "name": "Self-signed certificate in use: internal-ca",
+      "category": "Certificates",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "cert=internal-ca, source=self-signed",
+      "description": "Certificate 'internal-ca' is self-signed. Self-signed certificates are not trusted by clients and cannot be revoked.",
+      "recommendation": "Replace with a CA-signed certificate from a trusted Certificate Authority.",
+      "cwe": "CWE-295",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-NET-018",
+      "name": "Anti-spoofing disabled on wan interface: wan1",
+      "category": "Network Hardening",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "interface=wan1, src-check=disable",
+      "description": "Source IP address validation (anti-spoofing) is disabled on wan interface 'wan1'. This allows spoofed packets to traverse the firewall.",
+      "recommendation": "Enable anti-spoofing: config system interface / edit wan1 / set src-check enable.",
+      "cwe": "CWE-290",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-NET-018",
+      "name": "Anti-spoofing disabled on dmz interface: dmz",
+      "category": "Network Hardening",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "interface=dmz, src-check=disable",
+      "description": "Source IP address validation (anti-spoofing) is disabled on dmz interface 'dmz'. This allows spoofed packets to traverse the firewall.",
+      "recommendation": "Enable anti-spoofing: config system interface / edit dmz / set src-check enable.",
+      "cwe": "CWE-290",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "FORTIOS-LOG-018",
+      "name": "No automation stitches configured",
+      "category": "Logging & Monitoring",
+      "severity": "LOW",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "automation-trigger count=0",
+      "description": "No automation stitches are configured. Automation stitches enable automatic response to security events (e.g., quarantine compromised hosts, alert on config changes).",
+      "recommendation": "Configure automation stitches for critical events: config system automation-trigger / edit <name>.",
+      "cwe": "CWE-778",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": "config log fortianalyzer setting\n  set enc-algorithm high\nend"
+    },
+    {
+      "rule_id": "FORTIOS-ZTNA-006",
+      "name": "SD-WAN enabled without health checks",
+      "category": "ZTNA / SASE",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "sdwan=enable, health-check=0",
+      "description": "SD-WAN is enabled but no health check probes are configured. Without health checks, failover between WAN links is blind to link quality.",
+      "recommendation": "Configure SD-WAN health checks with SLA targets: config system sdwan / config health-check.",
+      "cwe": "CWE-693",
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "MITRE-T1190-001",
+      "name": "T1190 Exploit Public-Facing Application — IPS coverage gap",
+      "category": "MITRE ATT&CK Resilience",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "ips-sensor attached to 0/4 policies (0%)",
+      "description": "MITRE T1190: Less than 50% of active firewall policies have IPS sensors attached. Exploits targeting public-facing applications (web servers, VPN portals, mail gateways) will not be detected on unprotected policies.",
+      "recommendation": "Attach IPS sensors to all policies allowing inbound traffic, especially those for DMZ/public-facing services.",
+      "cwe": "CWE-693",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "4.2.2"
+        ],
+        "PCI-DSS": [
+          "6.5",
+          "11.4"
+        ],
+        "NIST": [
+          "SI-4",
+          "SC-7"
+        ]
+      },
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "MITRE-T1566-001",
+      "name": "T1566 Phishing — AV/WebFilter coverage gap",
+      "category": "MITRE ATT&CK Resilience",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "av=0/4, webfilter=0/4",
+      "description": "MITRE T1566: Antivirus and/or Web Filter profiles are not attached to the majority of policies. Phishing emails with malicious attachments or links may pass through without inspection.",
+      "recommendation": "Attach both AV and Web Filter profiles to all policies that allow user internet traffic.",
+      "cwe": "CWE-693",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "4.2.1",
+          "4.2.3"
+        ],
+        "PCI-DSS": [
+          "5.1",
+          "5.2"
+        ],
+        "NIST": [
+          "SI-3",
+          "SI-8"
+        ]
+      },
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "MITRE-T1133-001",
+      "name": "T1133 External Remote Services — SSL VPN without client cert",
+      "category": "MITRE ATT&CK Resilience",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "sslvpn=enable, reqclientcert=disable",
+      "description": "MITRE T1133: SSL VPN is enabled without client certificate requirement. Password-only VPN authentication is vulnerable to credential stuffing, phishing, and brute force attacks.",
+      "recommendation": "Enable client certificate verification: config vpn ssl settings / set reqclientcert enable.",
+      "cwe": "CWE-308",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "5.1.3"
+        ],
+        "PCI-DSS": [
+          "8.3.1"
+        ],
+        "NIST": [
+          "AC-17",
+          "IA-2"
+        ]
+      },
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "MITRE-T1059-001",
+      "name": "T1059 Command & Scripting — Application Control coverage gap",
+      "category": "MITRE ATT&CK Resilience",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "application-list attached to 0/4 policies",
+      "description": "MITRE T1059: Application Control profiles are not widely deployed. Without Application Control, web shells, scripting engines, and malicious application traffic cannot be identified and blocked.",
+      "recommendation": "Create Application Control profiles that block high-risk categories and attach to all outbound/DMZ policies.",
+      "cwe": "CWE-693",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "4.2.4"
+        ],
+        "PCI-DSS": [
+          "1.2.1"
+        ],
+        "NIST": [
+          "CM-7",
+          "SC-7"
+        ]
+      },
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "MITRE-T1203-001",
+      "name": "T1203 Exploitation for Client Execution — no deep SSL inspection",
+      "category": "MITRE ATT&CK Resilience",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "ssl-ssh-profile count=1, deep_inspection=false",
+      "description": "MITRE T1203: No SSL deep inspection profile detected. Without HTTPS inspection, exploit kits, drive-by downloads, and malicious payloads in encrypted traffic are invisible to IPS/AV scanning.",
+      "recommendation": "Create an SSL deep inspection profile and apply to policies for user internet traffic. Install the FortiGate CA cert on endpoints.",
+      "cwe": "CWE-693",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "4.2.5"
+        ],
+        "PCI-DSS": [
+          "6.5",
+          "11.4"
+        ],
+        "NIST": [
+          "SI-4",
+          "SC-8"
+        ]
+      },
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "MITRE-T1078-001",
+      "name": "T1078 Valid Accounts — admin accounts without MFA",
+      "category": "MITRE ATT&CK Resilience",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "no_mfa: admin, backup-admin, api-readonly (3 accounts)",
+      "description": "MITRE T1078: 3 admin account(s) lack two-factor authentication. Compromised credentials can grant full firewall control without additional verification.",
+      "recommendation": "Enable FortiToken or email-based 2FA for all admin accounts.",
+      "cwe": "CWE-308",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "2.1.4"
+        ],
+        "PCI-DSS": [
+          "8.3.1"
+        ],
+        "NIST": [
+          "IA-2(1)",
+          "AC-6"
+        ]
+      },
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "MITRE-T1071-001",
+      "name": "T1071 Application Layer Protocol — DNS filter coverage gap",
+      "category": "MITRE ATT&CK Resilience",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "dnsfilter-profile attached to 0/4 policies",
+      "description": "MITRE T1071: DNS filtering is not widely deployed. Adversaries use DNS tunneling, DNS over HTTPS (DoH), and malicious domain resolution for C2 communication and data exfiltration.",
+      "recommendation": "Attach DNS Filter profiles (with botnet/C2 domain blocking) to all outbound policies.",
+      "cwe": "CWE-693",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "4.2.6"
+        ],
+        "PCI-DSS": [
+          "1.2.1"
+        ],
+        "NIST": [
+          "SC-7",
+          "SI-4"
+        ]
+      },
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "MITRE-T1027-001",
+      "name": "T1027 Obfuscated Files — no sandbox/outbreak prevention",
+      "category": "MITRE ATT&CK Resilience",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "av_profiles=1, sandbox=disabled, outbreak=disabled",
+      "description": "MITRE T1027: No AV profiles have sandbox analysis or outbreak prevention enabled. Obfuscated, packed, or zero-day malware will bypass signature-based detection.",
+      "recommendation": "Enable FortiGuard analytics (cloud sandbox) and outbreak prevention on AV profiles.",
+      "cwe": "CWE-693",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "4.2.1"
+        ],
+        "PCI-DSS": [
+          "5.1"
+        ],
+        "NIST": [
+          "SI-3"
+        ]
+      },
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "MITRE-T1562-001",
+      "name": "T1562 Impair Defenses — no external log forwarding",
+      "category": "MITRE ATT&CK Resilience",
+      "severity": "CRITICAL",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "fortianalyzer=disable, syslog=disable",
+      "description": "MITRE T1562: No external log forwarding (FortiAnalyzer or Syslog) is configured. An attacker who compromises the firewall can delete local logs, destroying evidence of the intrusion.",
+      "recommendation": "Configure log forwarding to FortiAnalyzer or external SIEM immediately. This is critical for incident response.",
+      "cwe": "CWE-778",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "6.1.1",
+          "6.1.2"
+        ],
+        "PCI-DSS": [
+          "10.1",
+          "10.5"
+        ],
+        "NIST": [
+          "AU-2",
+          "AU-9"
+        ],
+        "HIPAA": [
+          "164.312(b)"
+        ]
+      },
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "MITRE-T1110-001",
+      "name": "T1110 Brute Force — no admin account lockout",
+      "category": "MITRE ATT&CK Resilience",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "admin-lockout-threshold=0, duration=60",
+      "description": "MITRE T1110: Admin account lockout is not configured. Adversaries can perform unlimited password guessing attempts against the management interface.",
+      "recommendation": "Set lockout: config system global / set admin-lockout-threshold 3 / set admin-lockout-duration 300.",
+      "cwe": "CWE-307",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "3.1.5"
+        ],
+        "PCI-DSS": [
+          "8.1.6"
+        ],
+        "NIST": [
+          "AC-7",
+          "IA-5"
+        ]
+      },
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "MITRE-T1557-001",
+      "name": "T1557 Adversary-in-the-Middle — HTTP on wan interface",
+      "category": "MITRE ATT&CK Resilience",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "interface=wan1, role=wan, allowaccess includes http",
+      "description": "MITRE T1557: HTTP (unencrypted) is allowed on wan interface 'wan1'. This enables MitM attacks, credential interception, and session hijacking.",
+      "recommendation": "Remove HTTP from allowaccess on wan interfaces. Use HTTPS only with admin-https-redirect.",
+      "cwe": "CWE-319",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "2.1.1"
+        ],
+        "PCI-DSS": [
+          "4.1"
+        ],
+        "NIST": [
+          "SC-8",
+          "SC-23"
+        ]
+      },
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "MITRE-T1021-001",
+      "name": "T1021 Remote Services — 1 any/any/any policies allow lateral movement",
+      "category": "MITRE ATT&CK Resilience",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "any-any-any policies=1",
+      "description": "MITRE T1021: 1 firewall policies allow any source to any destination on any service. This permits unrestricted lateral movement (SMB, RDP, SSH, WMI) between network zones.",
+      "recommendation": "Replace any/any/any rules with specific source, destination, and service restrictions. Implement network segmentation.",
+      "cwe": "CWE-284",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "4.1.2"
+        ],
+        "PCI-DSS": [
+          "1.2.1"
+        ],
+        "NIST": [
+          "AC-4",
+          "SC-7"
+        ]
+      },
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "MITRE-T1048-001",
+      "name": "T1048 Exfiltration Over Alternative Protocol — no DLP",
+      "category": "MITRE ATT&CK Resilience",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "dlp-sensor attached to 0/4 policies",
+      "description": "MITRE T1048: No DLP (Data Loss Prevention) sensors are attached to any firewall policies. Sensitive data can be exfiltrated via DNS, ICMP, HTTP, or custom protocols without detection.",
+      "recommendation": "Create DLP sensors to detect sensitive data patterns (SSN, credit cards, PII) and attach to outbound policies.",
+      "cwe": "CWE-200",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "4.2.7"
+        ],
+        "PCI-DSS": [
+          "1.3.4"
+        ],
+        "NIST": [
+          "SC-7",
+          "AC-4"
+        ]
+      },
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "MITRE-T1041-001",
+      "name": "T1041 Exfiltration Over C2 — DNS botnet detection disabled",
+      "category": "MITRE ATT&CK Resilience",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "dns_profiles=1, botnet_domain_filter=disabled",
+      "description": "MITRE T1041: DNS botnet/C2 domain filtering is not enabled. Malware can use known C2 domains for command and control and data exfiltration without being blocked.",
+      "recommendation": "Enable botnet C2 domain blocking in DNS Filter profiles: config dnsfilter profile / set block-botnet enable.",
+      "cwe": "CWE-693",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "4.2.6"
+        ],
+        "PCI-DSS": [
+          "1.2.1"
+        ],
+        "NIST": [
+          "SI-4",
+          "SC-7"
+        ]
+      },
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "MITRE-T1573-001",
+      "name": "T1573 Encrypted Channel — encrypted C2 traffic invisible",
+      "category": "MITRE ATT&CK Resilience",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "ssl-deep-inspection=not-detected",
+      "description": "MITRE T1573: Without SSL deep inspection, adversaries can establish encrypted C2 channels over HTTPS that are completely invisible to IPS, AV, and application control.",
+      "recommendation": "Deploy SSL deep inspection for outbound user traffic. Whitelist trusted financial/medical sites via SSL exemption lists.",
+      "cwe": "CWE-693",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "4.2.5"
+        ],
+        "PCI-DSS": [
+          "4.1"
+        ],
+        "NIST": [
+          "SC-8",
+          "SI-4"
+        ]
+      },
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "MITRE-T1090-001",
+      "name": "T1090 Proxy — proxy/tunnel applications not blocked",
+      "category": "MITRE ATT&CK Resilience",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "app-control profiles=1, proxy-blocked=false",
+      "description": "MITRE T1090: Application Control is not blocking proxy/tunnel applications (Tor, VPN tunnels, SOCKS proxies). Adversaries use these to disguise C2 traffic.",
+      "recommendation": "Block proxy/tunnel application categories in Application Control profiles.",
+      "cwe": "CWE-693",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "4.2.4"
+        ],
+        "PCI-DSS": [
+          "1.2.1"
+        ],
+        "NIST": [
+          "SC-7"
+        ]
+      },
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "MITRE-T1486-001",
+      "name": "T1486 Data Encrypted for Impact — no ransomware sandbox detection",
+      "category": "MITRE ATT&CK Resilience",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "sandbox=disabled, outbreak_prevention=disabled",
+      "description": "MITRE T1486: Cloud sandbox and outbreak prevention are disabled. Ransomware samples that evade signature detection (zero-day variants) will not be caught by behavioral analysis.",
+      "recommendation": "Enable FortiGuard sandbox analysis and outbreak prevention on all AV profiles protecting user traffic.",
+      "cwe": "CWE-693",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "4.2.1"
+        ],
+        "PCI-DSS": [
+          "5.1"
+        ],
+        "NIST": [
+          "SI-3",
+          "CP-9"
+        ]
+      },
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "MITRE-T1595-001",
+      "name": "T1595 Active Scanning — management exposed on WAN",
+      "category": "MITRE ATT&CK Resilience",
+      "severity": "CRITICAL",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "WAN interface has management protocols (HTTPS/SSH/SNMP/HTTP)",
+      "description": "MITRE T1595: Management interfaces are exposed on WAN, allowing adversaries to discover, fingerprint, and attack the firewall's management plane directly from the internet. This is the #1 attack vector for FortiGate compromises (CVE-2024-55591, CVE-2024-21762).",
+      "recommendation": "Remove all management protocols from WAN interfaces immediately. Use a dedicated management VLAN or VPN-only admin access.",
+      "cwe": "CWE-284",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "2.1.7"
+        ],
+        "PCI-DSS": [
+          "1.2.1"
+        ],
+        "NIST": [
+          "AC-17",
+          "SC-7"
+        ]
+      },
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "MITRE-T1189-001",
+      "name": "T1189 Drive-by Compromise — Web Filter coverage insufficient",
+      "category": "MITRE ATT&CK Resilience",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "webfilter-profile on 0/4 policies (0%)",
+      "description": "MITRE T1189: Web Filter profiles cover less than 50% of policies. Users visiting compromised websites (watering holes) will not have malicious URLs blocked by FortiGuard URL categorization.",
+      "recommendation": "Attach Web Filter profiles to all policies allowing user internet traffic. Enable FortiGuard URL rating.",
+      "cwe": "CWE-693",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "4.2.3"
+        ],
+        "PCI-DSS": [
+          "5.1"
+        ],
+        "NIST": [
+          "SI-3",
+          "SC-7"
+        ]
+      },
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "MITRE-T1046-001",
+      "name": "T1046 Network Service Discovery — no inter-zone IPS",
+      "category": "MITRE ATT&CK Resilience",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "No IPS sensor on inter-zone (east-west) policies",
+      "description": "MITRE T1046: No IPS sensors are applied to inter-zone policies. Internal network scanning (Nmap, masscan) by a compromised host traversing the firewall between zones will not trigger IPS detection signatures.",
+      "recommendation": "Apply IPS sensors to inter-zone (east-west) policies, not just inbound/outbound. This detects lateral movement scanning.",
+      "cwe": "CWE-693",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "9.1.1"
+        ],
+        "PCI-DSS": [
+          "11.4"
+        ],
+        "NIST": [
+          "SI-4",
+          "SC-7"
+        ]
+      },
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "MITRE-T1210-001",
+      "name": "T1210 Exploitation of Remote Services — east-west exploits undetected",
+      "category": "MITRE ATT&CK Resilience",
+      "severity": "HIGH",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "No IPS on inter-zone policies for exploit detection",
+      "description": "MITRE T1210: Without IPS on inter-zone policies, lateral exploitation (EternalBlue/MS17-010, PrintNightmare, Log4Shell targeting internal services) will not be detected as traffic passes between network zones.",
+      "recommendation": "Enable IPS with exploit signatures on all inter-zone policies to detect lateral exploitation attempts.",
+      "cwe": "CWE-693",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "4.2.2"
+        ],
+        "PCI-DSS": [
+          "6.5",
+          "11.4"
+        ],
+        "NIST": [
+          "SI-4",
+          "SI-2"
+        ]
+      },
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "MITRE-T1219-001",
+      "name": "T1219 Remote Access Software — RATs not blocked by AppCtrl",
+      "category": "MITRE ATT&CK Resilience",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "app-control profiles=1, remote-access-blocked=false",
+      "description": "MITRE T1219: Application Control is not blocking remote access tool categories (TeamViewer, AnyDesk, ScreenConnect, RustDesk). Adversaries deploy these legitimate tools as C2 channels to evade detection.",
+      "recommendation": "Block unauthorized remote access applications in AppCtrl profiles. Whitelist only sanctioned tools.",
+      "cwe": "CWE-693",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "4.2.4"
+        ],
+        "PCI-DSS": [
+          "1.2.1"
+        ],
+        "NIST": [
+          "CM-7",
+          "SC-7"
+        ]
+      },
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "MITRE-T1568-001",
+      "name": "T1568 Dynamic Resolution / DGA — DNS filter lacks category blocking",
+      "category": "MITRE ATT&CK Resilience",
+      "severity": "MEDIUM",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "dnsfilter 'dns-default' has no FTGD category filters",
+      "description": "MITRE T1568: DNS filter profile exists but has no FortiGuard DNS category filters configured. DGA-generated domains and newly registered malicious domains will not be caught by reputation scoring.",
+      "recommendation": "Configure FortiGuard DNS category filters to block malicious, phishing, and newly-registered domain categories.",
+      "cwe": "CWE-693",
+      "cve": null,
+      "compliance": {
+        "CIS": [
+          "4.2.6"
+        ],
+        "PCI-DSS": [
+          "1.2.1"
+        ],
+        "NIST": [
+          "SI-4"
+        ]
+      },
+      "remediation_cmd": ""
+    },
+    {
+      "rule_id": "MITRE-SUMMARY-SCORE",
+      "name": "MITRE ATT&CK Resilience Score: 23%",
+      "category": "MITRE ATT&CK Resilience",
+      "severity": "INFO",
+      "file_path": "FGT-TEST-LAB",
+      "line_num": null,
+      "line_content": "score=23%, gaps=23/30",
+      "description": "MITRE ATT&CK resilience score: 23% (7/30 controls properly configured, 23 gaps identified). Higher score = better defense against real-world attack techniques.",
+      "recommendation": "Address the 23 MITRE ATT&CK finding(s) above to improve resilience. Prioritize CRITICAL and HIGH findings first.",
+      "cwe": null,
+      "cve": null,
+      "compliance": {},
+      "remediation_cmd": ""
+    }
+  ]
+}
