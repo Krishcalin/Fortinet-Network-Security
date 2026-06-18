@@ -14,7 +14,7 @@
   <img src="https://img.shields.io/badge/FortiOS-6.x%20%7C%207.x-red?style=flat-square" alt="FortiOS"/>
   <img src="https://img.shields.io/badge/rules-260%2B-orange?style=flat-square" alt="Rules"/>
   <img src="https://img.shields.io/badge/MITRE_ATT%26CK-30_techniques-dc2626?style=flat-square" alt="MITRE"/>
-  <img src="https://img.shields.io/badge/CVEs-30-critical?style=flat-square" alt="CVEs"/>
+  <img src="https://img.shields.io/badge/CVEs-66-critical?style=flat-square" alt="CVEs"/>
   <img src="https://img.shields.io/badge/compliance-CIS%20%7C%20PCI--DSS%20%7C%20NIST%20%7C%20SOC2%20%7C%20HIPAA-blueviolet?style=flat-square" alt="Compliance"/>
   <img src="https://img.shields.io/badge/offline%20mode-OT%20%2F%20air--gapped-success?style=flat-square" alt="Offline"/>
   <img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="License"/>
@@ -32,7 +32,7 @@ The **Fortinet FortiGate Security Scanner** is a Python-based security assessmen
 It performs **260+ security checks** across **18 check methods**, including:
 - **Configuration auditing** — admin access, firewall policies, VPN, security profiles, logging, HA, certificates, network hardening, wireless, backup, authentication, ZTNA/SD-WAN, FIPS, session management
 - **MITRE ATT&CK resilience** — 30 technique-specific tests across 10 tactics with a 0-100% resilience score
-- **CVE detection** — 30 known FortiOS CVEs (2019-2025) with train-based firmware version matching
+- **CVE detection** — 66 known FortiOS CVEs (2019-2026) with train-based firmware version matching, sourced from FortiGuard PSIRT
 - **Compliance mapping** — CIS, PCI-DSS, NIST 800-53, SOC 2, HIPAA controls per finding
 - **Remediation automation** — 42 FortiOS CLI config commands exported per finding
 
@@ -42,7 +42,7 @@ It performs **260+ security checks** across **18 check methods**, including:
 |-----------|---------|
 | **260+ security rules** | 18 check methods covering all FortiGate security domains |
 | **30 MITRE ATT&CK techniques** | Resilience testing across 10 tactics with percentage scoring |
-| **30 known CVEs** | Train-based firmware version matching (FortiOS 6.2 through 7.6) |
+| **66 known CVEs** | FortiGuard PSIRT 2019–2026 with train-based version matching (FortiOS 6.2 → 7.6) |
 | **5 compliance frameworks** | CIS FortiGate, PCI-DSS 4.0, NIST 800-53 Rev 5, SOC 2 Type II, HIPAA |
 | **42 remediation commands** | FortiOS CLI config blocks per finding (`--remediation`) |
 | **Multi-device scanning** | Fleet-wide assessment via JSON inventory (`--inventory`) |
@@ -59,7 +59,7 @@ It performs **260+ security checks** across **18 check methods**, including:
 |---------|-------------|
 | **18 Check Methods** | Admin access, system settings, firewall policies, SSL VPN, IPsec VPN, security profiles, logging, HA, certificates, network hardening, FortiGuard updates, ZTNA/SD-WAN, wireless, backup & DR, authentication, advanced hardening, MITRE ATT&CK resilience, known CVEs |
 | **MITRE ATT&CK Resilience** | 30 techniques across 10 tactics: T1190, T1566, T1133, T1189, T1059, T1203, T1078, T1071, T1027, T1562, T1572, T1571, T1110, T1557, T1046, T1021, T1210, T1048, T1041, T1567, T1573, T1090, T1105, T1219, T1568, T1102, T1498, T1486, T1499, T1496, T1595 |
-| **30 Known CVEs** | CVE-2025-24472, CVE-2025-22252, CVE-2024-55591, CVE-2024-21762, CVE-2024-35279, CVE-2023-27997, CVE-2022-42475, and 23 more |
+| **66 Known CVEs** | All major FortiGuard PSIRT advisories 2019–2026: CVE-2026-24858 (FortiCloud SSO), CVE-2025-59718, CVE-2025-24472, CVE-2025-22252, CVE-2024-55591, CVE-2024-21762, CVE-2024-23113, CVE-2024-47575 (FortiJump), CVE-2023-27997 (xortigate), CVE-2022-42475, CVE-2022-40684, and 55 more |
 | **Compliance Mapping** | 76 rule-to-framework mappings across CIS, PCI-DSS, NIST, SOC2, HIPAA |
 | **Remediation Export** | 42 FortiOS CLI config commands (`--remediation fix.txt`) |
 | **Multi-Device Scanning** | JSON inventory for batch scanning with unified summary (`--inventory devices.json`) |
@@ -323,19 +323,17 @@ The scanner tests **30 MITRE ATT&CK Enterprise techniques across 10 tactics**, v
 | 15 | Authentication | FORTIOS-AUTH | 6 | LDAP/RADIUS/SAML security, MFA, server identity verification |
 | 16 | Advanced Hardening | FORTIOS-SYS/NET/etc. | ~15 | FIPS 140-2, TCP timers, SSH grace, SCP, DNS encryption, MFA %, default admin, policy profile analysis, log transport, certs, anti-spoofing, automation, SD-WAN |
 
-### Known CVEs (30 CVEs)
+### Known CVEs (66 CVEs across 2019–2026)
 
-| ID | CVE | Severity | Description |
-|---|-----|:--------:|-------------|
-| CVE-001 | CVE-2024-55591 | CRITICAL | Auth bypass via Node.js websocket |
-| CVE-002 | CVE-2024-21762 | CRITICAL | SSL VPN out-of-bounds write (RCE) |
-| CVE-003 | CVE-2024-23113 | CRITICAL | Format string in fgfmd daemon |
-| CVE-004 | CVE-2023-27997 | CRITICAL | SSL VPN heap buffer overflow (xortigate) |
-| CVE-005 | CVE-2022-42475 | CRITICAL | SSL VPN heap overflow + backdoor |
-| CVE-023 | CVE-2025-24472 | CRITICAL | CSF proxy auth bypass — super-admin |
-| CVE-027 | CVE-2024-35279 | CRITICAL | Stack buffer overflow in fgfmd — RCE |
-| CVE-029 | CVE-2025-22252 | CRITICAL | RADIUS auth bypass with empty secret |
-| ... | ... | ... | 22 more HIGH/MEDIUM CVEs covering 2019-2025 |
+All CVEs are sourced from [FortiGuard PSIRT advisories](https://www.fortiguard.com/psirt?product=FortiOS) and matched against the parsed FortiOS version via the firmware train logic in `_check_cves`.
+
+| Severity | Count | Highlights |
+|----------|:-----:|------------|
+| **CRITICAL** | 16 | CVE-2026-24858 (FortiCloud SSO bypass), CVE-2025-59718 (FortiCloud SSO multi-product), CVE-2025-24472 (CSF proxy), CVE-2025-22252 (TACACS+ bypass), CVE-2024-55591 (Node.js websocket), CVE-2024-47575 (FortiJump), CVE-2024-23113 (fgfmd format string), CVE-2024-21762 (SSL VPN OOB write), CVE-2023-42789 (captive portal), CVE-2023-27997 (xortigate), CVE-2022-42475 (sslvpnd + backdoor), CVE-2022-40684 (auth bypass) |
+| **HIGH** | 27 | CVE-2026-22153 (LDAP/Agentless VPN bypass), CVE-2025-58325 (restricted CLI bypass), CVE-2025-53844 / CVE-2025-25249 (CAPWAP), CVE-2024-46670 (IPsec IKE OOB), CVE-2024-45324 (format strings), CVE-2024-26013 (FGFM cert), CVE-2024-26009 (FGFM weak auth), CVE-2023-44250 (HA auth), CVE-2023-41677 (admin cookie leakage) |
+| **MEDIUM** | 23 | CVE-2025-68686 (SSL-VPN symlink re-persistence), CVE-2025-67862 (Lua CLI escape), CVE-2025-55018 (request smuggling), CVE-2024-3596 (RADIUS Blast-RADIUS), CVE-2024-55599 (DNS-65 filter bypass), CVE-2024-50562 (SSL-VPN session expiration) |
+
+All entries include compliance mapping (CIS / PCI-DSS / NIST / SOC 2 / HIPAA) via the standard `FORTIOS-CVE` prefix in `COMPLIANCE_MAP`.
 
 ---
 

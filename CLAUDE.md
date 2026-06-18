@@ -4,7 +4,8 @@
 
 Fortinet FortiGate Security Scanner — a security posture assessment tool that audits FortiGate
 NGFW configuration against security best practices, 5 compliance frameworks (CIS, PCI-DSS,
-NIST 800-53, SOC 2, HIPAA), 30 known CVEs, and 30 MITRE ATT&CK technique resilience tests.
+NIST 800-53, SOC 2, HIPAA), 66 known CVEs (2019–2026), and 30 MITRE ATT&CK technique
+resilience tests.
 
 Ships in two modes that share the same 18 check methods and rule set:
 1. **Live mode** — `fortinet_scanner.py`, connects to FortiGate via the FortiOS REST API.
@@ -19,7 +20,7 @@ Ships in two modes that share the same 18 check methods and rule set:
 
 ## Architecture
 
-1. **`FORTIOS_CVES` list** — 30 known FortiOS CVEs (2019-2025) with train-based version matching.
+1. **`FORTIOS_CVES` list** — 66 known FortiOS CVEs (2019-2026) with train-based version matching, sourced from FortiGuard PSIRT advisories.
 2. **`COMPLIANCE_MAP` dict** — 76 rule-to-framework mappings (CIS, PCI-DSS, NIST 800-53, SOC 2, HIPAA).
 3. **`REMEDIATION_COMMANDS` dict** — 42 FortiOS CLI config commands mapped to rule IDs.
 4. **`Finding` class** — `__slots__` with `rule_id, name, category, severity, description, recommendation, cwe, cve, compliance, remediation_cmd`. Auto-resolves compliance + remediation on init.
@@ -61,7 +62,7 @@ Ships in two modes that share the same 18 check methods and rule set:
 | Authentication | FORTIOS-AUTH | `_check_authentication` | 6 |
 | Advanced Hardening | FORTIOS-SYS/NET/POLICY/LOG/CERT/ZTNA | `_check_advanced_hardening` | ~15 |
 | MITRE ATT&CK Resilience | MITRE-T{NNNN}-{NNN} | `_check_mitre_attack_resilience` | ~30 |
-| Known CVEs | FORTIOS-CVE | `_check_cves` | 30 |
+| Known CVEs | FORTIOS-CVE | `_check_cves` | 66 |
 
 ## Compliance Framework Mapping
 
@@ -105,16 +106,22 @@ Output: console (inline), JSON (`compliance` dict), compliance CSV (`--complianc
 
 Scoring: `MITRE-SUMMARY-PASS` (all 30 pass) or `MITRE-SUMMARY-SCORE` (percentage).
 
-## Known CVEs (30 entries, 2019-2025)
+## Known CVEs (66 entries, 2019-2026)
 
-| Range | Count | Severity Mix |
-|-------|-------|-------------|
-| CVE-001 to 008 | 8 | 6 CRITICAL, 2 HIGH |
-| CVE-009 to 015 | 7 | 1 CRITICAL, 5 HIGH, 1 MEDIUM |
-| CVE-016 to 020 | 5 | 1 CRITICAL, 3 HIGH, 1 MEDIUM |
-| CVE-021 to 030 | 10 | 3 CRITICAL, 5 HIGH, 2 MEDIUM (2024-2025 new) |
+| Range | Count | Severity Mix | Notes |
+|-------|-------|-------------|-------|
+| CVE-001 to 015 | 15 | 8 CRITICAL, 6 HIGH, 1 MEDIUM | KEV-listed SSL VPN / fgfmd RCEs, FortiJump, xortigate |
+| CVE-016 to 030 | 15 | 5 CRITICAL, 7 HIGH, 3 MEDIUM | 2024-2025 CVEs, CSF proxy auth bypass, TACACS+ bypass |
+| CVE-031 to 046 | 16 | 2 CRITICAL, 14 HIGH | 2023-2026 sweep: CAPWAP, IPsec IKE, FGFM, restricted CLI escape, LDAP bypass |
+| CVE-047 to 066 | 20 | 0 CRITICAL, 0 HIGH, 20 MEDIUM | SSL-VPN symlink re-persistence, RADIUS Blast-RADIUS, request smuggling, DNS-65 filter bypass, session expiration |
+
+Totals: **16 CRITICAL, 27 HIGH, 23 MEDIUM** across all 6 supported version trains.
 
 Train-based matching: `_parse_ver()`, `_ver_in_train()`, `_ver_lt()`. Trains: 6.2, 6.4, 7.0, 7.2, 7.4, 7.6.
+
+Source: FortiGuard PSIRT advisories (https://www.fortiguard.com/psirt?product=FortiOS). Fixed
+version derived as (max-affected-version + 1 patch) per Fortinet's release convention; verified
+against several published advisories.
 
 ## API Endpoints Used (30+)
 

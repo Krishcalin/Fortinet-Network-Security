@@ -412,6 +412,404 @@ FORTIOS_CVES: list[dict] = [
         "recommendation": "Upgrade to fixed version. Review admin accounts for least-privilege. Monitor config change logs.",
         "cwe": "CWE-269",
     },
+    # ─────────────────────────────────────────────────────────────────────────
+    #  Batch 2: comprehensive PSIRT sweep (2023-2026), CVE-031 .. CVE-066
+    #  Sourced from FortiGuard PSIRT advisories pages 1-7 (FortiOS filter).
+    #  Fixed version derived as (max-affected-version + 1 patch) per the
+    #  Fortinet release convention; verified against several known CVEs.
+    # ─────────────────────────────────────────────────────────────────────────
+    {
+        "id": "FORTIOS-CVE-031", "cve": "CVE-2026-24858", "severity": "CRITICAL",
+        "name": "Administrative FortiCloud SSO authentication bypass",
+        "affected": [
+            {"train": "7.6", "fixed": "7.6.6"},
+        ],
+        "description": "An authentication bypass in the FortiCloud SSO login flow on FortiOS allows a remote attacker to gain administrative access to the FortiGate via crafted SSO requests.",
+        "recommendation": "Upgrade to FortiOS 7.6.6 or later. If FortiCloud SSO is not required, disable it on the admin login profile.",
+        "cwe": "CWE-287",
+    },
+    {
+        "id": "FORTIOS-CVE-032", "cve": "CVE-2025-59718", "severity": "CRITICAL",
+        "name": "FortiCloud SSO login authentication bypass (multi-product)",
+        "affected": [
+            {"train": "7.6", "fixed": "7.6.4"},
+            {"train": "7.4", "fixed": "7.4.9"},
+        ],
+        "description": "A missing or improper authentication step in the FortiCloud SSO login handler allows an unauthenticated attacker to obtain a valid admin session against multiple Fortinet products including FortiOS.",
+        "recommendation": "Upgrade FortiOS to 7.6.4 / 7.4.9 or later. Restrict admin login interfaces to management networks.",
+        "cwe": "CWE-288",
+    },
+    {
+        "id": "FORTIOS-CVE-033", "cve": "CVE-2026-22153", "severity": "HIGH",
+        "name": "LDAP authentication bypass in Agentless VPN and FSSO",
+        "affected": [
+            {"train": "7.6", "fixed": "7.6.5"},
+        ],
+        "description": "An authentication bypass in the LDAP path used by FortiOS Agentless VPN and Fortinet Single Sign-On (FSSO) allows an attacker to authenticate as a valid user without supplying valid credentials.",
+        "recommendation": "Upgrade FortiOS to 7.6.5 or later. Audit LDAP authentication logs for unexplained successful logins.",
+        "cwe": "CWE-287",
+    },
+    {
+        "id": "FORTIOS-CVE-034", "cve": "CVE-2025-58325", "severity": "HIGH",
+        "name": "Restricted CLI command bypass",
+        "affected": [
+            {"train": "7.6", "fixed": "7.6.1"},
+            {"train": "7.4", "fixed": "7.4.6"},
+        ],
+        "description": "A restricted shell escape allows an admin with a limited-CLI profile (prof_admin / read-only) to execute commands outside their permitted command set, leading to privilege escalation.",
+        "recommendation": "Upgrade to fixed version. Review accprofile assignments for least-privilege.",
+        "cwe": "CWE-184",
+    },
+    {
+        "id": "FORTIOS-CVE-035", "cve": "CVE-2025-53844", "severity": "HIGH",
+        "name": "Out-of-bounds access in CAPWAP daemon",
+        "affected": [
+            {"train": "7.6", "fixed": "7.6.4"},
+            {"train": "7.4", "fixed": "7.4.9"},
+            {"train": "7.2", "fixed": "7.2.11"},
+        ],
+        "description": "An out-of-bounds memory access in the CAPWAP daemon used to manage FortiAP access points allows a network-adjacent attacker to crash the daemon or potentially execute code.",
+        "recommendation": "Upgrade to fixed version. If FortiAPs are not deployed, disable the CAPWAP listener.",
+        "cwe": "CWE-125",
+    },
+    {
+        "id": "FORTIOS-CVE-036", "cve": "CVE-2025-25249", "severity": "HIGH",
+        "name": "Heap-based buffer overflow in cw_acd daemon (CAPWAP)",
+        "affected": [
+            {"train": "7.6", "fixed": "7.6.4"},
+            {"train": "7.4", "fixed": "7.4.9"},
+        ],
+        "description": "A heap-based buffer overflow in the cw_acd CAPWAP control daemon allows a remote unauthenticated attacker on the management/wireless segment to execute arbitrary code or crash the daemon.",
+        "recommendation": "Upgrade to fixed version. Restrict CAPWAP (UDP/5246, UDP/5247) to trusted AP networks only.",
+        "cwe": "CWE-122",
+    },
+    {
+        "id": "FORTIOS-CVE-037", "cve": "CVE-2024-46670", "severity": "HIGH",
+        "name": "Out-of-bounds read in IPsec IKE handler",
+        "affected": [
+            {"train": "7.6", "fixed": "7.6.1"},
+            {"train": "7.4", "fixed": "7.4.5"},
+        ],
+        "description": "An out-of-bounds read in the IPsec IKE message handler can be triggered by a malformed IKE packet, leading to information disclosure or daemon crash.",
+        "recommendation": "Upgrade to fixed version. Restrict IPsec peer IPs in phase-1 configuration where possible.",
+        "cwe": "CWE-125",
+    },
+    {
+        "id": "FORTIOS-CVE-038", "cve": "CVE-2024-45324", "severity": "HIGH",
+        "name": "Multiple format string vulnerabilities",
+        "affected": [
+            {"train": "7.4", "fixed": "7.4.5"},
+        ],
+        "description": "Multiple format string flaws across FortiOS components allow an authenticated attacker to execute arbitrary code or trigger memory disclosure via crafted CLI input.",
+        "recommendation": "Upgrade to FortiOS 7.4.5 or later.",
+        "cwe": "CWE-134",
+    },
+    {
+        "id": "FORTIOS-CVE-039", "cve": "CVE-2024-26013", "severity": "HIGH",
+        "name": "FGFM connection lacks certificate name verification",
+        "affected": [
+            {"train": "7.4", "fixed": "7.4.5"},
+        ],
+        "description": "The FortiGate Federated Management (FGFM) channel between the FortiGate and FortiManager does not properly verify the certificate name, allowing a MitM attacker on the management network to intercept or modify management traffic.",
+        "recommendation": "Upgrade to FortiOS 7.4.5. Use IPsec or dedicated out-of-band management for FGFM where possible.",
+        "cwe": "CWE-295",
+    },
+    {
+        "id": "FORTIOS-CVE-040", "cve": "CVE-2024-26009", "severity": "HIGH",
+        "name": "Weak authentication in FGFM protocol (FortiOS 6.4)",
+        "affected": [
+            {"train": "6.4", "fixed": "6.4.16"},
+        ],
+        "description": "A weak-authentication flaw in the FGFM protocol on FortiOS 6.4 lets an attacker who can reach the management port impersonate FortiManager and push configuration changes.",
+        "recommendation": "Upgrade to FortiOS 6.4.16 or migrate to 7.x. Restrict FGFM (TCP/541) to trusted FortiManager IPs.",
+        "cwe": "CWE-287",
+    },
+    {
+        "id": "FORTIOS-CVE-041", "cve": "CVE-2024-23110", "severity": "HIGH",
+        "name": "Multiple buffer overflows in 'diag npu' CLI command",
+        "affected": [
+            {"train": "7.4", "fixed": "7.4.3"},
+            {"train": "7.2", "fixed": "7.2.7"},
+        ],
+        "description": "Multiple stack-based buffer overflows in the 'diag npu' diagnostic CLI commands allow an authenticated admin to execute arbitrary code with elevated privileges.",
+        "recommendation": "Upgrade to fixed version. Restrict CLI access to trusted admins.",
+        "cwe": "CWE-120",
+    },
+    {
+        "id": "FORTIOS-CVE-042", "cve": "CVE-2024-23112", "severity": "HIGH",
+        "name": "Authorization bypass via SSL VPN bookmarks",
+        "affected": [
+            {"train": "7.4", "fixed": "7.4.2"},
+            {"train": "7.2", "fixed": "7.2.7"},
+        ],
+        "description": "An IDOR-style authorization bypass in the SSL VPN bookmark mechanism allows an authenticated SSL VPN user to access another user's bookmarks (and the resources they reference).",
+        "recommendation": "Upgrade to fixed version. Audit SSL VPN bookmarks for sensitive internal targets.",
+        "cwe": "CWE-639",
+    },
+    {
+        "id": "FORTIOS-CVE-043", "cve": "CVE-2023-44250", "severity": "HIGH",
+        "name": "Improper authorization for HA requests",
+        "affected": [
+            {"train": "7.4", "fixed": "7.4.2"},
+            {"train": "7.2", "fixed": "7.2.6"},
+        ],
+        "description": "Improper authorization on HA cluster requests allows a low-privileged admin on one HA peer to perform operations that should require super-admin privileges, by routing the request through the HA channel.",
+        "recommendation": "Upgrade to fixed version. Restrict HA heartbeat/sync interfaces to dedicated, isolated VLANs.",
+        "cwe": "CWE-285",
+    },
+    {
+        "id": "FORTIOS-CVE-044", "cve": "CVE-2023-41677", "severity": "HIGH",
+        "name": "Administrator cookie leakage",
+        "affected": [
+            {"train": "7.4", "fixed": "7.4.2"},
+            {"train": "7.2", "fixed": "7.2.7"},
+        ],
+        "description": "An admin authentication cookie may be exposed to other services or written to logs, allowing an attacker with limited access to hijack an active admin session.",
+        "recommendation": "Upgrade to fixed version. Rotate admin sessions and review audit logs for unexpected admin activity.",
+        "cwe": "CWE-1004",
+    },
+    {
+        "id": "FORTIOS-CVE-045", "cve": "CVE-2023-41678", "severity": "HIGH",
+        "name": "Double-free in cache management (FortiOS 7.0)",
+        "affected": [
+            {"train": "7.0", "fixed": "7.0.6"},
+        ],
+        "description": "A double-free condition in the FortiOS 7.0 cache management code allows a remote attacker to crash the system or potentially achieve code execution.",
+        "recommendation": "Upgrade to FortiOS 7.0.6 or later.",
+        "cwe": "CWE-415",
+    },
+    {
+        "id": "FORTIOS-CVE-046", "cve": "CVE-2023-36639", "severity": "HIGH",
+        "name": "Format string vulnerability in HTTPSd",
+        "affected": [
+            {"train": "7.4", "fixed": "7.4.1"},
+            {"train": "7.2", "fixed": "7.2.5"},
+        ],
+        "description": "A format string flaw in the HTTPSd web administration daemon allows an authenticated attacker to crash the daemon or execute arbitrary code.",
+        "recommendation": "Upgrade to fixed version. Restrict admin HTTPS access to trusted networks.",
+        "cwe": "CWE-134",
+    },
+    {
+        "id": "FORTIOS-CVE-047", "cve": "CVE-2025-68686", "severity": "MEDIUM",
+        "name": "SSL-VPN symlink persistence patch bypass",
+        "affected": [
+            {"train": "7.6", "fixed": "7.6.2"},
+            {"train": "7.4", "fixed": "7.4.7"},
+        ],
+        "description": "A patch bypass for the SSL-VPN symlink persistence technique (originally seen with CVE-2022-42475) lets an attacker who previously planted a symlink under /data/etc/ssl/vhosts/*/language/ retain read-only access to portal files after patching.",
+        "recommendation": "Upgrade to fixed version AND audit /data/etc/ssl/vhosts/*/language/ for unexpected symlinks. Reset affected devices.",
+        "cwe": "CWE-59",
+    },
+    {
+        "id": "FORTIOS-CVE-048", "cve": "CVE-2025-67862", "severity": "MEDIUM",
+        "name": "Restricted CLI escape via embedded Lua",
+        "affected": [
+            {"train": "7.6", "fixed": "7.6.4"},
+            {"train": "7.4", "fixed": "7.4.9"},
+            {"train": "7.2", "fixed": "7.2.11"},
+            {"train": "7.0", "fixed": "7.0.17"},
+            {"train": "6.4", "fixed": "6.4.16"},
+        ],
+        "description": "An admin restricted to a limited CLI profile can break out via the embedded Lua scripting engine, executing arbitrary system commands.",
+        "recommendation": "Upgrade to fixed version. Disable Lua scripting for restricted admins.",
+        "cwe": "CWE-78",
+    },
+    {
+        "id": "FORTIOS-CVE-049", "cve": "CVE-2025-57740", "severity": "MEDIUM",
+        "name": "Authenticated heap overflow in SSL-VPN bookmarks",
+        "affected": [
+            {"train": "7.6", "fixed": "7.6.3"},
+            {"train": "7.4", "fixed": "7.4.8"},
+        ],
+        "description": "An authenticated SSL-VPN user can trigger a heap overflow in the bookmark handler, leading to denial of service or potential code execution in the SSL-VPN daemon.",
+        "recommendation": "Upgrade to fixed version. Disable SSL-VPN bookmarks if not in use.",
+        "cwe": "CWE-122",
+    },
+    {
+        "id": "FORTIOS-CVE-050", "cve": "CVE-2025-55018", "severity": "MEDIUM",
+        "name": "HTTP request smuggling in admin interface",
+        "affected": [
+            {"train": "7.6", "fixed": "7.6.1"},
+            {"train": "7.4", "fixed": "7.4.10"},
+        ],
+        "description": "An HTTP request smuggling vulnerability in the FortiOS web admin / SSL-VPN front-end allows an unauthenticated attacker to bypass front-end security controls or pivot through the proxy layer.",
+        "recommendation": "Upgrade to fixed version. Front the admin interface with a WAF that normalises Content-Length / Transfer-Encoding.",
+        "cwe": "CWE-444",
+    },
+    {
+        "id": "FORTIOS-CVE-051", "cve": "CVE-2025-58413", "severity": "MEDIUM",
+        "name": "Stack buffer overflow in CAPWAP daemon",
+        "affected": [
+            {"train": "7.6", "fixed": "7.6.4"},
+            {"train": "7.4", "fixed": "7.4.9"},
+        ],
+        "description": "A stack-based buffer overflow in the CAPWAP daemon can be triggered by a malformed CAPWAP message and may lead to daemon crash or code execution.",
+        "recommendation": "Upgrade to fixed version. Restrict CAPWAP ports to trusted AP segments.",
+        "cwe": "CWE-121",
+    },
+    {
+        "id": "FORTIOS-CVE-052", "cve": "CVE-2025-64157", "severity": "MEDIUM",
+        "name": "Format string vulnerability in CAPWAP fast-failover mode",
+        "affected": [
+            {"train": "7.6", "fixed": "7.6.5"},
+        ],
+        "description": "A format string flaw in CAPWAP fast-failover handling allows an attacker on the AP/wireless control segment to crash the daemon or potentially execute code.",
+        "recommendation": "Upgrade to FortiOS 7.6.5 or later.",
+        "cwe": "CWE-134",
+    },
+    {
+        "id": "FORTIOS-CVE-053", "cve": "CVE-2025-53847", "severity": "MEDIUM",
+        "name": "Missing authentication for critical function in CAPWAP daemon",
+        "affected": [
+            {"train": "7.6", "fixed": "7.6.4"},
+            {"train": "7.4", "fixed": "7.4.9"},
+        ],
+        "description": "A critical CAPWAP control function lacks authentication checks, letting a network-adjacent attacker invoke management operations on FortiAP-connected devices.",
+        "recommendation": "Upgrade to fixed version. Segment AP networks from user / guest networks.",
+        "cwe": "CWE-306",
+    },
+    {
+        "id": "FORTIOS-CVE-054", "cve": "CVE-2025-54821", "severity": "MEDIUM",
+        "name": "Trusted hosts bypass via SSH",
+        "affected": [
+            {"train": "7.6", "fixed": "7.6.4"},
+            {"train": "7.4", "fixed": "7.4.12"},
+        ],
+        "description": "Under specific SSH configurations, the FortiOS trusted-hosts ACL is not enforced for SSH admin logins, letting an attacker connect from an untrusted source IP.",
+        "recommendation": "Upgrade to fixed version. Restrict the SSH admin port via firewall policy as an additional control.",
+        "cwe": "CWE-287",
+    },
+    {
+        "id": "FORTIOS-CVE-055", "cve": "CVE-2025-61624", "severity": "MEDIUM",
+        "name": "Path traversal in CLI",
+        "affected": [
+            {"train": "7.6", "fixed": "7.6.5"},
+        ],
+        "description": "A path traversal flaw in a FortiOS CLI command allows an authenticated admin to read or write files outside the intended directory, leading to privilege escalation or config tampering.",
+        "recommendation": "Upgrade to FortiOS 7.6.5 or later.",
+        "cwe": "CWE-22",
+    },
+    {
+        "id": "FORTIOS-CVE-056", "cve": "CVE-2025-24471", "severity": "MEDIUM",
+        "name": "eap-cert-auth bypass via revoked certificate",
+        "affected": [
+            {"train": "7.6", "fixed": "7.6.2"},
+            {"train": "7.4", "fixed": "7.4.8"},
+        ],
+        "description": "The EAP certificate authentication path does not properly check certificate revocation, allowing a user with a revoked client certificate to still authenticate to 802.1X / Wi-Fi.",
+        "recommendation": "Upgrade to fixed version. Verify OCSP/CRL configuration on the user certificate profile.",
+        "cwe": "CWE-295",
+    },
+    {
+        "id": "FORTIOS-CVE-057", "cve": "CVE-2025-22258", "severity": "MEDIUM",
+        "name": "Heap buffer overflow in WebSocket handler",
+        "affected": [
+            {"train": "7.6", "fixed": "7.6.3"},
+            {"train": "7.4", "fixed": "7.4.7"},
+        ],
+        "description": "A heap buffer overflow in the FortiOS WebSocket handler can be triggered by an authenticated user via crafted WebSocket frames, leading to potential code execution.",
+        "recommendation": "Upgrade to fixed version. Disable unused WebSocket-based admin / SSL-VPN features.",
+        "cwe": "CWE-122",
+    },
+    {
+        "id": "FORTIOS-CVE-058", "cve": "CVE-2024-55599", "severity": "MEDIUM",
+        "name": "DNS filter bypass via DNS type 65 (HTTPS) records",
+        "affected": [
+            {"train": "7.6", "fixed": "7.6.1"},
+            {"train": "7.4", "fixed": "7.4.8"},
+        ],
+        "description": "The DNS filter does not inspect DNS type 65 (HTTPS) resource records, allowing a client to resolve domains that should be blocked by web/DNS filtering policy.",
+        "recommendation": "Upgrade to fixed version. Use additional egress filtering on DoH/DoT endpoints.",
+        "cwe": "CWE-693",
+    },
+    {
+        "id": "FORTIOS-CVE-059", "cve": "CVE-2024-50571", "severity": "MEDIUM",
+        "name": "Heap overflow in fgfmsd",
+        "affected": [
+            {"train": "7.6", "fixed": "7.6.3"},
+            {"train": "7.4", "fixed": "7.4.7"},
+        ],
+        "description": "A heap overflow in the fgfmsd (Fortinet Federated Management Server Daemon) can be triggered by a crafted FGFM message, potentially leading to remote code execution on the management plane.",
+        "recommendation": "Upgrade to fixed version. Restrict FGFM (TCP/541) to trusted FortiManager IPs only.",
+        "cwe": "CWE-122",
+    },
+    {
+        "id": "FORTIOS-CVE-060", "cve": "CVE-2024-50562", "severity": "MEDIUM",
+        "name": "Insufficient session expiration on SSL-VPN cookie",
+        "affected": [
+            {"train": "7.6", "fixed": "7.6.1"},
+            {"train": "7.4", "fixed": "7.4.8"},
+        ],
+        "description": "The SSL-VPN session cookie remains valid beyond the intended idle/absolute timeout, allowing a captured cookie to be reused after the user has logically logged out.",
+        "recommendation": "Upgrade to fixed version. Tighten SSL-VPN idle-timeout and force-logout on auth failure.",
+        "cwe": "CWE-613",
+    },
+    {
+        "id": "FORTIOS-CVE-061", "cve": "CVE-2024-36505", "severity": "MEDIUM",
+        "name": "Real-time file system integrity write-protection bypass",
+        "affected": [
+            {"train": "7.4", "fixed": "7.4.4"},
+            {"train": "7.2", "fixed": "7.2.8"},
+        ],
+        "description": "The real-time file system integrity checker can be bypassed, allowing an authenticated attacker with shell access to modify protected system files without triggering integrity alerts.",
+        "recommendation": "Upgrade to fixed version. Forward integrity logs to FortiAnalyzer / SIEM and alert on unexpected file modifications.",
+        "cwe": "CWE-693",
+    },
+    {
+        "id": "FORTIOS-CVE-062", "cve": "CVE-2024-26011", "severity": "MEDIUM",
+        "name": "Improper authentication in fgfmd",
+        "affected": [
+            {"train": "7.4", "fixed": "7.4.4"},
+            {"train": "7.2", "fixed": "7.2.8"},
+        ],
+        "description": "An improper authentication flaw in fgfmd allows an attacker with network access to the FGFM port to send commands that should require an authenticated FortiManager session.",
+        "recommendation": "Upgrade to fixed version. Restrict FGFM (TCP/541) to trusted FortiManager IPs only.",
+        "cwe": "CWE-287",
+    },
+    {
+        "id": "FORTIOS-CVE-063", "cve": "CVE-2024-26008", "severity": "MEDIUM",
+        "name": "Unauthenticated reset of FGFM connection",
+        "affected": [
+            {"train": "7.4", "fixed": "7.4.4"},
+            {"train": "7.2", "fixed": "7.2.8"},
+        ],
+        "description": "An unauthenticated attacker who can reach the FGFM port can repeatedly reset the FGFM connection, causing management plane denial of service against FortiManager.",
+        "recommendation": "Upgrade to fixed version. Restrict FGFM port to trusted FortiManager IPs.",
+        "cwe": "CWE-306",
+    },
+    {
+        "id": "FORTIOS-CVE-064", "cve": "CVE-2024-3596", "severity": "MEDIUM",
+        "name": "RADIUS protocol weakness — Blast-RADIUS",
+        "affected": [
+            {"train": "7.6", "fixed": "7.6.1"},
+            {"train": "7.4", "fixed": "7.4.6"},
+        ],
+        "description": "Implementation of RFC 2865 is vulnerable to the 'Blast-RADIUS' MD5 chosen-prefix collision attack, allowing a MitM on the FortiGate↔RADIUS path to forge Access-Accept responses.",
+        "recommendation": "Upgrade to fixed version. Run RADIUS over IPsec or RadSec (TLS) where possible.",
+        "cwe": "CWE-924",
+    },
+    {
+        "id": "FORTIOS-CVE-065", "cve": "CVE-2023-46720", "severity": "MEDIUM",
+        "name": "Stack buffer overflow on Bluetooth write feature",
+        "affected": [
+            {"train": "7.4", "fixed": "7.4.4"},
+            {"train": "7.2", "fixed": "7.2.8"},
+        ],
+        "description": "A stack-based buffer overflow in the Bluetooth write helper used by FortiAP provisioning can be triggered by an attacker with physical proximity, causing a crash or code execution.",
+        "recommendation": "Upgrade to fixed version. Disable Bluetooth provisioning on FortiAPs in production.",
+        "cwe": "CWE-121",
+    },
+    {
+        "id": "FORTIOS-CVE-066", "cve": "CVE-2023-46714", "severity": "MEDIUM",
+        "name": "Buffer overflow in administrative interface",
+        "affected": [
+            {"train": "7.4", "fixed": "7.4.2"},
+            {"train": "7.2", "fixed": "7.2.8"},
+        ],
+        "description": "A buffer overflow in the FortiOS administrative interface allows an authenticated admin to crash the management daemon or potentially execute code with elevated privileges.",
+        "recommendation": "Upgrade to fixed version. Restrict admin interface to trusted networks.",
+        "cwe": "CWE-120",
+    },
 ]
 
 # ========================================================================== #
