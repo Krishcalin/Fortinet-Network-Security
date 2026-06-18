@@ -2,14 +2,19 @@
 
 ## Project Overview
 
-Fortinet FortiGate Security Scanner — a live-API security posture assessment tool that connects
-to FortiGate NGFW appliances via the FortiOS REST API and audits configuration against security
-best practices, 5 compliance frameworks (CIS, PCI-DSS, NIST 800-53, SOC 2, HIPAA), 30 known
-CVEs, and 30 MITRE ATT&CK technique resilience tests.
+Fortinet FortiGate Security Scanner — a security posture assessment tool that audits FortiGate
+NGFW configuration against security best practices, 5 compliance frameworks (CIS, PCI-DSS,
+NIST 800-53, SOC 2, HIPAA), 30 known CVEs, and 30 MITRE ATT&CK technique resilience tests.
 
-- **Language**: Python 3.10+ (requires `requests`)
-- **Scanner file**: `fortinet_scanner.py` (single self-contained file, ~5,174 lines)
-- **Version**: 4.0.0
+Ships in two modes that share the same 18 check methods and rule set:
+1. **Live mode** — `fortinet_scanner.py`, connects to FortiGate via the FortiOS REST API.
+2. **Offline mode** — `fortinet_offline_scanner.py`, parses an exported `.conf` backup for
+   OT / air-gapped environments where direct network access is impossible. Stdlib-only.
+
+- **Language**: Python 3.10+ (live mode also needs `requests`; offline mode has no third-party deps)
+- **Scanner files**: `fortinet_scanner.py` (~5,200 lines, all check logic) +
+  `fortinet_offline_scanner.py` (~340 lines, parser + adapter)
+- **Version**: 4.0.0 (engine) / 1.0.0 (offline adapter)
 - **License**: MIT
 
 ## Architecture
@@ -115,6 +120,53 @@ Train-based matching: `_parse_ver()`, `_ver_in_train()`, `_ver_lt()`. Trains: 6.
 
 System status, admin accounts, API users, global settings, DNS, interfaces, firewall policies, SSL VPN, IPsec VPN, security profiles (AV, IPS, WebFilter, AppCtrl, DLP, DNS filter, SSL-SSH, email filter, file filter, ICAP), logging (FAZ, syslog, event), HA, certificates, network (DoS, BGP, OSPF, SNMP, NTP), ZTNA/SD-WAN, FortiGuard licensing, wireless (VAP, WTP, WIDS), central management, authentication (LDAP, RADIUS, SAML, local), automation triggers.
 
+## Offline Scanner (`fortinet_offline_scanner.py`)
+
+For OT / air-gapped environments. Parses a FortiGate `.conf` backup (from `execute backup config`
+or GUI > System > Configuration > Backup) into the same dict shape the REST API returns, then
+delegates to `FortinetScanner` so every existing check runs unchanged.
+
+1. **`FortiGateConfParser`** — recursive descent over `config/edit/set/end/next` blocks.
+   - CLI section `config vpn ssl settings` → API path `vpn.ssl/settings` (join all but last with
+     dots, slash before last).
+   - `edit "X"` → `{"name": "X", …}`; numeric `edit N` also sets `policyid` for
+     firewall-policy paths or `id` for everything else.
+   - `set` values: digit-only single tokens coerced to `int` so the scanner's many
+     `isinstance(x, int) and x > N` checks fire (otherwise ~30 findings silently no-op).
+   - Reference fields (`srcaddr`, `dstaddr`, `service`, `srcintf`, `dstintf`, `member`, `groups`,
+     `users`, `match`, `ip-pools`, `tunnel-ip-pools`, `ssl-vpn-client-cert`, `api-gateway`,
+     `split-tunneling-routing-address`) shaped as `[{"name": X}]` lists to match the live API.
+   - VDOM/global wrappers (`config vdom; edit "root"; …; next; end`) transparently lifted —
+     nested configs promoted to top-level endpoints (multi-VDOM configs collapse to last-seen).
+   - Tolerant of: empty blocks, missing trailing `end`, mid-block `#` comments, blank lines,
+     `unset`, deeply nested sub-blocks (BGP/OSPF interfaces, IPS sensor entries, VIP mapped IPs).
+
+2. **`OfflineFortinetScanner(FortinetScanner)`** — subclass that overrides `_api_get(path, monitor)`.
+   - Reads from a pre-parsed response dict instead of making HTTP calls.
+   - `system/status` (monitor) synthesised from the `#config-version=FGT60F-7.0.10-FW-build1234`
+     header so CVE matching against `_fw_version` works.
+   - All other `monitor=True` endpoints (license/status, system/ha-peer, system/fortiguard-service-status,
+     system/certificate) return `None` — live checks already tolerate this (skip-with-warn semantics).
+   - Best-effort from `.conf` only: runtime-only findings (current FortiGuard subscription, HA peer
+     sync state, signature DB age) are silently omitted; static config findings all fire.
+
+3. **CLI** — same flags as live scanner minus `--token`/`--verify-ssl`/`--timeout`/`--inventory`:
+   `python fortinet_offline_scanner.py <conf> [--json …] [--html …] [--remediation …]
+   [--compliance-csv …] [--severity …] [-v]`.
+   At startup reconfigures stdout/stderr to UTF-8 with `errors='replace'` so finding text with
+   non-ASCII characters doesn't crash on Windows cp1252 consoles.
+
+4. **Lazy-import refactor in `fortinet_scanner.py`** — `requests` and `urllib3` are imported on
+   demand inside `_api_get` via `_ensure_requests()`. Offline mode requires zero third-party
+   packages, important for locked-down OT operator workstations.
+
+5. **Tests** — `test_data/test_offline_parser.py` (28 pytest cases) covers header parsing,
+   section-to-API-path mapping, tokenisation, edit/policy/SNMP id handling, reference shaping,
+   nested configs, VDOM/global wrappers, malformed input, and end-to-end smoke through
+   `OfflineFortinetScanner`. Run: `python -m pytest test_data/test_offline_parser.py -v`.
+   Smoke artefact: `test_data/sample_insecure.conf` (intentionally insecure mini-config that
+   triggers ~115 findings across all 18 categories).
+
 ## Development Guidelines
 
 ### Adding New Config Checks
@@ -133,19 +185,42 @@ System status, admin accounts, API users, global settings, DNS, interfaces, fire
 2. Add compliance mapping to `COMPLIANCE_MAP` with `MITRE-T{NNNN}` prefix key.
 3. Update the total technique count in the resilience summary.
 
+### Touching the Offline Scanner
+1. New check method that reads a new endpoint? Confirm the endpoint comes from a `config X Y`
+   block in real `.conf` exports — the parser handles it automatically. No code change needed.
+2. New iterated reference field (`[a["name"] for a in …]`)? Add the field name to
+   `REF_LIST_FIELDS` in `fortinet_offline_scanner.py` so flat `set` lines parse as
+   `[{"name": X}]` lists instead of strings.
+3. New numeric comparison (`isinstance(x, int) and x > N`)? Already covered — the parser
+   coerces digit-only single tokens to `int` in `_coerce_value`.
+4. New runtime-only endpoint? Document in the "best-effort offline" caveats; the parser will
+   return `None` and the check should already guard with `if not data: return`.
+5. Add a corresponding test case to `test_data/test_offline_parser.py`.
+
 ### Running
 ```bash
+# Live (REST API)
 python fortinet_scanner.py 10.1.1.1 --token <TOKEN> --verbose
 python fortinet_scanner.py 10.1.1.1 --token <TOKEN> --json report.json --html report.html
 python fortinet_scanner.py 10.1.1.1 --token <TOKEN> --remediation fix.txt --compliance-csv audit.csv
 python fortinet_scanner.py --inventory devices.json --json unified.json
+
+# Offline (.conf backup, no network access required)
+python fortinet_offline_scanner.py /backups/fw1.conf
+python fortinet_offline_scanner.py fw1.conf --json r.json --html r.html --compliance-csv audit.csv
+python fortinet_offline_scanner.py fw1.conf --severity HIGH --remediation fix.txt -v
+
+# Tests
+python -m pytest test_data/test_offline_parser.py -v
 ```
 
 ## Conventions
 
-- Single-file scanner: all logic in `fortinet_scanner.py`.
-- Requires `requests` (`pip install requests`).
-- Token via `--token` or env `FORTIOS_API_TOKEN`.
-- SSL verification disabled by default (FortiGate self-signed certs).
+- Live mode: single-file scanner in `fortinet_scanner.py`. Requires `requests`
+  (`pip install requests`). Token via `--token` or env `FORTIOS_API_TOKEN`. SSL verification
+  disabled by default (FortiGate self-signed certs).
+- Offline mode: `fortinet_offline_scanner.py` + `fortinet_scanner.py`. Stdlib only — no
+  `pip install` needed on the operator workstation.
 - HTML reports: Catppuccin Mocha dark theme (`#1a1b2e` bg, `#cdd6f4` text).
 - Every finding auto-resolves compliance mapping and remediation commands.
+- Both modes share the same `Finding` schema, exit codes, and report formats.

@@ -5,7 +5,7 @@
 <h1 align="center">Fortinet FortiGate Security Scanner</h1>
 
 <p align="center">
-  <strong>Live-API Security Posture Assessment with MITRE ATT&CK Resilience Testing</strong>
+  <strong>Live-API & Offline Config Security Posture Assessment with MITRE ATT&CK Resilience Testing</strong>
 </p>
 
 <p align="center">
@@ -16,6 +16,7 @@
   <img src="https://img.shields.io/badge/MITRE_ATT%26CK-30_techniques-dc2626?style=flat-square" alt="MITRE"/>
   <img src="https://img.shields.io/badge/CVEs-30-critical?style=flat-square" alt="CVEs"/>
   <img src="https://img.shields.io/badge/compliance-CIS%20%7C%20PCI--DSS%20%7C%20NIST%20%7C%20SOC2%20%7C%20HIPAA-blueviolet?style=flat-square" alt="Compliance"/>
+  <img src="https://img.shields.io/badge/offline%20mode-OT%20%2F%20air--gapped-success?style=flat-square" alt="Offline"/>
   <img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="License"/>
 </p>
 
@@ -23,7 +24,10 @@
 
 ## Overview
 
-The **Fortinet FortiGate Security Scanner** is a Python-based live-API security assessment tool that connects to FortiGate NGFW appliances via the FortiOS REST API and evaluates security posture against industry best practices, compliance frameworks, MITRE ATT&CK techniques, and known vulnerabilities.
+The **Fortinet FortiGate Security Scanner** is a Python-based security assessment tool that evaluates FortiGate NGFW posture against industry best practices, compliance frameworks, MITRE ATT&CK techniques, and known vulnerabilities. It ships in two modes that share the same 260+ checks and rule set:
+
+- **Live mode** (`fortinet_scanner.py`) — connects via the FortiOS REST API.
+- **Offline mode** (`fortinet_offline_scanner.py`) — parses an exported `.conf` backup file with **zero network access** and **zero third-party dependencies**, designed for OT, ICS, and air-gapped environments where the live scanner cannot reach the firewall.
 
 It performs **260+ security checks** across **18 check methods**, including:
 - **Configuration auditing** — admin access, firewall policies, VPN, security profiles, logging, HA, certificates, network hardening, wireless, backup, authentication, ZTNA/SD-WAN, FIPS, session management
@@ -42,6 +46,7 @@ It performs **260+ security checks** across **18 check methods**, including:
 | **5 compliance frameworks** | CIS FortiGate, PCI-DSS 4.0, NIST 800-53 Rev 5, SOC 2 Type II, HIPAA |
 | **42 remediation commands** | FortiOS CLI config blocks per finding (`--remediation`) |
 | **Multi-device scanning** | Fleet-wide assessment via JSON inventory (`--inventory`) |
+| **Offline / OT mode** | Audit from a `.conf` backup with no network access and no `pip install` |
 | **6 output formats** | Console, JSON, HTML (dark theme), compliance CSV, remediation script, ATT&CK score |
 | **Zero-agent** | REST API only, no software on target |
 | **CI/CD ready** | Exit code 1 on CRITICAL/HIGH for pipeline gating |
@@ -88,13 +93,29 @@ It performs **260+ security checks** across **18 check methods**, including:
 │  _ReportMixin            console, JSON, HTML, CSV, remediation│
 │  FortinetScanner         18 _check_* methods (260+ rules)     │
 │  MultiDeviceScanner      Fleet scanning + unified reports     │
+│  _api_get(path)          Single swap point for live/offline   │
 │  main()                  CLI with single + multi-device modes │
 └──────────────────────────────────────────────────────────────┘
+         ▲                              ▲
+         │ inherits & overrides         │
+         │ _api_get only                │
+┌────────┴───────────────────────┐      │
+│ fortinet_offline_scanner.py     │     │
+│ (v1.0.0, stdlib only)           │     │
+│   FortiGateConfParser           │     │
+│   OfflineFortinetScanner        │     │
+└─────────────────────────────────┘     │
          │                              │
          ▼                              ▼
-   FortiOS REST API              Report Output
-   /api/v2/cmdb/...          Console | JSON | HTML
-   /api/v2/monitor/...       CSV | Remediation | Score
+   Live: FortiOS REST API        Offline: .conf backup
+   /api/v2/cmdb/...                 (no network access)
+   /api/v2/monitor/...
+         │                              │
+         └──────────────┬───────────────┘
+                        ▼
+                  Report Output
+              Console | JSON | HTML
+              CSV | Remediation | Score
 ```
 
 ### Scanner Flow
@@ -112,10 +133,16 @@ It performs **260+ security checks** across **18 check methods**, including:
 
 ## Prerequisites
 
+### Live mode (`fortinet_scanner.py`)
 - **Python 3.10+**
 - **requests** library (`pip install requests`)
-- **FortiGate** with REST API enabled
-- **API token** with read access to system configuration
+- **FortiGate** with REST API enabled and an API token with read access
+
+### Offline mode (`fortinet_offline_scanner.py`)
+- **Python 3.10+** — **no other packages required** (stdlib only). Designed to run on locked-down
+  OT operator workstations with no internet access for `pip install`.
+- A FortiGate `.conf` backup file (`execute backup config flash` on the CLI or GUI > System >
+  Configuration > Backup).
 
 ---
 
@@ -124,8 +151,13 @@ It performs **260+ security checks** across **18 check methods**, including:
 ```bash
 git clone https://github.com/Krishcalin/Fortinet-Network-Security.git
 cd Fortinet-Network-Security
+
+# Only needed for live API mode:
 pip install requests
 ```
+
+For offline mode, copy `fortinet_scanner.py` and `fortinet_offline_scanner.py` to the operator
+workstation. No installation step is required.
 
 ---
 
@@ -202,6 +234,48 @@ export FORTIOS_API_TOKEN="your-api-token-here"
 python fortinet_scanner.py 10.1.1.1
 ```
 
+### Offline Mode (OT / Air-Gapped)
+
+When the FortiGate sits in an OT / ICS / air-gapped network where the live scanner cannot
+reach the management interface, use the offline scanner against a configuration backup file.
+It runs the exact same 18 check methods and produces the same report formats.
+
+**1. Export the config from the FortiGate** (one-time, by someone with console access):
+
+```
+FGT # execute backup config flash <filename>
+# or via GUI: System > Configuration > Backup > Local PC
+```
+
+**2. Run the offline scanner on the backup file**:
+
+```bash
+# Console output only
+python fortinet_offline_scanner.py /path/to/fortigate.conf
+
+# Full report set
+python fortinet_offline_scanner.py fw1.conf \
+    --json   report.json \
+    --html   report.html \
+    --remediation     fix.txt \
+    --compliance-csv  audit.csv
+
+# Filter to HIGH+ findings only
+python fortinet_offline_scanner.py fw1.conf --severity HIGH -v
+```
+
+**What works offline (from the .conf alone)**:
+- All 18 check categories, all 30 CVEs, all 30 MITRE ATT&CK resilience tests, all 76 compliance
+  mappings, all 42 remediation commands.
+- Multi-VDOM configs (collapse to the last-seen VDOM as an audit baseline).
+
+**What is skipped offline** (no runtime data in a .conf):
+- Live FortiGuard license expiry / subscription state.
+- HA peer sync status and firmware-mismatch detection.
+- Current signature database age, active session tables.
+
+These checks fire normally in live mode.
+
 ---
 
 ## MITRE ATT&CK Resilience Testing
@@ -267,6 +341,8 @@ The scanner tests **30 MITRE ATT&CK Enterprise techniques across 10 tactics**, v
 
 ## CLI Reference
 
+### Live scanner
+
 ```
 usage: fortinet_scanner.py [-h] [--token TOKEN] [--verify-ssl] [--timeout SEC]
                            [--json FILE] [--html FILE] [--remediation FILE]
@@ -287,6 +363,28 @@ options:
   --remediation FILE      Export FortiOS CLI fix commands
   --compliance-csv FILE   Export compliance mapping CSV (CIS/PCI/NIST/SOC2/HIPAA)
   --inventory FILE        Multi-device JSON inventory for batch scanning
+  --severity LEVEL        Minimum severity (default: LOW)
+  --verbose, -v           Verbose output
+  --version               Show version
+```
+
+### Offline scanner
+
+```
+usage: fortinet_offline_scanner.py [-h] [--json FILE] [--html FILE]
+                                   [--remediation FILE] [--compliance-csv FILE]
+                                   [--severity {CRITICAL,HIGH,MEDIUM,LOW,INFO}]
+                                   [--verbose] [--version]
+                                   conf
+
+positional arguments:
+  conf                    Path to a FortiGate .conf backup file
+
+options:
+  --json FILE             Save JSON report
+  --html FILE             Save interactive HTML report
+  --remediation FILE      Export FortiOS CLI fix commands
+  --compliance-csv FILE   Export compliance mapping CSV (CIS/PCI/NIST/SOC2/HIPAA)
   --severity LEVEL        Minimum severity (default: LOW)
   --verbose, -v           Verbose output
   --version               Show version
@@ -364,6 +462,7 @@ options:
 - **SSL Verification** — Use `--verify-ssl` in environments with trusted certificates
 - **Report Handling** — Reports contain sensitive configuration details; handle per data classification policy
 - **Remediation Scripts** — Always review `--remediation` output before applying to production
+- **Offline .conf Files** — A FortiGate config backup contains every policy, certificate, pre-shared key, hashed admin password, and SNMP community on the device. Treat the `.conf` artifact and any generated reports with the same controls you apply to the firewall itself: encrypted transport off the device, restricted storage, deletion after the audit.
 
 ---
 
