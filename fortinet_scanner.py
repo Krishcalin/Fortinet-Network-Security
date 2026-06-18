@@ -26,23 +26,37 @@ import json
 import os
 import re
 import sys
-import urllib3
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 VERSION = "4.0.0"
 
 # ---------------------------------------------------------------------------
-# requests (required for API mode)
+# requests / urllib3 (only required for live API mode — imported lazily so
+# the offline scanner can run on a minimal Python install without them)
 # ---------------------------------------------------------------------------
+_requests = None
 try:
-    import requests as _requests
+    import urllib3 as _urllib3
+    _urllib3.disable_warnings(_urllib3.exceptions.InsecureRequestWarning)
 except ImportError:
-    print("[!] 'requests' library is required: pip install requests", file=sys.stderr)
-    sys.exit(1)
+    _urllib3 = None
 
-# Suppress InsecureRequestWarning for self-signed certs
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+def _ensure_requests():
+    """Import the ``requests`` library on demand. Live API mode only."""
+    global _requests
+    if _requests is None:
+        try:
+            import requests as _req  # noqa: PLC0415
+        except ImportError:
+            print(
+                "[!] 'requests' library is required for live API scanning: pip install requests",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        _requests = _req
+    return _requests
 
 # ========================================================================== #
 #  KNOWN FortiOS CVEs                                                         #
@@ -879,23 +893,24 @@ class FortinetScanner(_ReportMixin):
     # ---- API helpers ----
 
     def _api_get(self, path: str, monitor: bool = False) -> dict | list | None:
+        req = _ensure_requests()
         prefix = "monitor" if monitor else "cmdb"
         url = f"{self.host}/api/v2/{prefix}/{path}"
         self._vprint(f"  [api] GET {url}")
         try:
-            resp = _requests.get(
+            resp = req.get(
                 url,
                 headers={"Authorization": f"Bearer {self.token}"},
                 verify=self.verify_ssl,
                 timeout=self.timeout,
             )
-        except _requests.exceptions.ConnectionError as exc:
+        except req.exceptions.ConnectionError as exc:
             self._warn(f"Connection failed: {exc}")
             return None
-        except _requests.exceptions.Timeout:
+        except req.exceptions.Timeout:
             self._warn(f"Timeout for {path}")
             return None
-        except _requests.exceptions.RequestException as exc:
+        except req.exceptions.RequestException as exc:
             self._warn(f"Request failed: {exc}")
             return None
 
