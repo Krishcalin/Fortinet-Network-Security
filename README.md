@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/python-3.10%2B-blue?style=flat-square&logo=python&logoColor=white" alt="Python"/>
   <img src="https://img.shields.io/badge/FortiOS-6.x%20%7C%207.x-red?style=flat-square" alt="FortiOS"/>
   <img src="https://img.shields.io/badge/rules-260%2B-orange?style=flat-square" alt="Rules"/>
-  <img src="https://img.shields.io/badge/MITRE_ATT%26CK-30_techniques-dc2626?style=flat-square" alt="MITRE"/>
+  <img src="https://img.shields.io/badge/MITRE_ATT%26CK-31_techniques-dc2626?style=flat-square" alt="MITRE"/>
   <img src="https://img.shields.io/badge/CVEs-66-critical?style=flat-square" alt="CVEs"/>
   <img src="https://img.shields.io/badge/compliance-CIS%20%7C%20PCI--DSS%20%7C%20NIST%20%7C%20SOC2%20%7C%20HIPAA-blueviolet?style=flat-square" alt="Compliance"/>
   <img src="https://img.shields.io/badge/offline%20mode-OT%20%2F%20air--gapped-success?style=flat-square" alt="Offline"/>
@@ -31,7 +31,7 @@ The **Fortinet FortiGate Security Scanner** is a Python-based security assessmen
 
 It performs **260+ security checks** across **18 check methods**, including:
 - **Configuration auditing** — admin access, firewall policies, VPN, security profiles, logging, HA, certificates, network hardening, wireless, backup, authentication, ZTNA/SD-WAN, FIPS, session management
-- **MITRE ATT&CK resilience** — 30 technique-specific tests across 10 tactics with a 0-100% resilience score
+- **MITRE ATT&CK resilience** — 31 technique-specific tests across 11 tactics with a 0-100% resilience score
 - **CVE detection** — 66 known FortiOS CVEs (2019-2026) with train-based firmware version matching, sourced from FortiGuard PSIRT
 - **Compliance mapping** — CIS, PCI-DSS, NIST 800-53, SOC 2, HIPAA controls per finding
 - **Remediation automation** — 42 FortiOS CLI config commands exported per finding
@@ -41,7 +41,7 @@ It performs **260+ security checks** across **18 check methods**, including:
 | Capability | Details |
 |-----------|---------|
 | **260+ security rules** | 18 check methods covering all FortiGate security domains |
-| **30 MITRE ATT&CK techniques** | Resilience testing across 10 tactics with percentage scoring |
+| **31 MITRE ATT&CK techniques** | Resilience testing across 11 tactics with percentage scoring |
 | **66 known CVEs** | FortiGuard PSIRT 2019–2026 with train-based version matching (FortiOS 6.2 → 7.6) |
 | **5 compliance frameworks** | CIS FortiGate, PCI-DSS 4.0, NIST 800-53 Rev 5, SOC 2 Type II, HIPAA |
 | **42 remediation commands** | FortiOS CLI config blocks per finding (`--remediation`) |
@@ -58,7 +58,7 @@ It performs **260+ security checks** across **18 check methods**, including:
 | Feature | Description |
 |---------|-------------|
 | **18 Check Methods** | Admin access, system settings, firewall policies, SSL VPN, IPsec VPN, security profiles, logging, HA, certificates, network hardening, FortiGuard updates, ZTNA/SD-WAN, wireless, backup & DR, authentication, advanced hardening, MITRE ATT&CK resilience, known CVEs |
-| **MITRE ATT&CK Resilience** | 30 techniques across 10 tactics: T1190, T1566, T1133, T1189, T1059, T1203, T1078, T1071, T1027, T1562, T1572, T1571, T1110, T1557, T1046, T1021, T1210, T1048, T1041, T1567, T1573, T1090, T1105, T1219, T1568, T1102, T1498, T1486, T1499, T1496, T1595 |
+| **MITRE ATT&CK Resilience** | 31 techniques across 11 tactics: T1190, T1566, T1133, T1189, T1059, T1203, T1078, T1071, T1027, T1562, T1572, T1571, T1110, T1557, T1046, T1021, T1210, T1048, T1041, T1567, T1573, T1090, T1105, T1219, T1568, T1102, T1498, T1486, T1499, T1496, T1595 |
 | **66 Known CVEs** | All major FortiGuard PSIRT advisories 2019–2026: CVE-2026-24858 (FortiCloud SSO), CVE-2025-59718, CVE-2025-24472, CVE-2025-22252, CVE-2024-55591, CVE-2024-21762, CVE-2024-23113, CVE-2024-47575 (FortiJump), CVE-2023-27997 (xortigate), CVE-2022-42475, CVE-2022-40684, and 55 more |
 | **Compliance Mapping** | 76 rule-to-framework mappings across CIS, PCI-DSS, NIST, SOC2, HIPAA |
 | **Remediation Export** | 42 FortiOS CLI config commands (`--remediation fix.txt`) |
@@ -86,7 +86,7 @@ It performs **260+ security checks** across **18 check methods**, including:
 ┌──────────────────────────────────────────────────────────────┐
 │                  fortinet_scanner.py (v4.0.0)                 │
 ├──────────────────────────────────────────────────────────────┤
-│  FORTIOS_CVES[]          30 CVE definitions (2019-2025)      │
+│  FORTIOS_CVES[]          66 CVE definitions (2019-2026)      │
 │  COMPLIANCE_MAP{}        76 rule → CIS/PCI/NIST/SOC2/HIPAA   │
 │  REMEDIATION_COMMANDS{}  42 FortiOS CLI fix commands          │
 │  Finding                 __slots__ + compliance + remediation │
@@ -124,8 +124,8 @@ It performs **260+ security checks** across **18 check methods**, including:
 2. **Discover** — Retrieve system info and firmware version
 3. **Collect** — Pull configuration from 30+ API endpoints
 4. **Audit** — Run 18 check methods across all security domains
-5. **CVE Match** — Compare firmware against 30 known CVE version ranges
-6. **MITRE Test** — Evaluate 30 ATT&CK technique mitigations, calculate resilience score
+5. **CVE Match** — Compare firmware against 66 known CVE version ranges
+6. **MITRE Test** — Evaluate 31 ATT&CK technique mitigations, calculate resilience score
 7. **Comply** — Map findings to CIS, PCI-DSS, NIST, SOC2, HIPAA controls
 8. **Report** — Output to console, JSON, HTML, compliance CSV, remediation script
 
@@ -265,7 +265,7 @@ python fortinet_offline_scanner.py fw1.conf --severity HIGH -v
 ```
 
 **What works offline (from the .conf alone)**:
-- All 18 check categories, all 30 CVEs, all 30 MITRE ATT&CK resilience tests, all 76 compliance
+- All 18 check categories, all 66 CVEs, all 31 MITRE ATT&CK resilience tests, all 76 compliance
   mappings, all 42 remediation commands.
 - Multi-VDOM configs (collapse to the last-seen VDOM as an audit baseline).
 
@@ -280,7 +280,7 @@ These checks fire normally in live mode.
 
 ## MITRE ATT&CK Resilience Testing
 
-The scanner tests **30 MITRE ATT&CK Enterprise techniques across 10 tactics**, verifying that FortiGate security controls can detect and block real-world attack scenarios. Each test checks a specific FortiGate feature against the ATT&CK technique it should mitigate.
+The scanner tests **31 MITRE ATT&CK Enterprise techniques across 11 tactics**, verifying that FortiGate security controls can detect and block real-world attack scenarios. Each test checks a specific FortiGate feature against the ATT&CK technique it should mitigate.
 
 | Tactic | Techniques Tested | FortiGate Controls Verified |
 |--------|:-:|---------------------------|
@@ -296,7 +296,7 @@ The scanner tests **30 MITRE ATT&CK Enterprise techniques across 10 tactics**, v
 | **Impact** | 4 | DoS policies, ransomware sandbox, app-layer DoS, cryptomining detection |
 | **Reconnaissance** | 1 | WAN management interface exposure |
 
-**Resilience Score**: Each scan produces a 0-100% score. A `MITRE-SUMMARY-SCORE` finding shows how many of the 30 controls are properly configured. 100% = `MITRE-SUMMARY-PASS`.
+**Resilience Score**: Each scan produces a 0-100% score. A `MITRE-SUMMARY-SCORE` finding shows how many of the 31 controls are properly configured. 100% = `MITRE-SUMMARY-PASS`.
 
 ---
 

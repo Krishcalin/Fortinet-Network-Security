@@ -5259,7 +5259,7 @@ class FortinetScanner(_ReportMixin):
         # RESILIENCE SUMMARY
         # ================================================================
         mitre_findings = [f for f in self.findings if f.rule_id.startswith("MITRE-")]
-        total_techniques = 30  # Total techniques we test for
+        total_techniques = 31  # Total distinct techniques we test for (across 11 tactics)
         gaps = len(mitre_findings)
         if not mitre_findings:
             self._add(Finding(

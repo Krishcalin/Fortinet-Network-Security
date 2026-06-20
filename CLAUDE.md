@@ -4,7 +4,7 @@
 
 Fortinet FortiGate Security Scanner — a security posture assessment tool that audits FortiGate
 NGFW configuration against security best practices, 5 compliance frameworks (CIS, PCI-DSS,
-NIST 800-53, SOC 2, HIPAA), 66 known CVEs (2019–2026), and 30 MITRE ATT&CK technique
+NIST 800-53, SOC 2, HIPAA), 66 known CVEs (2019–2026), and 31 MITRE ATT&CK technique
 resilience tests.
 
 Ships in two modes that share the same 18 check methods and rule set:
@@ -61,7 +61,7 @@ Ships in two modes that share the same 18 check methods and rule set:
 | Backup & DR | FORTIOS-BACKUP | `_check_backup` | 5 |
 | Authentication | FORTIOS-AUTH | `_check_authentication` | 6 |
 | Advanced Hardening | FORTIOS-SYS/NET/POLICY/LOG/CERT/ZTNA | `_check_advanced_hardening` | ~15 |
-| MITRE ATT&CK Resilience | MITRE-T{NNNN}-{NNN} | `_check_mitre_attack_resilience` | ~30 |
+| MITRE ATT&CK Resilience | MITRE-T{NNNN}-{NNN} | `_check_mitre_attack_resilience` | 31 |
 | Known CVEs | FORTIOS-CVE | `_check_cves` | 66 |
 
 ## Compliance Framework Mapping
@@ -88,7 +88,7 @@ Output: console (inline), JSON (`compliance` dict), compliance CSV (`--complianc
 
 ## MITRE ATT&CK Resilience Testing
 
-`_check_mitre_attack_resilience()` tests **30 MITRE ATT&CK Enterprise techniques across 10 tactics**. Each test verifies a specific FortiGate control is configured to mitigate the attack vector. Produces a resilience score (0-100%).
+`_check_mitre_attack_resilience()` tests **31 MITRE ATT&CK Enterprise techniques across 11 tactics**. Each test verifies a specific FortiGate control is configured to mitigate the attack vector. Produces a resilience score (0-100%).
 
 | Tactic | Techniques |
 |--------|-----------|
@@ -104,7 +104,7 @@ Output: console (inline), JSON (`compliance` dict), compliance CSV (`--complianc
 | **Impact** (TA0040) | T1498 (DoS policies), T1486 (ransomware sandbox), T1499 (app-layer DoS), T1496 (cryptomining) |
 | **Reconnaissance** (TA0043) | T1595 (WAN management exposure) |
 
-Scoring: `MITRE-SUMMARY-PASS` (all 30 pass) or `MITRE-SUMMARY-SCORE` (percentage).
+Scoring: `MITRE-SUMMARY-PASS` (all 31 pass) or `MITRE-SUMMARY-SCORE` (percentage).
 
 ## Known CVEs (66 entries, 2019-2026)
 
