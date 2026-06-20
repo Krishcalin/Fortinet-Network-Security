@@ -54,7 +54,7 @@ That second mode isn't a convenience feature. It's the reason the project exists
 
 ## The part I'm proudest of: resilience, not just hygiene
 
-The headline capability is **MITRE ATT&CK resilience testing**. The scanner runs **30 ATT&CK techniques across 10 tactics** — initial access, execution, persistence, defense evasion, credential access, discovery, lateral movement, command-and-control, exfiltration, and impact — and checks whether the FortiGate features that *should* mitigate each technique are actually configured to do so.
+The headline capability is **MITRE ATT&CK resilience testing**. The scanner runs **31 ATT&CK techniques across 11 tactics** — reconnaissance, initial access, execution, persistence, defense evasion, credential access, discovery, lateral movement, command-and-control, exfiltration, and impact — and checks whether the FortiGate features that *should* mitigate each technique are actually configured to do so.
 
 The output is a single **0–100% resilience score**. Not a vibe. A number you can put on a slide and watch move quarter over quarter.
 
@@ -66,7 +66,7 @@ Now, that offline mode.
 
 Most scanners assume they can reach the thing they're scanning. In enterprise IT, fair enough. In **OT, ICS, and air-gapped environments** — the world I actually live in — that assumption falls apart. The firewall protecting a process network is often somewhere a scanning host simply cannot route to, by deliberate design. And the operator workstation that *can* reach it usually has no internet, no `pip`, and a change-control process that treats installing a Python package as a federal case.
 
-So the offline scanner runs on a config backup file, on the standard library alone. Copy two `.py` files to a locked-down operator workstation, point it at a `.conf` export, and you get the **same 18 check categories, the same 30 MITRE tests, the same 66 CVE checks, the same compliance mappings** — with nothing installed and nothing touching the network. The same machinery that would've needed a live connection now runs against a static file you can carry across an air gap.
+So the offline scanner runs on a config backup file, on the standard library alone. Copy two `.py` files to a locked-down operator workstation, point it at a `.conf` export, and you get the **same 18 check categories, the same 31 MITRE tests, the same 66 CVE checks, the same compliance mappings** — with nothing installed and nothing touching the network. The same machinery that would've needed a live connection now runs against a static file you can carry across an air gap.
 
 For anyone defending critical infrastructure, that's the difference between a tool you can use and a tool you can only admire.
 
