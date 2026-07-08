@@ -1280,6 +1280,94 @@
    "CWE-693 Protection Mechanism Failure"
   ]
  },
+ "FORTIOS-DRIFT-SUMMARY": {
+  "risk": "Configuration drift is unmanaged change. Between two scans, new Critical/High findings can appear from an unreviewed rule edit, a firmware roll-back, a re-enabled insecure setting, or an attacker who has already gained access and loosened controls. Without a diff you only ever see a point-in-time snapshot and cannot tell an intentional fix from a dangerous regression.",
+  "steps": [
+   "Review each NEW Critical/High finding in the drift summary as a potential regression or unauthorized change.",
+   "Correlate the change window with your change-management / management-of-change records; if a change is unaccounted for, treat it as a possible incident.",
+   "Confirm the RESOLVED findings were fixed intentionally (and not merely hidden by a filter or an offline/runtime data gap).",
+   "Roll back any unauthorized or mistaken change from a known-good config backup.",
+   "Schedule this scan (e.g. daily/weekly) and diff every run against the last approved baseline for continuous compliance.",
+   "Store baselines securely and version them alongside change tickets."
+  ],
+  "gui": "Not applicable on the device - drift is computed by comparing two scanner --json reports. Use FortiManager revision history / config diff for the on-box change trail.",
+  "cli": "# Save a baseline, then diff future scans against it:\n#   fortinet_scanner.py <host> --token <t> --json baseline.json\n#   fortinet_scanner.py <host> --token <t> --baseline baseline.json --json today.json\n# On-box change trail:\nget system config revision\ndiagnose sys config-error-log read",
+  "verify": "Re-run with --baseline pointing at the last APPROVED report; a clean run shows 0 new Critical/High and a non-worsening risk score.",
+  "rollback": "execute restore config from the last approved revision if an unauthorized change is confirmed: execute restore config flash <revision>.",
+  "impact": "The drift comparison itself is read-only and non-disruptive. Any rollback of an unauthorized change is a configuration change - perform it under change control.",
+  "references": [
+   "PCI-DSS 1.1.7 & 11.5 (change detection), NIST SP 800-53 CM-3 / CM-6 / SI-7",
+   "FireMon / NSPM practice - continuous compliance and drift detection",
+   "Fortinet - configuration revisions and change auditing",
+   "CWE-710: Improper Adherence to Coding Standards (change management)"
+  ]
+ },
+ "FORTIOS-EXPOSURE-001": {
+  "risk": "An inbound WAN policy that allows ANY internet source to reach ALL services on its destination(s) is effectively no perimeter for those hosts. Every open TCP/UDP port is reachable by internet-wide scanners (Shodan/Censys and mass-exploitation bots) within minutes, so any weak service, default credential, or unpatched CVE on the destination becomes an immediate, unauthenticated entry point into the network.",
+  "steps": [
+   "Identify the offending inbound policy (its ID is in the finding) and exactly what it is meant to publish.",
+   "Replace it with least-privilege policies: set specific destination address/VIP objects instead of broad ranges.",
+   "Restrict the service to only the ports actually required (e.g. a specific VIP forwarding 443), not ALL.",
+   "For administrative access, require VPN or ZTNA and restrict srcaddr to trusted IPs - do not publish admin/management to the internet.",
+   "Attach UTM profiles (IPS, AV, Web Filter / WAF via VIP, SSL inspection) and enable logging on the retained inbound rules.",
+   "Re-run the scanner and confirm the any-source/all-service exposure is gone."
+  ],
+  "gui": "Policy & Objects > Firewall Policy: edit the inbound (WAN->internal) rule; set specific Destination, Service, and (for admin) Source, add Security Profiles and logging. Publish services via Policy & Objects > Virtual IPs with explicit port forwarding.",
+  "cli": "config firewall policy\n  edit <policyid>\n    set dstaddr <specific-vip-or-host>\n    set service HTTPS\n    set utm-status enable\n    set ips-sensor default\n    set ssl-ssh-profile deep-inspection\n    set logtraffic all\n  next\nend",
+  "verify": "From an external host, port-scan the published IP (nmap) and confirm only the intended ports respond; show firewall policy <id> shows specific dstaddr/service, not all/ALL.",
+  "rollback": "Revert the policy from your config backup if a required inbound flow breaks; loosen one destination/service at a time rather than reverting to any/ALL.",
+  "impact": "Tightening an inbound rule can block currently-working inbound flows that were implicitly allowed - inventory legitimate inbound services first and test. No reboot; syncs on HA.",
+  "references": [
+   "CIS Fortinet FortiGate Benchmark - restrict inbound access (section 4)",
+   "Fortinet 'Hardening your FortiGate' - publish only required services, use VIPs",
+   "PCI-DSS 1.2.1 / 1.3, NIST SP 800-53 SC-7 (boundary protection), AC-4",
+   "CWE-284: Improper Access Control"
+  ]
+ },
+ "FORTIOS-EXPOSURE-002": {
+  "risk": "A high-risk service (SSH, RDP, SMB, Telnet, VNC, a database, etc.) is reachable from the internet through an inbound WAN policy. These are the services attackers target first for initial access and lateral movement: internet-exposed RDP/SSH are the leading ransomware entry vector, SMB and databases leak or are exploited directly, and exposed management protocols enable credential attacks against the device or servers behind it. If the source is 'all', the entire internet can reach it.",
+  "steps": [
+   "Identify the inbound policy and the exposed service named in the finding.",
+   "Remove that service from the internet-facing policy entirely if it does not need to be public.",
+   "If remote access is required, put it behind VPN or ZTNA (FortiClient / ZTNA access proxy) and restrict srcaddr to specific trusted IP objects.",
+   "For web apps that must be public, front them with a WAF / reverse proxy and deep SSL inspection rather than exposing the raw service.",
+   "Enforce MFA on any exposed authentication surface and enable IPS + logging on the rule.",
+   "Re-run the scanner to confirm the high-risk service is no longer internet-facing."
+  ],
+  "gui": "Policy & Objects > Firewall Policy: edit the inbound rule, remove the risky Service (or restrict Source to trusted IPs); publish admin access via VPN (VPN > SSL-VPN / IPsec) or ZTNA instead.",
+  "cli": "config firewall policy\n  edit <policyid>\n    unset service            # or narrow to only required, non-admin services\n    set srcaddr <trusted-ip-object>   # if it must stay, restrict the source\n  next\nend\n# prefer: expose admin only via VPN/ZTNA, never directly on the WAN",
+  "verify": "From outside, attempt to reach the service (e.g. nc -vz <public-ip> 3389) and confirm it is now refused/filtered; show firewall policy <id> no longer lists the risky service to an 'all' source.",
+  "rollback": "Re-add the service or broaden the source from your config backup only if a legitimate, risk-accepted need exists - and pair it with source restriction, MFA and IPS.",
+  "impact": "Removing/restricting the service breaks direct internet access to it (the intended effect) - notify users who rely on it and provide the VPN/ZTNA alternative first. No reboot.",
+  "references": [
+   "CISA / FBI guidance - do not expose RDP/SMB to the internet; use VPN",
+   "Fortinet 'Hardening your FortiGate' - restrict administrative and management access",
+   "NIST SP 800-53 AC-17 (remote access), SC-7; PCI-DSS 1.2.1 / 8.x",
+   "CWE-284: Improper Access Control / CWE-1327: Binding to an Unrestricted IP Address"
+  ]
+ },
+ "FORTIOS-EXPOSURE-SUMMARY": {
+  "risk": "This is the externally-reachable attack surface an internet attacker enumerates first: the count of inbound WAN allow policies, how many accept any internet source, and how many expose high-risk services. A large or permissive internet-facing surface directly correlates with breach likelihood - the fewer services and sources exposed, the fewer paths an attacker has.",
+  "steps": [
+   "Review each inbound WAN allow policy and justify why it must be internet-facing.",
+   "Remove or VPN-gate everything that does not strictly need public exposure (especially admin/management and databases).",
+   "For services that must be public, restrict source where possible, publish via specific VIPs, and add WAF/IPS + logging.",
+   "Adopt a default-deny inbound posture with an explicit, reviewed allow-list.",
+   "Track the inbound-exposure count over time (use --baseline drift) and drive it down.",
+   "Re-run the scanner and confirm the attack surface has shrunk."
+  ],
+  "gui": "Policy & Objects > Firewall Policy: filter to WAN->internal policies and review them as a set; Policy & Objects > Virtual IPs for published services.",
+  "cli": "get firewall policy | grep -B2 -A6 'srcintf.*wan'   # review inbound rules\n# then tighten each per the individual EXPOSURE findings",
+  "verify": "Re-run the scanner: the inbound-policy and high-risk-service counts fall. Corroborate with an external port scan / attack-surface tool.",
+  "rollback": "Restore specific inbound rules from your config backup if a required service was removed.",
+  "impact": "Reducing the attack surface changes what is reachable from the internet - stage changes and confirm legitimate inbound services still work. No reboot.",
+  "references": [
+   "Attack Surface Management best practice - minimise internet-facing services",
+   "Fortinet 'Hardening your FortiGate'",
+   "NIST SP 800-53 SC-7, CA-8; PCI-DSS 1.x / 11.x",
+   "CWE-284: Improper Access Control"
+  ]
+ },
  "FORTIOS-HA-001": {
   "risk": "A standalone FortiGate at the network edge is a single point of failure: one hardware fault, PSU/fan failure, kernel panic, or a failed firmware upgrade takes down all Internet ingress/egress, inter-segment routing, IPsec and SSL-VPN tunnels, and all inspection/logging at once. An attacker who can crash the device (triggering a DoS bug or a memory-corruption CVE) causes a total perimeter outage with no automatic recovery. Business impact: complete loss of connectivity and security visibility until a human manually replaces or reboots the box (typically hours), plus a logging blind spot during the outage.",
   "steps": [

@@ -899,6 +899,8 @@ COMPLIANCE_MAP: dict[str, dict[str, list[str]]] = {
     "FORTIOS-RULEBASE":  {"CIS": ["4.1"], "PCI-DSS": ["1.1.7", "1.2.1"], "NIST": ["AC-4", "CM-7"], "SOC2": ["CC6.6"]},
     "FORTIOS-USAGE":     {"PCI-DSS": ["1.1.7"], "NIST": ["AC-4", "CM-7"], "SOC2": ["CC6.6"]},
     "FORTIOS-OBJECT":    {"PCI-DSS": ["1.1.7"], "NIST": ["CM-7"], "SOC2": ["CC6.6"]},
+    "FORTIOS-EXPOSURE":  {"CIS": ["4.1"], "PCI-DSS": ["1.2.1", "1.3"], "NIST": ["SC-7", "AC-17"], "SOC2": ["CC6.6"]},
+    "FORTIOS-DRIFT":     {"PCI-DSS": ["1.1.7", "11.5"], "NIST": ["CM-3", "CM-6", "SI-7"], "SOC2": ["CC7.1"]},
     "FORTIOS-POLICY-001": {"CIS": ["4.1.1"], "PCI-DSS": ["1.2.1"], "NIST": ["AC-4"], "SOC2": ["CC6.6"]},
     "FORTIOS-POLICY-002": {"CIS": ["4.1.2"], "PCI-DSS": ["1.2.1"], "NIST": ["AC-4", "SC-7"], "SOC2": ["CC6.6"]},
     "FORTIOS-POLICY-003": {"CIS": ["4.1.3"], "PCI-DSS": ["1.1.7"], "NIST": ["AU-3"], "SOC2": ["CC7.2"]},
@@ -1123,6 +1125,74 @@ class _ReportMixin:
             f for f in self.findings
             if self.SEVERITY_ORDER.get(f.severity, 4) <= threshold
         ]
+
+    @staticmethod
+    def _risk_score(counts: dict) -> int:
+        return min(100, counts.get("CRITICAL", 0) * 25 + counts.get("HIGH", 0) * 10
+                   + counts.get("MEDIUM", 0) * 4 + counts.get("LOW", 0) * 1)
+
+    def apply_drift(self, baseline_path: str) -> None:
+        """Compare the current findings against a previous ``--json`` report and
+        report what is NEW (regressions) vs RESOLVED, plus the posture delta.
+        Prints a drift summary and adds a FORTIOS-DRIFT-SUMMARY finding so the
+        change surfaces in every report format. Enables trend/continuous-compliance
+        use (run on a schedule, diff each time)."""
+        try:
+            with open(baseline_path, encoding="utf-8") as fh:
+                base = json.load(fh)
+        except (OSError, ValueError) as exc:
+            print(f"[!] Could not load baseline '{baseline_path}': {exc}", file=sys.stderr)
+            return
+        base_findings = base.get("findings", []) if isinstance(base, dict) else []
+
+        def sig_d(d):
+            return (d.get("rule_id", ""), d.get("file_path", ""), d.get("line_content", ""))
+
+        base_sigs = {sig_d(d): d for d in base_findings if isinstance(d, dict)}
+        cur_sigs = {(f.rule_id, f.file_path, f.line_content): f for f in self.findings}
+        new = [f for s, f in cur_sigs.items() if s not in base_sigs]
+        resolved = [d for s, d in base_sigs.items() if s not in cur_sigs]
+        new.sort(key=lambda f: self.SEVERITY_ORDER.get(f.severity, 4))
+        new_crit = sum(1 for f in new if f.severity == "CRITICAL")
+        new_high = sum(1 for f in new if f.severity == "HIGH")
+
+        cur_score = self._risk_score(self.summary())
+        base_score = self._risk_score(base.get("summary", {}) if isinstance(base, dict) else {})
+        delta = cur_score - base_score
+        base_time = str(base.get("generated", "") if isinstance(base, dict) else "")[:19].replace("T", " ")
+
+        sep = "=" * 60
+        print(f"\n{self.BOLD}{sep}")
+        print("  Configuration Drift vs baseline")
+        print(f"  Baseline : {baseline_path}  ({base_time or 'unknown time'})")
+        print(f"  New      : {len(new)}  (CRITICAL {new_crit}, HIGH {new_high})")
+        print(f"  Resolved : {len(resolved)}")
+        print(f"  Risk score: {base_score} -> {cur_score}  (delta {delta:+d})")
+        print(f"{sep}{self.RESET}")
+        for f in new[:15]:
+            print(f"    {self.SEVERITY_COLOR.get(f.severity, '')}+ [{f.severity}]{self.RESET} {f.rule_id} — {f.name}")
+        for d in resolved[:10]:
+            print(f"    - [resolved] {d.get('rule_id', '')} — {d.get('name', '')}")
+        print()
+
+        sev = "HIGH" if (new_crit or new_high) else ("LOW" if new else "INFO")
+        top = "; ".join(f"[{f.severity}] {f.rule_id} {f.name}" for f in new[:8])
+        self._add(Finding(
+            rule_id="FORTIOS-DRIFT-SUMMARY",
+            name=f"Config drift: {len(new)} new, {len(resolved)} resolved vs baseline",
+            category="Drift", severity=sev,
+            file_path=self._sys_info.get("hostname", self.host), line_num=None,
+            line_content=(f"new={len(new)} (crit={new_crit} high={new_high}) resolved={len(resolved)} "
+                          f"risk_score {base_score}->{cur_score} (delta {delta:+d}) baseline={base_time}"),
+            description=(f"Compared against the baseline scan from {base_time or 'a previous run'}: {len(new)} new finding(s) "
+                         f"({new_crit} Critical, {new_high} High) appeared and {len(resolved)} were resolved. Aggregate risk "
+                         f"score moved {base_score} -> {cur_score} (delta {delta:+d}). "
+                         + (f"New/regressed: {top}." if top else "No new findings — posture held or improved.")),
+            recommendation=("Investigate every new Critical/High finding as a potential regression or unauthorized change; "
+                            "confirm resolved findings were fixed intentionally. Run this scan on a schedule and diff each run "
+                            "to catch configuration drift early (continuous compliance)."),
+            cwe="CWE-710",
+        ))
 
     def print_report(self) -> None:
         sep = "=" * 72
@@ -1365,6 +1435,7 @@ class FortinetScanner(_ReportMixin):
             ("Rule-Base Analysis",   self._check_rulebase),
             ("Rule Usage",           self._check_rule_usage),
             ("Object Hygiene",       self._check_object_hygiene),
+            ("Attack Surface",       self._check_exposure),
             ("SSL VPN",              self._check_ssl_vpn),
             ("IPsec VPN",            self._check_ipsec_vpn),
             ("Security Profiles",    self._check_security_profiles),
@@ -1956,8 +2027,8 @@ class FortinetScanner(_ReportMixin):
                         rule_id="FORTIOS-ADMIN-012", name="Management protocols on WAN interface",
                         category="Admin Access", severity="CRITICAL",
                         file_path=self._sys_info.get("hostname", self.host),
-                        line_num=None, line_content=f"interface={iface_name}, role=wan, mgmt_access={','.join(wan_bad)}",
-                        description=f"WAN interface '{iface_name}' allows management protocols ({', '.join(wan_bad)}). This exposes the management plane to the internet.",
+                        line_num=None, line_content=f"interface={iface_name}, role=wan, mgmt_access={','.join(sorted(wan_bad))}",
+                        description=f"WAN interface '{iface_name}' allows management protocols ({', '.join(sorted(wan_bad))}). This exposes the management plane to the internet.",
                         recommendation="Remove all management protocols from WAN interfaces. Use a dedicated management interface or VPN for admin access.",
                         cwe="CWE-284",
                     ))
@@ -2545,6 +2616,131 @@ class FortinetScanner(_ReportMixin):
                 recommendation="Either apply these profiles to the relevant allow policies, or delete them if superseded. Ensure every internet-facing allow rule carries the appropriate UTM profiles.",
                 cwe="CWE-1164",
             ))
+
+    # ================================================================== #
+    #  CHECK: Exposure / Attack Surface (internet-reachable services)     #
+    # ================================================================== #
+
+    # Services that should essentially never be directly reachable from the internet.
+    _EXPO_RISKY = {
+        "ssh": "SSH", "telnet": "Telnet", "rdp": "RDP", "ms-rdp": "RDP",
+        "smb": "SMB", "samba": "SMB", "netbios": "NetBIOS", "cifs": "SMB",
+        "ms-sql": "MS-SQL", "mssql": "MS-SQL", "mysql": "MySQL", "sql": "SQL",
+        "postgres": "PostgreSQL", "mongo": "MongoDB", "redis": "Redis",
+        "vnc": "VNC", "ftp": "FTP", "tftp": "TFTP", "rlogin": "rlogin",
+        "ldap": "LDAP", "winrm": "WinRM", "snmp": "SNMP", "rpc": "RPC",
+        "elasticsearch": "Elasticsearch", "kibana": "Kibana", "docker": "Docker",
+        "rexec": "rexec", "rsh": "rsh", "x11": "X11",
+    }
+    _EXPO_ALL_SVC = {"ALL", "ALL_TCP", "ALL_UDP", "ALL_ICMP", "ANY"}
+
+    def _wan_interfaces(self) -> set:
+        """Best-effort set of internet-facing interface names (role=wan, or a
+        conventional WAN name when the role attribute is not set)."""
+        names: set = set()
+        ifaces = self._api_get("system/interface")
+        if isinstance(ifaces, list):
+            for i in ifaces:
+                if not isinstance(i, dict):
+                    continue
+                nm = i.get("name", "")
+                role = str(i.get("role", "")).lower()
+                if role == "wan":
+                    names.add(nm)
+                elif role in ("", "undefined") and any(
+                        t in nm.lower() for t in ("wan", "internet", "outside", "ppp", "wwan")):
+                    names.add(nm)
+        return names
+
+    def _check_exposure(self) -> None:
+        _host = self._sys_info.get("hostname", self.host)
+        policies = self._api_get("firewall/policy")
+        if not isinstance(policies, list) or not policies:
+            return
+        wan = self._wan_interfaces()
+
+        exposed = []       # (pid, name, src_all, svc_names)
+        risky_count = 0
+        for pol in policies:
+            if str(pol.get("status", "enable")).lower() == "disable":
+                continue
+            if str(pol.get("action", "")).lower() != "accept":
+                continue
+            srcintf = {i.get("name", "") for i in (pol.get("srcintf") or []) if isinstance(i, dict)}
+            inbound = ("any" in srcintf) or bool(srcintf & wan)
+            if not inbound:
+                continue
+            src_names = {a.get("name", "") for a in (pol.get("srcaddr") or []) if isinstance(a, dict)}
+            svc_names = [s.get("name", "") for s in (pol.get("service") or []) if isinstance(s, dict)]
+            src_all = "all" in src_names
+            pid = pol.get("policyid", "?")
+            name = pol.get("name") or f"policy-{pid}"
+            exposed.append((pid, name, src_all, svc_names))
+
+            # Named high-risk services reachable from the internet.
+            for sv in svc_names:
+                if sv.upper() in self._EXPO_ALL_SVC:
+                    continue  # handled by EXPOSURE-001 below
+                key = sv.lower()
+                label = next((lab for tok, lab in self._EXPO_RISKY.items() if tok in key), None)
+                if not label:
+                    continue
+                risky_count += 1
+                sev = "CRITICAL" if src_all else "HIGH"
+                self._add(Finding(
+                    rule_id="FORTIOS-EXPOSURE-002",
+                    name=f"High-risk service exposed to the internet: {label}",
+                    category="Attack Surface", severity=sev,
+                    file_path=_host, line_num=None,
+                    line_content=f"policy {pid} ({name}): {'ANY internet source' if src_all else 'restricted source'} -> service {sv} via WAN",
+                    description=("Inbound WAN policy {p} '{n}' permits internet traffic to the high-risk service '{s}' "
+                                 "({lab}). ".format(p=pid, n=name, s=sv, lab=label)
+                                 + ("It is open to ANY source on the internet. " if src_all
+                                    else "It is restricted to specific sources, but ")
+                                 + f"{label} is a common initial-access / lateral-movement target and should not be "
+                                 "directly internet-facing."),
+                    recommendation=(f"Remove '{sv}' from inbound WAN policy {pid}, or restrict srcaddr to specific trusted "
+                                    "IP objects and require VPN/ZTNA for administrative access. Front web apps with a WAF and "
+                                    "publish management only via VPN — never expose SSH/RDP/SMB/database ports to the internet."),
+                    cwe="CWE-284",
+                ))
+
+            # Any-source to all-services inbound from the internet.
+            if src_all and any(s.upper() in self._EXPO_ALL_SVC for s in svc_names):
+                self._add(Finding(
+                    rule_id="FORTIOS-EXPOSURE-001",
+                    name="Inbound internet policy allows ANY source to ALL services",
+                    category="Attack Surface", severity="CRITICAL",
+                    file_path=_host, line_num=None,
+                    line_content=f"policy {pid} ({name}): srcintf=WAN, srcaddr=all, service=ALL, action=accept",
+                    description=(f"Inbound WAN policy {pid} '{name}' allows ANY source on the internet to reach ALL services "
+                                 "on the destination(s). This is effectively no perimeter for the covered destinations and "
+                                 "exposes every open port to internet-wide scanning and exploitation."),
+                    recommendation=("Replace this rule with least-privilege policies: specific destination objects, only the "
+                                    "required services, and — for admin — trusted source IPs behind VPN/ZTNA. Add UTM inspection "
+                                    "and logging."),
+                    cwe="CWE-284",
+                ))
+
+        # Attack-surface summary.
+        internet_open = sum(1 for e in exposed if e[2])
+        sev = "HIGH" if risky_count else ("MEDIUM" if internet_open else "LOW" if exposed else "INFO")
+        wan_note = f"WAN interfaces: {', '.join(sorted(wan)) or '(none identified — used any-source policies)'}"
+        self._add(Finding(
+            rule_id="FORTIOS-EXPOSURE-SUMMARY",
+            name=f"Attack surface: {len(exposed)} inbound internet policy(ies), {risky_count} high-risk exposure(s)",
+            category="Attack Surface", severity=sev,
+            file_path=_host, line_num=None,
+            line_content=f"inbound_wan_accept={len(exposed)} any-source={internet_open} high-risk-services={risky_count} | {wan_note}",
+            description=(f"Modelling reachability from the internet through the policy set: {len(exposed)} enabled inbound "
+                         f"WAN allow policy(ies), of which {internet_open} accept ANY internet source, exposing {risky_count} "
+                         "high-risk service instance(s) (SSH/RDP/SMB/DB and similar). This is the externally-reachable attack "
+                         "surface an internet attacker sees first."),
+            recommendation=("Minimise the internet-facing attack surface: publish only necessary services, restrict admin to "
+                            "VPN/ZTNA, front web apps with a WAF, and remove any-source/all-service inbound rules. Re-run to "
+                            "confirm the surface shrinks."),
+            cwe="CWE-284",
+        ))
 
     # ================================================================== #
     #  CHECK: SSL VPN                                                      #
@@ -3653,8 +3849,8 @@ class FortinetScanner(_ReportMixin):
                     rule_id="FORTIOS-HA-004", name="HA cluster firmware version mismatch",
                     category="High Availability", severity="HIGH",
                     file_path=_host, line_num=None,
-                    line_content=f"versions={', '.join(versions)}",
-                    description=f"HA cluster members are running different firmware versions: {', '.join(versions)}.",
+                    line_content=f"versions={', '.join(sorted(versions))}",
+                    description=f"HA cluster members are running different firmware versions: {', '.join(sorted(versions))}.",
                     recommendation="Upgrade all HA cluster members to the same firmware version.",
                     cwe="CWE-1104",
                 ))
@@ -5888,6 +6084,7 @@ Examples:
     parser.add_argument("--pdf", metavar="FILE", help="Save detailed PDF report to FILE (stdlib only, no extra deps)")
     parser.add_argument("--remediation", metavar="FILE", help="Export a detailed remediation runbook to FILE")
     parser.add_argument("--compliance-csv", metavar="FILE", help="Export compliance mapping CSV (CIS, PCI-DSS, NIST, SOC2, HIPAA)")
+    parser.add_argument("--baseline", metavar="FILE", help="Prior --json report to diff against (config drift: new vs resolved findings + posture delta)")
     parser.add_argument("--inventory", metavar="FILE", help="Multi-device inventory JSON file for batch scanning")
     parser.add_argument(
         "--severity",
@@ -5952,6 +6149,9 @@ Examples:
     if args.severity:
         scanner.filter_severity(args.severity)
         scanner._sev_filter = f"{args.severity} and above"
+
+    if args.baseline:
+        scanner.apply_drift(args.baseline)
 
     scanner.print_report()
 

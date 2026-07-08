@@ -7,7 +7,7 @@ NGFW configuration against security best practices, 5 compliance frameworks (CIS
 NIST 800-53, SOC 2, HIPAA), 70 known CVEs (2019–2026), and 31 MITRE ATT&CK technique
 resilience tests.
 
-Ships in two modes that share the same 21 check methods and rule set:
+Ships in two modes that share the same 22 check methods and rule set:
 1. **Live mode** — `fortinet_scanner.py`, connects to FortiGate via the FortiOS REST API.
 2. **Offline mode** — `fortinet_offline_scanner.py`, parses an exported `.conf` backup for
    OT / air-gapped environments where direct network access is impossible. Stdlib-only.
@@ -45,7 +45,7 @@ Ships in two modes that share the same 21 check methods and rule set:
 | SSL | Self-signed certs accepted by default; `--verify-ssl` to enforce |
 | Token env var | `FORTIOS_API_TOKEN` |
 
-## Check Methods (21 methods, 260+ rules)
+## Check Methods (22 methods, 260+ rules)
 
 | Category | Prefix | Check Method | Rules |
 |----------|--------|-------------|-------|
@@ -55,6 +55,7 @@ Ships in two modes that share the same 21 check methods and rule set:
 | Rule-Base Analysis | FORTIOS-RULEBASE | `_check_rulebase` | shadow/redundant + Policy Control Index (SCORE) |
 | Rule Usage (live) | FORTIOS-USAGE | `_check_rule_usage` | dormant-rule cleanup via `monitor/firewall/policy` |
 | Object Hygiene | FORTIOS-OBJECT | `_check_object_hygiene` | orphaned address/service/profile objects |
+| Attack Surface | FORTIOS-EXPOSURE | `_check_exposure` | WAN→internal reachability; internet-exposed high-risk services + summary |
 | SSL VPN | FORTIOS-SSLVPN | `_check_ssl_vpn` | 14 |
 | IPsec VPN | FORTIOS-IPSEC | `_check_ipsec_vpn` | 12 |
 | Security Profiles | FORTIOS-PROFILE/AV/IPS/WF/APP/DLP/DNS | `_check_security_profiles` | 11 |
@@ -104,7 +105,9 @@ report section is never empty. It covers **every** emitted rule_id (0 gaps).
 - `save_remediation` → a detailed text **runbook** (risk / steps / GUI / CLI / verify / rollback /
   impact / references per finding), not a bare CLI dump.
 
-CLI flags: `--html`, `--pdf`, `--remediation`, `--compliance-csv` (both live and offline scanners).
+CLI flags: `--html`, `--pdf`, `--remediation`, `--compliance-csv`, `--baseline` (both live and offline scanners).
+
+**Config drift** (`_ReportMixin.apply_drift`, `--baseline prior.json`): diffs current findings vs a prior `--json` report by signature `(rule_id, file_path, line_content)`, prints new/resolved + posture-score delta, and adds a `FORTIOS-DRIFT-SUMMARY` finding. **Line_content must be deterministic** for signatures to match — sort any set before joining it into `line_content` (fixed `wan_bad`/`versions`).
 
 ## Multi-Device Scanning
 

@@ -5,7 +5,7 @@
 <h1 align="center">Fortinet FortiGate Security Scanner</h1>
 
 <p align="center">
-  <strong>Agentless FortiGate NGFW posture assessment — live API or offline <code>.conf</code> — with MITRE ATT&CK resilience scoring,<br/>70 CVE checks, 5-framework compliance mapping, and a 233-entry detailed remediation runbook.</strong>
+  <strong>Agentless FortiGate NGFW posture assessment — live API or offline <code>.conf</code> — with MITRE ATT&CK resilience scoring,<br/>70 CVE checks, 5-framework compliance mapping, and a 237-entry detailed remediation runbook.</strong>
 </p>
 
 <p align="center">
@@ -65,7 +65,7 @@ It runs in **two modes that share one engine, one rule set, and one report layer
 
 Offline mode exists for the places live scanning cannot reach: **OT / ICS networks, air-gapped enclaves, and locked-down operator workstations** where you cannot open a socket to the firewall or `pip install` anything.
 
-> **260+ checks · 21 domains · rule-base analysis + Policy Control Index · 31 MITRE ATT&CK techniques · 70 FortiOS CVEs · 5 compliance frameworks · 233-entry remediation knowledge base · HTML + PDF + JSON + CSV reports**
+> **260+ checks · 22 domains · rule-base analysis + Policy Control Index · attack-surface + config-drift · 31 MITRE ATT&CK techniques · 70 FortiOS CVEs · 5 compliance frameworks · 237-entry remediation knowledge base · HTML + PDF + JSON + CSV reports**
 
 ---
 
@@ -105,12 +105,12 @@ Open `report.html` in any browser, hand `report.pdf` to management, and give `ru
 
 | Capability | Details |
 |-----------|---------|
-| **260+ security rules** | 21 check methods covering every FortiGate security domain |
-| **Rule-base analysis (FireMon-style)** | Shadowed & redundant rule detection, a 0–100 **Policy Control Index**, dormant-rule cleanup (live), and orphaned address/service/profile hygiene |
+| **260+ security rules** | 22 check methods covering every FortiGate security domain |
+| **Rule-base analysis (FireMon-style)** | Shadowed & redundant rule detection, a 0–100 **Policy Control Index**, dormant-rule cleanup (live), orphaned object hygiene, **internet attack-surface** modelling, and **config-drift** diffing between scans |
 | **31 MITRE ATT&CK techniques** | Resilience testing across 11 tactics with a 0–100% score |
 | **70 known CVEs** | FortiGuard PSIRT 2019–2026, train-based firmware version matching (FortiOS 6.2 → 7.6) |
 | **5 compliance frameworks** | CIS FortiGate, PCI-DSS 4.0, NIST 800-53 Rev 5, SOC 2 Type II, HIPAA — 77 rule-to-control mappings |
-| **233-entry remediation KB** | Per finding: risk · numbered steps · GUI path · verified CLI · verification command · rollback · service impact · references |
+| **237-entry remediation KB** | Per finding: risk · numbered steps · GUI path · verified CLI · verification command · rollback · service impact · references |
 | **HTML + PDF reports** | Rich self-contained HTML and paginated PDF — both **stdlib-only** (no reportlab / weasyprint) |
 | **Offline / OT mode** | Audit from a `.conf` backup with no network access and no `pip install` |
 | **Multi-device scanning** | Fleet-wide assessment via a JSON inventory, with a unified report |
@@ -148,13 +148,13 @@ Open `report.html` in any browser, hand `report.pdf` to management, and give `ru
 
 The two scanners share the same engine through a single seam: the offline scanner subclasses the live one and overrides **only** `_api_get()`, feeding it configuration parsed from the `.conf` file instead of live HTTP responses. Every check, CVE match, compliance mapping, and report format therefore behaves identically in both modes.
 
-**Scan flow:** Connect → Discover firmware → Collect (30+ endpoints) → Audit (21 methods) → Rule-base analysis → CVE match → MITRE resilience → Compliance map → **Report**.
+**Scan flow:** Connect → Discover firmware → Collect (30+ endpoints) → Audit (22 methods) → Rule-base + attack-surface analysis → CVE match → MITRE resilience → Compliance map → *(optional drift diff vs baseline)* → **Report**.
 
 ---
 
 ## Detailed Remediation
 
-This is the headline of v4.0.0. Findings are joined at report time to a **233-entry remediation knowledge base** (`remediation_kb.json`) keyed by rule ID (with family-prefix fallback, so e.g. one `FORTIOS-CVE` entry serves every CVE). Every emitted rule is covered. When a rule has no KB entry the loader gracefully falls back to the finding's own recommendation, so a report section is never empty.
+This is the headline of v4.0.0. Findings are joined at report time to a **237-entry remediation knowledge base** (`remediation_kb.json`) keyed by rule ID (with family-prefix fallback, so e.g. one `FORTIOS-CVE` entry serves every CVE). Every emitted rule is covered. When a rule has no KB entry the loader gracefully falls back to the finding's own recommendation, so a report section is never empty.
 
 Each entry answers the questions an engineer actually asks:
 
@@ -270,8 +270,19 @@ Inspired by enterprise NSPM tools (e.g. FireMon Policy Manager), the scanner ana
 | `FORTIOS-RULEBASE-SCORE` | **Policy Control Index** — a 0–100 posture score (grade A–F) for the whole rule-base, from rule permissiveness, logging & UTM coverage, and dead/redundant rules. |
 | `FORTIOS-USAGE-001` | **Dormant policy** — an allow rule with **no observed traffic** (live mode only, via runtime hit counters), for recertification/cleanup. |
 | `FORTIOS-OBJECT-001/002/003` | **Orphaned objects** — address objects, custom services, and security profiles that are defined but referenced by no policy (address-group membership is resolved). |
+| `FORTIOS-EXPOSURE-001/002` | **Internet attack surface** — models WAN→internal reachability through the policy set: an any-source→all-services inbound rule (**CRITICAL**), or a high-risk service (SSH/RDP/SMB/DB/…) reachable from the internet (**CRITICAL** if any-source, else **HIGH**). `FORTIOS-EXPOSURE-SUMMARY` rolls up the externally-reachable surface. |
 
 Shadow/redundancy analysis is **name-based** (it compares the object names on each rule, resolving address/service groups) — a fast first-pass that catches the common cases; it does not resolve overlapping IP/CIDR ranges. Rule-usage is live-only; everything else works offline too.
+
+### Configuration Drift (`--baseline`)
+
+Point `--baseline` at a previous `--json` report to diff two scans — what's **new** (regressions / unauthorized change), what's **resolved**, and the **posture-score delta**. It prints a drift summary and adds a `FORTIOS-DRIFT-SUMMARY` finding (rated by new Critical/High) to every report, so the exit code fails CI on a regression. Run on a schedule and diff each time for continuous compliance.
+
+```bash
+# 1) capture a baseline, 2) diff future scans against it
+python fortinet_offline_scanner.py fw.conf --json baseline.json
+python fortinet_offline_scanner.py fw.conf --baseline baseline.json --json today.json --html drift.html
+```
 
 ### MITRE ATT&CK Resilience Testing
 
@@ -420,7 +431,7 @@ python fortinet_offline_scanner.py fw1.conf \
 python fortinet_offline_scanner.py fw1.conf --severity HIGH -v
 ```
 
-**Works offline (from the `.conf` alone):** all config-audit + rule-base/object-hygiene categories, all 70 CVEs, all 31 MITRE ATT&CK tests, all 77 compliance mappings, and the full 233-entry remediation runbook. Multi-VDOM configs collapse to the last-seen VDOM as an audit baseline.
+**Works offline (from the `.conf` alone):** all config-audit + rule-base/object-hygiene categories, all 70 CVEs, all 31 MITRE ATT&CK tests, all 77 compliance mappings, and the full 237-entry remediation runbook. Multi-VDOM configs collapse to the last-seen VDOM as an audit baseline.
 
 **Skipped offline** (no runtime data in a static `.conf`): live FortiGuard license/subscription state, HA peer sync status, and current signature-database age. These fire normally in live mode.
 
@@ -447,6 +458,7 @@ usage: fortinet_scanner.py [-h] [--token TOKEN] [--verify-ssl] [--timeout SEC]
   --pdf FILE              Save detailed PDF report (stdlib only)
   --remediation FILE      Export a detailed remediation runbook
   --compliance-csv FILE   Export compliance mapping CSV (CIS/PCI/NIST/SOC2/HIPAA)
+  --baseline FILE         Diff against a prior --json report (config drift)
   --inventory FILE        Multi-device JSON inventory for batch scanning
   --severity LEVEL        Minimum severity to report (default: LOW)
   --verbose, -v           Verbose output
@@ -501,7 +513,7 @@ The job fails automatically (exit `1`) whenever a CRITICAL or HIGH finding is pr
 Fortinet-Network-Security/
 ├── fortinet_scanner.py           # Live engine: checks, CVEs, MITRE, compliance, reports (~5,600 lines)
 ├── fortinet_offline_scanner.py   # Offline adapter: .conf parser + _api_get override (stdlib only)
-├── remediation_kb.json           # 233-entry detailed remediation knowledge base
+├── remediation_kb.json           # 237-entry detailed remediation knowledge base
 ├── remediation_kb.py             # RemediationKB loader (exact + family-prefix resolution)
 ├── fortinet_html.py              # Rich self-contained HTML report generator
 ├── fortinet_pdf.py               # Paginated PDF report layout

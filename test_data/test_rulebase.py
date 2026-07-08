@@ -169,5 +169,81 @@ def test_object_hygiene_group_membership_counts_as_used():
     assert "FORTIOS-OBJECT-001" not in _ids(s.findings)
 
 
+# --------------------------------------------------------------- exposure ----
+
+def _idata(policies):
+    return {"system/interface": [{"name": "wan1", "role": "wan"}, {"name": "lan", "role": "lan"}],
+            "firewall/policy": policies}
+
+
+def test_exposure_ssh_from_internet_is_critical():
+    s = StubScanner(_idata([_pol(1, srcintf="wan1", srcaddr="all", dstaddr="srv", service="SSH")]))
+    s._check_exposure()
+    e2 = [f for f in s.findings if f.rule_id == "FORTIOS-EXPOSURE-002"]
+    assert e2 and e2[0].severity == "CRITICAL"
+
+
+def test_exposure_restricted_rdp_is_high():
+    s = StubScanner(_idata([_pol(1, srcintf="wan1", srcaddr="trusted", dstaddr="srv", service="RDP")]))
+    s._check_exposure()
+    e2 = [f for f in s.findings if f.rule_id == "FORTIOS-EXPOSURE-002"]
+    assert e2 and e2[0].severity == "HIGH"
+
+
+def test_exposure_any_to_all_and_summary():
+    s = StubScanner(_idata([_pol(1, srcintf="wan1", srcaddr="all", service="ALL")]))
+    s._check_exposure()
+    ids = _ids(s.findings)
+    assert "FORTIOS-EXPOSURE-001" in ids
+    assert "FORTIOS-EXPOSURE-SUMMARY" in ids
+
+
+def test_exposure_outbound_and_web_not_flagged():
+    s = StubScanner(_idata([
+        _pol(1, srcintf="lan", dstintf="wan1", srcaddr="all", service="SSH"),  # outbound
+        _pol(2, srcintf="wan1", srcaddr="all", service="HTTPS"),               # web = legit public
+    ]))
+    s._check_exposure()
+    assert "FORTIOS-EXPOSURE-002" not in _ids(s.findings)
+
+
+# ----------------------------------------------------------------- drift ------
+
+def _finding(rid, sev, name, lc="x"):
+    from fortinet_scanner import Finding
+    return Finding(rule_id=rid, name=name, category="c", severity=sev, file_path="h",
+                   line_num=None, line_content=lc, description="", recommendation="")
+
+
+def _write_baseline(tmp_path, findings, summary):
+    import json as _json
+    doc = {"generated": "2026-01-01T00:00:00", "summary": summary,
+           "findings": [{"rule_id": f[0], "file_path": "h", "line_content": f[3] if len(f) > 3 else "x",
+                         "severity": f[1], "name": f[2]} for f in findings]}
+    p = tmp_path / "baseline.json"
+    p.write_text(_json.dumps(doc), encoding="utf-8")
+    return str(p)
+
+
+def test_drift_detects_new_and_resolved(tmp_path):
+    base = _write_baseline(tmp_path, [("R-OLD", "CRITICAL", "old")], {"CRITICAL": 1})
+    s = StubScanner({})
+    s.findings = [_finding("R-NEW", "HIGH", "new one")]
+    s.apply_drift(base)
+    drift = [f for f in s.findings if f.rule_id == "FORTIOS-DRIFT-SUMMARY"][0]
+    assert "new=1" in drift.line_content and "resolved=1" in drift.line_content
+    assert drift.severity == "HIGH"  # a new HIGH is a regression
+
+
+def test_drift_identical_is_zero(tmp_path):
+    base = _write_baseline(tmp_path, [("R-1", "LOW", "f1")], {"LOW": 1})
+    s = StubScanner({})
+    s.findings = [_finding("R-1", "LOW", "f1")]
+    s.apply_drift(base)
+    drift = [f for f in s.findings if f.rule_id == "FORTIOS-DRIFT-SUMMARY"][0]
+    assert "new=0" in drift.line_content and "resolved=0" in drift.line_content
+    assert drift.severity == "INFO"
+
+
 if __name__ == "__main__":
     sys.exit(pytest.main([__file__, "-v"]))

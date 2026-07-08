@@ -401,6 +401,7 @@ class OfflineFortinetScanner(FortinetScanner):
             ("Rule-Base Analysis",      self._check_rulebase),
             ("Rule Usage",              self._check_rule_usage),
             ("Object Hygiene",          self._check_object_hygiene),
+            ("Attack Surface",          self._check_exposure),
             ("SSL VPN",                 self._check_ssl_vpn),
             ("IPsec VPN",               self._check_ipsec_vpn),
             ("Security Profiles",       self._check_security_profiles),
@@ -469,6 +470,8 @@ Examples:
                         help="Export a detailed remediation runbook to FILE")
     parser.add_argument("--compliance-csv", metavar="FILE",
                         help="Export compliance CSV (CIS, PCI-DSS, NIST, SOC2, HIPAA)")
+    parser.add_argument("--baseline", metavar="FILE",
+                        help="Prior --json report to diff against (config drift: new vs resolved + posture delta)")
     parser.add_argument(
         "--severity",
         choices=["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"],
@@ -490,6 +493,9 @@ Examples:
     if args.severity:
         scanner.filter_severity(args.severity)
         scanner._sev_filter = f"{args.severity} and above"
+
+    if args.baseline:
+        scanner.apply_drift(args.baseline)
 
     scanner.print_report()
 
