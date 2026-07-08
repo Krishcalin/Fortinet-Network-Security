@@ -7,7 +7,7 @@ NGFW configuration against security best practices, 5 compliance frameworks (CIS
 NIST 800-53, SOC 2, HIPAA), 70 known CVEs (2019–2026), and 31 MITRE ATT&CK technique
 resilience tests.
 
-Ships in two modes that share the same 18 check methods and rule set:
+Ships in two modes that share the same 21 check methods and rule set:
 1. **Live mode** — `fortinet_scanner.py`, connects to FortiGate via the FortiOS REST API.
 2. **Offline mode** — `fortinet_offline_scanner.py`, parses an exported `.conf` backup for
    OT / air-gapped environments where direct network access is impossible. Stdlib-only.
@@ -16,7 +16,7 @@ Ships in two modes that share the same 18 check methods and rule set:
 - **Scanner files**: `fortinet_scanner.py` (~5,500 lines, all check logic) +
   `fortinet_offline_scanner.py` (~340 lines, parser + adapter)
 - **Reporting files** (all stdlib-only, so offline mode keeps zero third-party deps):
-  - `remediation_kb.py` + `remediation_kb.json` — 226-entry detailed remediation knowledge base
+  - `remediation_kb.py` + `remediation_kb.json` — 233-entry detailed remediation knowledge base
   - `fortinet_html.py` — rich self-contained HTML report (`FortinetHTMLReport`)
   - `fortinet_pdf.py` + `pdf_writer.py` — paginated PDF report (`FortinetPDFReport`) on a hand-rolled PDF 1.4 writer (no reportlab/weasyprint)
 - **Version**: 4.0.0 (engine) / 1.0.0 (offline adapter)
@@ -45,13 +45,16 @@ Ships in two modes that share the same 18 check methods and rule set:
 | SSL | Self-signed certs accepted by default; `--verify-ssl` to enforce |
 | Token env var | `FORTIOS_API_TOKEN` |
 
-## Check Methods (18 methods, 260+ rules)
+## Check Methods (21 methods, 260+ rules)
 
 | Category | Prefix | Check Method | Rules |
 |----------|--------|-------------|-------|
 | Admin Access | FORTIOS-ADMIN | `_check_admin_access` | 24 |
 | System Settings | FORTIOS-SYS | `_check_system_settings` | 13 |
 | Firewall Policies | FORTIOS-POLICY | `_check_firewall_policies` | 16 |
+| Rule-Base Analysis | FORTIOS-RULEBASE | `_check_rulebase` | shadow/redundant + Policy Control Index (SCORE) |
+| Rule Usage (live) | FORTIOS-USAGE | `_check_rule_usage` | dormant-rule cleanup via `monitor/firewall/policy` |
+| Object Hygiene | FORTIOS-OBJECT | `_check_object_hygiene` | orphaned address/service/profile objects |
 | SSL VPN | FORTIOS-SSLVPN | `_check_ssl_vpn` | 14 |
 | IPsec VPN | FORTIOS-IPSEC | `_check_ipsec_vpn` | 12 |
 | Security Profiles | FORTIOS-PROFILE/AV/IPS/WF/APP/DLP/DNS | `_check_security_profiles` | 11 |
@@ -86,7 +89,7 @@ Output: console (inline), JSON (`compliance` dict), compliance CSV (`--complianc
 
 **Two-tier remediation.** The bare `Finding` carries `recommendation` (one line) + `remediation_cmd`
 (auto-resolved from the 43-entry `REMEDIATION_COMMANDS`). On top of that, `remediation_kb.json`
-(226 entries, loaded by `RemediationKB` in `remediation_kb.py`) supplies the **detailed** fix per
+(233 entries, loaded by `RemediationKB` in `remediation_kb.py`) supplies the **detailed** fix per
 rule: `risk`, numbered `steps`, `gui` path, canonical `cli`, `verify` command, `rollback`, service
 `impact`, and `references`. `RemediationKB.detail_for(finding)` resolves exact `rule_id` → family
 prefix (e.g. `FORTIOS-CVE` covers every CVE) → graceful fallback to the finding's own text, so a

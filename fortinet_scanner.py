@@ -895,6 +895,10 @@ COMPLIANCE_MAP: dict[str, dict[str, list[str]]] = {
     "FORTIOS-SYS-004":   {"CIS": ["3.1.4"], "PCI-DSS": ["2.2.2"], "NIST": ["AC-8"]},
     "FORTIOS-SYS-005":   {"CIS": ["3.1.5"], "PCI-DSS": ["8.1.6"], "NIST": ["AC-7"], "HIPAA": ["164.312(a)(2)(i)"]},
     "FORTIOS-SYS-018":   {"CIS": ["3.1.6"], "PCI-DSS": ["3.5.1", "8.3.2"], "NIST": ["SC-28", "SC-12"], "SOC2": ["CC6.1"], "HIPAA": ["164.312(a)(2)(iv)"]},
+    # Rule-base analysis / policy hygiene (family-prefix matches, FireMon-style)
+    "FORTIOS-RULEBASE":  {"CIS": ["4.1"], "PCI-DSS": ["1.1.7", "1.2.1"], "NIST": ["AC-4", "CM-7"], "SOC2": ["CC6.6"]},
+    "FORTIOS-USAGE":     {"PCI-DSS": ["1.1.7"], "NIST": ["AC-4", "CM-7"], "SOC2": ["CC6.6"]},
+    "FORTIOS-OBJECT":    {"PCI-DSS": ["1.1.7"], "NIST": ["CM-7"], "SOC2": ["CC6.6"]},
     "FORTIOS-POLICY-001": {"CIS": ["4.1.1"], "PCI-DSS": ["1.2.1"], "NIST": ["AC-4"], "SOC2": ["CC6.6"]},
     "FORTIOS-POLICY-002": {"CIS": ["4.1.2"], "PCI-DSS": ["1.2.1"], "NIST": ["AC-4", "SC-7"], "SOC2": ["CC6.6"]},
     "FORTIOS-POLICY-003": {"CIS": ["4.1.3"], "PCI-DSS": ["1.1.7"], "NIST": ["AU-3"], "SOC2": ["CC7.2"]},
@@ -1358,6 +1362,9 @@ class FortinetScanner(_ReportMixin):
             ("Admin Access",         self._check_admin_access),
             ("System Settings",      self._check_system_settings),
             ("Firewall Policies",    self._check_firewall_policies),
+            ("Rule-Base Analysis",   self._check_rulebase),
+            ("Rule Usage",           self._check_rule_usage),
+            ("Object Hygiene",       self._check_object_hygiene),
             ("SSL VPN",              self._check_ssl_vpn),
             ("IPsec VPN",            self._check_ipsec_vpn),
             ("Security Profiles",    self._check_security_profiles),
@@ -1416,6 +1423,7 @@ class FortinetScanner(_ReportMixin):
     # ================================================================== #
 
     def _check_admin_access(self) -> None:
+        _host = self._sys_info.get("hostname", self.host)
         # System global settings
         glb = self._api_get("system/global")
         if isinstance(glb, list) and glb:
@@ -2194,6 +2202,349 @@ class FortinetScanner(_ReportMixin):
                     recommendation="Implement egress filtering policies to restrict outbound traffic to only necessary services.",
                     cwe="CWE-284",
                 ))
+
+    # ================================================================== #
+    #  CHECK: Rule-Base Analysis (policy hygiene, FireMon-style)           #
+    # ================================================================== #
+
+    # Universal ("any"/"all") tokens per policy field.
+    _RB_UNIVERSAL: dict[str, set] = {
+        "srcintf": {"any"}, "dstintf": {"any"},
+        "srcaddr": {"all"}, "dstaddr": {"all"},
+        "service": {"ALL", "ALL_TCP", "ALL_UDP", "ANY", "all"},
+    }
+    _RB_FIELDS = ("srcintf", "dstintf", "srcaddr", "dstaddr", "service")
+    _RB_UTM_KEYS = ("av-profile", "webfilter-profile", "ips-sensor", "application-list",
+                    "ssl-ssh-profile", "dlp-sensor", "dnsfilter-profile",
+                    "file-filter-profile", "emailfilter-profile")
+
+    @classmethod
+    def _rb_set(cls, pol: dict, field: str):
+        """Set of object names for a policy field, or None if it is universal (any/all)."""
+        vals = pol.get(field, [])
+        if isinstance(vals, list):
+            names = {v.get("name", "") for v in vals if isinstance(v, dict) and v.get("name")}
+        elif isinstance(vals, str) and vals:
+            names = {vals}
+        else:
+            names = set()
+        if names & cls._RB_UNIVERSAL.get(field, set()):
+            return None
+        return names
+
+    @staticmethod
+    def _rb_covers(a, b) -> bool:
+        """Does field-set a cover field-set b? None = universal covers anything."""
+        if a is None:
+            return True
+        if b is None:
+            return False
+        return bool(b) and b.issubset(a)
+
+    def _check_rulebase(self) -> None:
+        _host = self._sys_info.get("hostname", self.host)
+        policies = self._api_get("firewall/policy")
+        if not isinstance(policies, list) or not policies:
+            return
+
+        def negated(p: dict) -> bool:
+            return any(str(p.get(k, "")).lower() == "enable"
+                       for k in ("srcaddr-negate", "dstaddr-negate", "service-negate"))
+
+        # Precompute field sets for enabled policies (in evaluation order).
+        enabled = []
+        for p in policies:
+            if str(p.get("status", "enable")).lower() == "disable":
+                continue
+            sets = {f: self._rb_set(p, f) for f in self._RB_FIELDS}
+            enabled.append((p, sets, negated(p)))
+
+        n = len(enabled)
+        shadowed = redundant = 0
+
+        if n > 2500:
+            self._add(Finding(
+                rule_id="FORTIOS-RULEBASE-INFO", name="Rule-base too large for full shadow analysis",
+                category="Rule-Base Analysis", severity="INFO",
+                file_path=_host, line_num=None,
+                line_content=f"enabled policies={n} (>2500)",
+                description=f"The rule-base has {n} enabled policies; pairwise shadow/redundancy analysis was skipped for performance.",
+                recommendation="Consider consolidating policies, or run analysis per-VDOM / per interface-pair.",
+                cwe="CWE-1120",
+            ))
+        else:
+            # O(n^2) top-down coverage: policy B is dead if an earlier enabled policy A covers it.
+            for i in range(n):
+                pol_b, sets_b, neg_b = enabled[i]
+                if neg_b:
+                    continue
+                pid_b = pol_b.get("policyid", "?")
+                name_b = pol_b.get("name") or f"policy-{pid_b}"
+                act_b = str(pol_b.get("action", "")).lower()
+                for j in range(i):
+                    pol_a, sets_a, neg_a = enabled[j]
+                    if neg_a:
+                        continue
+                    if all(self._rb_covers(sets_a[f], sets_b[f]) for f in self._RB_FIELDS):
+                        pid_a = pol_a.get("policyid", "?")
+                        name_a = pol_a.get("name") or f"policy-{pid_a}"
+                        act_a = str(pol_a.get("action", "")).lower()
+                        if act_a == act_b:
+                            redundant += 1
+                            self._add(Finding(
+                                rule_id="FORTIOS-RULEBASE-002",
+                                name="Redundant / duplicate firewall policy",
+                                category="Rule-Base Analysis", severity="LOW",
+                                file_path=_host, line_num=None,
+                                line_content=f"policy {pid_b} ({name_b}) is covered by earlier policy {pid_a} ({name_a}); same action '{act_b}'",
+                                description=f"Policy {pid_b} '{name_b}' matches only traffic already matched by the earlier policy {pid_a} '{name_a}', which has the same action. It is redundant and never changes the outcome.",
+                                recommendation=f"Remove policy {pid_b}, or merge its objects into policy {pid_a}. Fewer, clearer rules cut audit effort and misconfiguration risk.",
+                                cwe="CWE-1164",
+                            ))
+                        else:
+                            sev = "HIGH" if (act_a == "accept" and act_b == "deny") else "MEDIUM"
+                            shadowed += 1
+                            self._add(Finding(
+                                rule_id="FORTIOS-RULEBASE-001",
+                                name="Shadowed (dead) firewall policy",
+                                category="Rule-Base Analysis", severity=sev,
+                                file_path=_host, line_num=None,
+                                line_content=f"policy {pid_b} ({name_b}, {act_b}) shadowed by earlier policy {pid_a} ({name_a}, {act_a})",
+                                description=("Policy {b} '{nb}' (action {ab}) can never match: the earlier policy {a} '{na}' (action {aa}) already covers all of its traffic and is evaluated first. ".format(
+                                                 b=pid_b, nb=name_b, ab=act_b, a=pid_a, na=name_a, aa=act_a)
+                                             + ("Because the earlier rule ALLOWS the traffic this rule intends to DENY, traffic you believe is blocked is actually permitted."
+                                                if sev == "HIGH" else "The intended traffic is silently handled by the earlier rule instead.")),
+                                recommendation=f"Reorder or remove the shadowed policy {pid_b}. If its intent matters, move it above policy {pid_a} or narrow the scope of policy {pid_a}.",
+                                cwe="CWE-561",
+                            ))
+                        break  # first covering rule is enough
+
+        # ---- Policy Control Index (rule-base posture score) ----------------
+        accept = [(p, s) for (p, s, neg) in enabled
+                  if str(p.get("action", "")).lower() == "accept" and not neg]
+        ta = len(accept)
+        fully_perm = part_perm = logged = protected = 0
+        for p, s in accept:
+            univ = sum(1 for f in ("srcaddr", "dstaddr", "service") if s[f] is None)
+            if univ >= 3:
+                fully_perm += 1
+            elif univ == 2:
+                part_perm += 1
+            if str(p.get("logtraffic", "")).lower() in ("all", "utm"):
+                logged += 1
+            if any(p.get(k) for k in self._RB_UTM_KEYS):
+                protected += 1
+        disabled = sum(1 for p in policies if str(p.get("status", "enable")).lower() == "disable")
+
+        score = 100.0
+        if ta:
+            score -= 35 * (fully_perm / ta)
+            score -= 15 * (part_perm / ta)
+            score -= 20 * (1 - logged / ta)
+            score -= 20 * (1 - protected / ta)
+        if n:
+            score -= 25 * ((shadowed + redundant) / n)
+        score = int(max(0, min(100, round(score))))
+        grade = ("A" if score >= 90 else "B" if score >= 80 else "C" if score >= 70
+                 else "D" if score >= 60 else "F")
+        sev = ("INFO" if score >= 80 else "LOW" if score >= 70
+               else "MEDIUM" if score >= 60 else "HIGH")
+        self._add(Finding(
+            rule_id="FORTIOS-RULEBASE-SCORE",
+            name=f"Policy Control Index: {score}/100 (grade {grade})",
+            category="Rule-Base Analysis", severity=sev,
+            file_path=_host, line_num=None,
+            line_content=(f"score={score}/100 grade={grade} | accept={ta} any-any-any={fully_perm} "
+                          f"broad={part_perm} logged={logged}/{ta} protected={protected}/{ta} "
+                          f"shadowed={shadowed} redundant={redundant} disabled={disabled}"),
+            description=(f"The Policy Control Index summarises firewall rule-base hygiene on a 0-100 scale (higher is better) "
+                         f"from rule permissiveness, logging and UTM coverage, and dead/redundant rules. This device scores "
+                         f"{score}/100 (grade {grade}) across {ta} active allow rules: {fully_perm} fully permissive "
+                         f"(any-any-any), {part_perm} broadly permissive, {logged}/{ta} with traffic logging, "
+                         f"{protected}/{ta} with UTM profiles, {shadowed} shadowed and {redundant} redundant rules."),
+            recommendation=("Raise the score by tightening any-any-any rules to specific address/service objects, enabling "
+                            "logging and UTM security profiles on every allow rule, and removing shadowed/redundant rules. "
+                            "Target grade A (score >= 90)."),
+            cwe="CWE-1120",
+        ))
+
+    # ================================================================== #
+    #  CHECK: Rule Usage (live-only — dormant-rule cleanup)               #
+    # ================================================================== #
+
+    def _check_rule_usage(self) -> None:
+        """Flag firewall policies with no observed traffic (dormant rules), using
+        the runtime hit counters from the monitor API. Live mode only — the
+        offline .conf carries no runtime statistics, so this silently skips."""
+        _host = self._sys_info.get("hostname", self.host)
+        stats = self._api_get("firewall/policy", monitor=True)
+        if not isinstance(stats, list) or not stats:
+            return  # runtime stats unavailable (offline, or endpoint not present)
+
+        pol_by_id: dict = {}
+        policies = self._api_get("firewall/policy")
+        if isinstance(policies, list):
+            for p in policies:
+                pol_by_id[str(p.get("policyid"))] = p
+
+        dormant = 0
+        for st in stats:
+            pid = str(st.get("policyid", st.get("id", "")))
+            pol = pol_by_id.get(pid, {})
+            if str(pol.get("status", "enable")).lower() == "disable":
+                continue
+            action = str(pol.get("action", "")).lower()
+            name = pol.get("name") or f"policy-{pid}"
+            nbytes = st.get("bytes", 0) or 0
+            npkts = st.get("packets", 0) or 0
+            hits = st.get("hit_count")
+            never_used = (nbytes == 0 and npkts == 0) and (hits in (0, None))
+            if never_used and action == "accept":
+                dormant += 1
+                self._add(Finding(
+                    rule_id="FORTIOS-USAGE-001",
+                    name="Dormant firewall policy (no observed traffic)",
+                    category="Rule Usage", severity="LOW",
+                    file_path=_host, line_num=None,
+                    line_content=f"policy {pid} ({name}): bytes={nbytes}, packets={npkts}, hit_count={hits}",
+                    description=(f"Firewall policy {pid} '{name}' (accept) has matched no traffic since its counters were "
+                                 "last reset. Dormant allow rules widen the attack surface with no business benefit and are "
+                                 "prime cleanup / recertification candidates. (Account for device uptime and seasonal traffic "
+                                 "before removing — a rule may simply not have been exercised yet.)"),
+                    recommendation=(f"Verify policy {pid} is genuinely unused (check counter age vs device uptime), disable it "
+                                    "for an observation window, then remove it if still unused. Track recertification with a "
+                                    "policy-review workflow / FortiManager Policy Optimizer."),
+                    cwe="CWE-1164",
+                ))
+        if dormant:
+            self._add(Finding(
+                rule_id="FORTIOS-USAGE-SUMMARY",
+                name=f"{dormant} dormant allow policy(ies) identified for cleanup",
+                category="Rule Usage", severity="INFO",
+                file_path=_host, line_num=None,
+                line_content=f"dormant_accept_policies={dormant}",
+                description=f"{dormant} enabled allow policy(ies) show zero observed traffic and are candidates for recertification or removal.",
+                recommendation="Run a rule-base cleanup: recertify or remove dormant rules to shrink the policy set and the attack surface.",
+                cwe="CWE-1164",
+            ))
+
+    # ================================================================== #
+    #  CHECK: Object Hygiene (orphaned addresses / services / profiles)   #
+    # ================================================================== #
+
+    def _check_object_hygiene(self) -> None:
+        """Flag defined address / service objects and security profiles that are
+        not referenced by any firewall policy — orphaned cleanup candidates."""
+        _host = self._sys_info.get("hostname", self.host)
+        policies = self._api_get("firewall/policy")
+        if not isinstance(policies, list) or not policies:
+            return
+
+        # profile policy-field -> (endpoint, human name)
+        prof_map = {
+            "av-profile": ("antivirus/profile", "AntiVirus"),
+            "webfilter-profile": ("webfilter/profile", "Web Filter"),
+            "ips-sensor": ("ips/sensor", "IPS"),
+            "application-list": ("application/list", "Application Control"),
+            "dnsfilter-profile": ("dnsfilter/profile", "DNS Filter"),
+            "dlp-sensor": ("dlp/sensor", "DLP"),
+        }
+
+        addr_refs: set = set()
+        svc_refs: set = set()
+        prof_refs: dict = {k: set() for k in prof_map}
+        for p in policies:
+            for fld in ("srcaddr", "dstaddr"):
+                for o in (p.get(fld) or []):
+                    if isinstance(o, dict) and o.get("name"):
+                        addr_refs.add(o["name"])
+            for o in (p.get("service") or []):
+                if isinstance(o, dict) and o.get("name"):
+                    svc_refs.add(o["name"])
+            for pf in prof_map:
+                v = p.get(pf)
+                if isinstance(v, str) and v:
+                    prof_refs[pf].add(v)
+
+        # Expand group membership (a referenced group uses its members).
+        addrgrps = self._api_get("firewall/addrgrp")
+        if isinstance(addrgrps, list):
+            for g in addrgrps:
+                if g.get("name") in addr_refs:
+                    for m in (g.get("member") or []):
+                        if isinstance(m, dict) and m.get("name"):
+                            addr_refs.add(m["name"])
+        svcgrps = self._api_get("firewall.service/group")
+        if isinstance(svcgrps, list):
+            for g in svcgrps:
+                if g.get("name") in svc_refs:
+                    for m in (g.get("member") or []):
+                        if isinstance(m, dict) and m.get("name"):
+                            svc_refs.add(m["name"])
+        # VIPs referenced as a destination are "used"; VIPs never referenced are orphaned.
+        vips = self._api_get("firewall/vip")
+        vip_names = {v.get("name") for v in vips if isinstance(v, dict)} if isinstance(vips, list) else set()
+
+        def _sample(names, k=8):
+            names = sorted(names)
+            return ", ".join(names[:k]) + (f", +{len(names) - k} more" if len(names) > k else "")
+
+        # Unused address objects
+        addrs = self._api_get("firewall/address")
+        if isinstance(addrs, list):
+            unused = {a.get("name") for a in addrs
+                      if a.get("name") and a["name"] not in addr_refs and a["name"] != "all"}
+            if len(unused) >= 3:
+                self._add(Finding(
+                    rule_id="FORTIOS-OBJECT-001", name=f"{len(unused)} unused address objects",
+                    category="Object Hygiene", severity="LOW",
+                    file_path=_host, line_num=None,
+                    line_content=f"unused address objects ({len(unused)}): {_sample(unused)}",
+                    description=(f"{len(unused)} address object(s) are defined but not referenced by any firewall policy or "
+                                 "used address group. Orphaned objects clutter the configuration, slow audits, and can be "
+                                 "accidentally reused in a new over-broad rule."),
+                    recommendation="Review and delete unused address objects (config firewall address / delete <name>). Confirm each is not referenced by VPN, routing, or other features first.",
+                    cwe="CWE-1164",
+                ))
+
+        # Unused custom service objects
+        svcs = self._api_get("firewall.service/custom")
+        if isinstance(svcs, list):
+            unused = {s.get("name") for s in svcs if s.get("name") and s["name"] not in svc_refs}
+            if len(unused) >= 3:
+                self._add(Finding(
+                    rule_id="FORTIOS-OBJECT-002", name=f"{len(unused)} unused service objects",
+                    category="Object Hygiene", severity="LOW",
+                    file_path=_host, line_num=None,
+                    line_content=f"unused custom services ({len(unused)}): {_sample(unused)}",
+                    description=(f"{len(unused)} custom service object(s) are defined but not referenced by any firewall "
+                                 "policy or service group. Unused services are cleanup candidates and reduce audit clarity."),
+                    recommendation="Review and delete unused custom services (config firewall service custom / delete <name>).",
+                    cwe="CWE-1164",
+                ))
+
+        # Unused security profiles (across profile types)
+        unused_profiles: list = []
+        for pf, (endpoint, label) in prof_map.items():
+            objs = self._api_get(endpoint)
+            if not isinstance(objs, list):
+                continue
+            for o in objs:
+                nm = o.get("name")
+                if nm and nm not in prof_refs[pf] and nm.lower() not in ("no-inspection", "custom-deep-inspection"):
+                    unused_profiles.append(f"{label}:{nm}")
+        if len(unused_profiles) >= 3:
+            self._add(Finding(
+                rule_id="FORTIOS-OBJECT-003", name=f"{len(unused_profiles)} unused security profiles",
+                category="Object Hygiene", severity="LOW",
+                file_path=_host, line_num=None,
+                line_content=f"unused profiles ({len(unused_profiles)}): {_sample(unused_profiles)}",
+                description=(f"{len(unused_profiles)} security profile(s) (AV / IPS / Web Filter / App Control / DNS / DLP) "
+                             "are defined but not applied to any firewall policy. Unapplied profiles provide no protection and "
+                             "obscure which controls are actually enforced."),
+                recommendation="Either apply these profiles to the relevant allow policies, or delete them if superseded. Ensure every internet-facing allow rule carries the appropriate UTM profiles.",
+                cwe="CWE-1164",
+            ))
 
     # ================================================================== #
     #  CHECK: SSL VPN                                                      #

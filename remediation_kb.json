@@ -2720,6 +2720,68 @@
    "CWE-290 (Authentication Bypass by Spoofing)"
   ]
  },
+ "FORTIOS-OBJECT-001": {
+  "risk": "Address objects defined but not referenced by any policy or used address group are orphaned clutter. They lengthen audits, obscure which objects are actually enforced, and are a hazard because a future rule author may reuse a stale, over-broad object by mistake.",
+  "steps": [
+   "Review the listed unused address objects.",
+   "Confirm each is not referenced elsewhere (VPN phase2 selectors, routing, VIPs, proxy) before deleting - the scanner only checks firewall policies and address groups: diagnose sys cmdb refcnt <object> or GUI 'Where Used'.",
+   "Delete confirmed-orphan objects: config firewall address / delete <name> / end.",
+   "Adopt a naming convention and periodic object review to prevent re-accumulation."
+  ],
+  "gui": "Policy & Objects > Addresses: use the right-click 'Where Used' / reference count; delete objects with zero references.",
+  "cli": "config firewall address\n  delete <address-name>\nend",
+  "verify": "diagnose sys cmdb refcnt <object>  ->  reference count 0 before deletion; get firewall address | grep <name>  ->  gone afterwards.",
+  "rollback": "Re-create the object from your config backup. Deleting an object that IS referenced elsewhere will fail or break that feature - always check references first.",
+  "impact": "Non-disruptive when the object is genuinely unreferenced (FortiOS blocks deletion of referenced objects). No reboot.",
+  "references": [
+   "CIS Fortinet FortiGate Benchmark - object hygiene",
+   "Fortinet Administration Guide - 'Where Used' / cmdb refcnt",
+   "NIST SP 800-53 CM-7, PCI-DSS 1.1.7",
+   "CWE-1164: Irrelevant Code"
+  ]
+ },
+ "FORTIOS-OBJECT-002": {
+  "risk": "Custom service objects defined but not referenced by any policy or service group are orphaned clutter that reduces audit clarity and risks a stale, over-broad service being reused in a new rule.",
+  "steps": [
+   "Review the listed unused custom services.",
+   "Confirm each is not referenced by a service group or policy: GUI 'Where Used' or diagnose sys cmdb refcnt.",
+   "Delete confirmed-orphan services: config firewall service custom / delete <name> / end.",
+   "Standardise on the built-in services where possible and review custom services periodically."
+  ],
+  "gui": "Policy & Objects > Services: check reference count / 'Where Used', delete unreferenced custom services.",
+  "cli": "config firewall service custom\n  delete <service-name>\nend",
+  "verify": "diagnose sys cmdb refcnt <service>  ->  0; the object no longer appears in show firewall service custom.",
+  "rollback": "Re-create from your config backup. FortiOS prevents deletion of a referenced service, so accidental breakage is unlikely.",
+  "impact": "Non-disruptive for genuinely-unreferenced services; no reboot.",
+  "references": [
+   "CIS Fortinet FortiGate Benchmark - object hygiene",
+   "Fortinet Administration Guide - service objects / cmdb refcnt",
+   "NIST SP 800-53 CM-7, PCI-DSS 1.1.7",
+   "CWE-1164: Irrelevant Code"
+  ]
+ },
+ "FORTIOS-OBJECT-003": {
+  "risk": "Security profiles (AntiVirus, IPS, Web Filter, Application Control, DNS Filter, DLP) that are defined but applied to no firewall policy provide zero protection and obscure which controls are actually enforced. Teams often believe a profile is protecting traffic when in fact it is attached to nothing.",
+  "steps": [
+   "Review the listed unapplied profiles by type.",
+   "For each, decide: apply it to the relevant allow policies, or delete it if superseded.",
+   "Apply a profile: config firewall policy / edit <id> / set utm-status enable / set ips-sensor <name> (etc.) / next / end.",
+   "Ensure every internet-facing allow policy carries AV, IPS, Web Filter, App Control and SSL inspection.",
+   "Delete obsolete profiles once nothing references them.",
+   "Re-run the scanner to confirm coverage improved."
+  ],
+  "gui": "Security Profiles > (AntiVirus / IPS / Web Filter / Application Control / DNS Filter / DLP): confirm each profile is applied to a policy under Policy & Objects > Firewall Policy > Security Profiles; delete unused ones.",
+  "cli": "config firewall policy\n  edit <policyid>\n    set utm-status enable\n    set av-profile <name>\n    set ips-sensor <name>\n    set webfilter-profile <name>\n    set application-list <name>\n    set ssl-ssh-profile deep-inspection\n  next\nend",
+  "verify": "show firewall policy | grep -E 'av-profile|ips-sensor|webfilter-profile'  ->  the profile now appears on the intended policies; the scanner no longer lists it as unused.",
+  "rollback": "Remove the profile binding from the policy (unset av-profile, etc.) or re-create a deleted profile from backup.",
+  "impact": "Applying UTM inspection adds CPU and may block previously-allowed malicious/undesired content (the intended effect); test on a pilot policy first, especially SSL deep inspection which requires the CA cert to be trusted by clients. No reboot.",
+  "references": [
+   "CIS Fortinet FortiGate Benchmark - security profiles applied to policies (section 4.2)",
+   "Fortinet 'Hardening your FortiGate' - apply UTM to all policies",
+   "NIST SP 800-53 SI-3 & SI-4, PCI-DSS 5.x / 11.x",
+   "CWE-693: Protection Mechanism Failure"
+  ]
+ },
  "FORTIOS-POLICY-001": {
   "risk": "Disabled firewall policies accumulate as configuration debt. An operator troubleshooting an outage, or an attacker who has gained admin/write access, can re-enable a stale 'permit any' or legacy rule in one click and instantly re-open a path that was intentionally closed, with no change-control trail. Orphaned rules also hide shadowed/duplicate logic that leads to mis-ordered policy evaluation and unexpected allows.",
   "steps": [
@@ -3400,6 +3462,71 @@
    "Fortinet 'Hardening your FortiGate' guide",
    "NIST SP 800-53 SI-4 System Monitoring",
    "CWE-693 Protection Mechanism Failure"
+  ]
+ },
+ "FORTIOS-RULEBASE-001": {
+  "risk": "A shadowed (dead) policy can never match, because an earlier, broader policy is evaluated first and already covers all of its traffic. The dangerous case is an earlier ALLOW rule shadowing a later DENY rule: traffic the deny rule was meant to block is silently permitted, creating a false sense of security and a real exposure. Even in the benign direction it signals a mis-ordered rule-base that auditors and responders cannot reason about.",
+  "steps": [
+   "Identify the shadowed policy ID and the earlier policy that covers it (both are named in the finding).",
+   "Decide the intent: should the shadowed rule's action actually take effect? If yes, it must sit ABOVE the covering rule.",
+   "In the GUI drag the shadowed policy above the covering policy, or via CLI: config firewall policy / move <shadowed-id> before <covering-id> / end.",
+   "Alternatively, if the shadowed rule is obsolete, remove it: config firewall policy / delete <shadowed-id> / end.",
+   "If the covering rule is over-broad (e.g. any-any-any), narrow it to specific objects so intended exceptions can follow it.",
+   "Re-run the scanner and confirm the shadow finding is cleared and traffic behaves as intended."
+  ],
+  "gui": "Policy & Objects > Firewall Policy: review the sequence column; drag the shadowed rule above the covering rule, or right-click > Delete if obsolete. FortiManager: Policy Package > reorder/remove, then install.",
+  "cli": "config firewall policy\n  move <shadowed-policyid> before <covering-policyid>\nend\n# or, if the shadowed rule is obsolete:\n# config firewall policy\n#   delete <shadowed-policyid>\n# end",
+  "verify": "show firewall policy | grep -A2 'edit <shadowed-policyid>'  and confirm ordering with: get firewall policy  (sequence). Generate live traffic and check the session is matched by the intended policy: diagnose firewall iprope lookup ...",
+  "rollback": "Re-run 'move' with the original ordering, or re-create the deleted policy from your config backup. Take a config backup (execute backup config flash) before reordering.",
+  "impact": "Reordering/removing a policy changes traffic matching immediately and can allow or block flows that were previously handled differently. Non-disruptive to the device (no reboot) but test in a change window; on an HA cluster the change syncs to the peer.",
+  "references": [
+   "CIS Fortinet FortiGate Benchmark - firewall rule-base review (CIS 4.1)",
+   "Fortinet Administration Guide - Firewall policy sequence / policy lookup",
+   "PCI-DSS 1.1.7 (review rule-sets at least every 6 months), NIST SP 800-53 AC-4",
+   "CWE-561: Dead Code / CWE-284: Improper Access Control"
+  ]
+ },
+ "FORTIOS-RULEBASE-002": {
+  "risk": "A redundant (duplicate) policy matches only traffic already matched by an earlier policy with the same action, so it never changes the outcome. Redundant rules inflate the rule-base, slow audits and troubleshooting, and increase the chance that a future edit to one copy silently diverges from the other, creating an inconsistency.",
+  "steps": [
+   "Identify the redundant policy and the earlier policy that already covers it (named in the finding).",
+   "Confirm they truly overlap (same or broader src/dst/service/interfaces and identical action).",
+   "Remove the redundant policy: config firewall policy / delete <redundant-id> / end.",
+   "If both exist for documentation reasons, consolidate their objects into a single well-named policy instead.",
+   "Re-run the scanner to confirm the redundancy is resolved."
+  ],
+  "gui": "Policy & Objects > Firewall Policy: locate the duplicate rule and Delete it, or merge its address/service objects into the retained rule. FortiManager: Policy Package cleanup, then install.",
+  "cli": "config firewall policy\n  delete <redundant-policyid>\nend",
+  "verify": "get firewall policy | grep <redundant-policyid>  ->  no longer present; traffic still matches the retained policy (diagnose firewall iprope lookup).",
+  "rollback": "Re-create the policy from your config backup (execute backup config flash beforehand).",
+  "impact": "Non-disruptive if the retained policy genuinely covers the same traffic with the same action; no reboot. Verify object membership before deleting so you do not remove a rule that was subtly narrower.",
+  "references": [
+   "CIS Fortinet FortiGate Benchmark - rule-base hygiene (CIS 4.1)",
+   "Fortinet Administration Guide - Firewall policy consolidation",
+   "PCI-DSS 1.1.7, NIST SP 800-53 CM-7 (least functionality)",
+   "CWE-1164: Irrelevant Code"
+  ]
+ },
+ "FORTIOS-RULEBASE-SCORE": {
+  "risk": "The Policy Control Index is a 0-100 summary of firewall rule-base hygiene (higher is better). A low grade means the allow rule-base is permissive, poorly logged, under-protected by UTM, and/or cluttered with dead rules - the exact conditions in which a single mistake becomes an exposure and in which incidents are hard to detect and investigate. Rule-base misconfiguration, not firewall software, is the dominant cause of firewall-related breaches.",
+  "steps": [
+   "Read the breakdown in the finding: any-any-any rules, broadly-permissive rules, logging coverage, UTM coverage, and shadowed/redundant counts.",
+   "Tighten permissive rules: replace 'all' source/destination and 'ALL' service with specific address and service objects (least privilege).",
+   "Enable traffic logging on every allow rule: config firewall policy / edit <id> / set logtraffic all / next / end.",
+   "Apply UTM security profiles (AV, IPS, Web Filter, App Control, SSL inspection) to every internet-facing allow rule.",
+   "Remove the shadowed and redundant rules flagged separately by the scanner.",
+   "Re-run the scanner and confirm the index moves toward grade A (>= 90)."
+  ],
+  "gui": "Policy & Objects > Firewall Policy: edit each broad/allow rule to add specific objects, logging, and UTM profiles; use the Policy sequence view to spot dead rules. FortiManager Policy Optimizer assists at scale.",
+  "cli": "config firewall policy\n  edit <policyid>\n    set srcaddr <specific-address>\n    set dstaddr <specific-address>\n    set service <specific-service>\n    set logtraffic all\n    set av-profile default\n    set ips-sensor default\n    set ssl-ssh-profile deep-inspection\n  next\nend",
+  "verify": "Re-run the scanner: the Policy Control Index rises and the count of permissive / unlogged / unprotected rules falls. Spot-check with: show firewall policy | grep -E 'logtraffic|av-profile|srcaddr'.",
+  "rollback": "Revert individual policy edits from your config backup if a tightened rule breaks a required flow; loosen one object at a time rather than reverting logging/UTM.",
+  "impact": "Tightening rules can block flows that were implicitly allowed by an over-broad rule - stage changes and test. Enabling logging/UTM adds some CPU/logging load. No reboot; changes sync on HA.",
+  "references": [
+   "Gartner/industry: the majority of firewall breaches stem from misconfiguration, not the firewall",
+   "CIS Fortinet FortiGate Benchmark - firewall policies (section 4)",
+   "PCI-DSS 1.2.1 / 1.1.7, NIST SP 800-53 AC-4 & CM-7",
+   "CWE-1120: Excessive Code Complexity (rule-base complexity)"
   ]
  },
  "FORTIOS-SSLVPN-001": {
@@ -4393,6 +4520,28 @@
    "Fortinet Product Life Cycle / Supported Releases (6.0 & 6.2 End-of-Support)",
    "PCI-DSS v4.0 - 6.3.3 (install applicable security patches); NIST SP 800-53 SI-2 Flaw Remediation",
    "CWE-1104: Use of Unmaintained Third Party Components; CWE-1329: Reliance on a Component That is Not Updateable"
+  ]
+ },
+ "FORTIOS-USAGE-001": {
+  "risk": "A dormant allow policy that has matched no traffic since its counters were reset widens the attack surface with no business benefit. Unused rules accumulate as environments change; each one is a standing permission an attacker could leverage after a lateral move, and a rule nobody remembers is a rule nobody is maintaining.",
+  "steps": [
+   "Confirm the policy is genuinely unused: compare its zero counters against device uptime (get system status) and account for seasonal / periodic traffic.",
+   "Check hit history over time via FortiAnalyzer or FortiManager Policy Optimizer rather than a single snapshot.",
+   "Disable the policy for an observation window: config firewall policy / edit <id> / set status disable / next / end.",
+   "If it remains unused after the window, remove it: config firewall policy / delete <id> / end.",
+   "Record the decision (owner, date) so the rule is not silently re-created.",
+   "Re-run the scanner to confirm the dormant rule is gone."
+  ],
+  "gui": "Policy & Objects > Firewall Policy: enable the 'Hit Count'/'Last Used' columns, disable then later delete rules with no usage. FortiManager > Policy Optimizer automates unused-rule detection and recertification.",
+  "cli": "config firewall policy\n  edit <policyid>\n    set status disable\n  next\nend\n# after an observation window with still no traffic:\n# config firewall policy\n#   delete <policyid>\n# end",
+  "verify": "diagnose firewall iprope show 100004 <policyid>  (or the monitor API) shows zero bytes/packets; after disabling, confirm no service is broken over the observation window.",
+  "rollback": "set status enable (or re-create from backup) if a required but infrequently-used flow breaks. Prefer disable-then-delete over immediate deletion.",
+  "impact": "Disabling a truly-unused rule is non-disruptive; disabling a rule that only looked unused (short uptime, seasonal traffic) will break that flow - hence the observation window. No reboot; syncs on HA.",
+  "references": [
+   "FireMon/industry practice - unused-rule recertification and cleanup",
+   "Fortinet - policy hit count / FortiManager Policy Optimizer",
+   "PCI-DSS 1.1.7, NIST SP 800-53 CM-7 & AC-4",
+   "CWE-1164: Irrelevant Code"
   ]
  },
  "FORTIOS-WF-001": {
