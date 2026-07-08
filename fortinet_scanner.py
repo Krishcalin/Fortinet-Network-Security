@@ -810,6 +810,19 @@ FORTIOS_CVES: list[dict] = [
         "recommendation": "Upgrade to fixed version. Restrict admin interface to trusted networks.",
         "cwe": "CWE-120",
     },
+    {
+        "id": "FORTIOS-CVE-067", "cve": "CVE-2025-62439", "severity": "MEDIUM",
+        "name": "FSSO policy source-verification bypass",
+        "affected": [
+            {"train": "7.6", "fixed": "7.6.5"},
+            {"train": "7.4", "fixed": "7.4.10"},
+            {"train": "7.2", "fixed": "7.2.14"},
+            {"train": "7.0", "fixed": "7.0.20"},
+        ],
+        "description": "An improper verification of the source of a communication channel in FortiOS lets an authenticated user who knows the FSSO policy configuration reach protected network resources via crafted requests, bypassing the intended source checks.",
+        "recommendation": "Upgrade to FortiOS 7.6.5 / 7.4.10 / 7.2.14 / 7.0.20 or later. Review FSSO-based firewall policies and constrain them with additional source-address and identity restrictions.",
+        "cwe": "CWE-940",
+    },
 ]
 
 # ========================================================================== #
@@ -842,6 +855,7 @@ COMPLIANCE_MAP: dict[str, dict[str, list[str]]] = {
     "FORTIOS-SYS-003":   {"CIS": ["3.1.3"], "PCI-DSS": ["2.2.2"], "NIST": ["AC-8"], "SOC2": ["CC6.1"]},
     "FORTIOS-SYS-004":   {"CIS": ["3.1.4"], "PCI-DSS": ["2.2.2"], "NIST": ["AC-8"]},
     "FORTIOS-SYS-005":   {"CIS": ["3.1.5"], "PCI-DSS": ["8.1.6"], "NIST": ["AC-7"], "HIPAA": ["164.312(a)(2)(i)"]},
+    "FORTIOS-SYS-018":   {"CIS": ["3.1.6"], "PCI-DSS": ["3.5.1", "8.3.2"], "NIST": ["SC-28", "SC-12"], "SOC2": ["CC6.1"], "HIPAA": ["164.312(a)(2)(iv)"]},
     "FORTIOS-POLICY-001": {"CIS": ["4.1.1"], "PCI-DSS": ["1.2.1"], "NIST": ["AC-4"], "SOC2": ["CC6.6"]},
     "FORTIOS-POLICY-002": {"CIS": ["4.1.2"], "PCI-DSS": ["1.2.1"], "NIST": ["AC-4", "SC-7"], "SOC2": ["CC6.6"]},
     "FORTIOS-POLICY-003": {"CIS": ["4.1.3"], "PCI-DSS": ["1.1.7"], "NIST": ["AU-3"], "SOC2": ["CC7.2"]},
@@ -953,6 +967,7 @@ REMEDIATION_COMMANDS: dict[str, str] = {
     "FORTIOS-SYS-015":    "config system global\n  set admin-ssh-grace-time 60\nend",
     # FIPS
     "FORTIOS-SYS-016":    "config system global\n  set fips-cc enable\nend\n# NOTE: Enabling FIPS mode requires reboot and restricts cipher suites.",
+    "FORTIOS-SYS-018":    "config system global\n  set private-data-encryption enable\nend\n# Then set a device-unique key: config system global / set private-encryption-key <64-hex-key>",
     # Log retention
     "FORTIOS-LOG-017":    "config log setting\n  set log-file-size <size-MB>\nend\nAlternatively, configure FortiAnalyzer retention policies.",
     "FORTIOS-LOG-018":    "config log fortianalyzer setting\n  set enc-algorithm high\nend",
@@ -1138,128 +1153,39 @@ class _ReportMixin:
             json.dump(report, fh, indent=2, ensure_ascii=False)
         print(f"[+] JSON report saved to: {output_path}")
 
+    def _report_kb(self):
+        kb = getattr(self, "_kb_cache", None)
+        if kb is None:
+            try:
+                from remediation_kb import RemediationKB
+                kb = RemediationKB()
+            except Exception:
+                kb = None
+            self._kb_cache = kb
+        return kb
+
+    def _report_meta(self) -> dict:
+        si = getattr(self, "_sys_info", {}) or {}
+        return {
+            "host": getattr(self, "host", ""),
+            "hostname": si.get("hostname", "N/A"),
+            "model": si.get("model_name", si.get("model", "N/A")),
+            "version": si.get("version", "N/A"),
+            "serial": si.get("serial", "N/A"),
+            "generated": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "severity_filter": getattr(self, "_sev_filter", "ALL"),
+        }
+
     def save_html(self, output_path: str) -> None:
-        counts = self.summary()
-        sys_info = getattr(self, "_sys_info", {})
-        rows = ""
-        for f in sorted(
-            self.findings,
-            key=lambda x: (self.SEVERITY_ORDER.get(x.severity, 4), x.category, x.rule_id),
-        ):
-            sev_cls = f.severity.lower()
-            detail = _html.escape(f.line_content[:200]) if f.line_content else ""
-            ref = _html.escape(f.cwe or "")
-            if f.cve:
-                ref += f" | {_html.escape(f.cve)}"
-            rows += f"""<tr>
-  <td><span class="chip {sev_cls}">{_html.escape(f.severity)}</span></td>
-  <td>{_html.escape(f.rule_id)}</td>
-  <td>{_html.escape(f.category)}</td>
-  <td>{_html.escape(f.name)}</td>
-  <td class="loc">{_html.escape(f.file_path)}</td>
-  <td><code>{detail}</code></td>
-  <td>{ref}</td>
-  <td>{_html.escape(f.description)}</td>
-  <td>{_html.escape(f.recommendation)}</td>
-</tr>\n"""
+        """Rich, self-contained HTML report with detailed per-finding remediation."""
+        from fortinet_html import FortinetHTMLReport
+        FortinetHTMLReport(self.findings, self._report_meta(), self._report_kb()).generate(output_path)
 
-        meta_extra = ""
-        if sys_info:
-            meta_extra = f" &middot; {_html.escape(sys_info.get('hostname', ''))} &middot; {_html.escape(sys_info.get('model_name', sys_info.get('model', '')))} &middot; FortiOS {_html.escape(sys_info.get('version', ''))}"
-
-        html_content = f"""<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Fortinet FortiOS Security Report</title>
-<style>
-*{{margin:0;padding:0;box-sizing:border-box}}
-body{{font-family:'Segoe UI',system-ui,sans-serif;background:#1a1b2e;color:#cdd6f4;line-height:1.5}}
-.container{{max-width:1440px;margin:0 auto;padding:24px}}
-h1{{font-size:1.6rem;margin-bottom:4px;color:#f38ba8}}
-.meta{{color:#7f849c;font-size:0.85rem;margin-bottom:24px}}
-.summary{{display:flex;gap:16px;margin-bottom:24px;flex-wrap:wrap}}
-.summary .card{{background:#313244;border-radius:10px;padding:16px 24px;min-width:120px;text-align:center}}
-.summary .card .count{{font-size:1.8rem;font-weight:700}}
-.summary .card .label{{font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:#7f849c}}
-.critical .count{{color:#f38ba8}} .high .count{{color:#fab387}}
-.medium .count{{color:#89b4fa}} .low .count{{color:#a6e3a1}} .info .count{{color:#cdd6f4}}
-.filters{{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center}}
-.filters label{{color:#7f849c;font-size:0.85rem;margin-right:4px}}
-.filters select,.filters input{{background:#313244;color:#cdd6f4;border:1px solid #45475a;border-radius:6px;padding:6px 10px;font-size:0.85rem}}
-.filters input{{min-width:220px}}
-table{{width:100%;border-collapse:collapse;font-size:0.82rem}}
-thead{{position:sticky;top:0;background:#181825;z-index:1}}
-th{{text-align:left;padding:10px 8px;border-bottom:2px solid #45475a;color:#f38ba8;font-weight:600;white-space:nowrap}}
-td{{padding:8px;border-bottom:1px solid #313244;vertical-align:top}}
-tr:hover{{background:#313244}}
-code{{background:#1e1e2e;padding:2px 6px;border-radius:4px;font-size:0.78rem;word-break:break-all}}
-.chip{{display:inline-block;padding:2px 10px;border-radius:100px;font-size:0.7rem;font-weight:700;text-transform:uppercase}}
-.chip.critical{{background:rgba(243,139,168,0.18);color:#f38ba8}}
-.chip.high{{background:rgba(250,179,135,0.18);color:#fab387}}
-.chip.medium{{background:rgba(137,180,250,0.18);color:#89b4fa}}
-.chip.low{{background:rgba(166,227,161,0.18);color:#a6e3a1}}
-.chip.info{{background:rgba(205,214,244,0.12);color:#cdd6f4}}
-.loc{{white-space:nowrap;font-size:0.78rem;color:#f38ba8}}
-.wrap{{overflow-x:auto}}
-</style>
-</head>
-<body>
-<div class="container">
-<h1>Fortinet FortiOS Security Scanner v{VERSION} — Report</h1>
-<p class="meta">Generated: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")} &middot;
-Target: {_html.escape(getattr(self, "host", ""))}{meta_extra} &middot;
-Total findings: {len(self.findings)}</p>
-
-<div class="summary">
-  <div class="card critical"><div class="count">{counts.get("CRITICAL",0)}</div><div class="label">Critical</div></div>
-  <div class="card high"><div class="count">{counts.get("HIGH",0)}</div><div class="label">High</div></div>
-  <div class="card medium"><div class="count">{counts.get("MEDIUM",0)}</div><div class="label">Medium</div></div>
-  <div class="card low"><div class="count">{counts.get("LOW",0)}</div><div class="label">Low</div></div>
-  <div class="card info"><div class="count">{counts.get("INFO",0)}</div><div class="label">Info</div></div>
-</div>
-
-<div class="filters">
-  <label>Severity:</label>
-  <select id="fSev"><option value="">All</option><option>CRITICAL</option><option>HIGH</option><option>MEDIUM</option><option>LOW</option><option>INFO</option></select>
-  <label>Category:</label>
-  <select id="fCat"><option value="">All</option></select>
-  <label>Search:</label>
-  <input id="fSearch" placeholder="Filter by rule ID, name, detail…">
-</div>
-
-<div class="wrap">
-<table id="tbl">
-<thead><tr>
-  <th>Severity</th><th>Rule ID</th><th>Category</th><th>Name</th>
-  <th>Target</th><th>Detail</th><th>Ref</th><th>Description</th><th>Recommendation</th>
-</tr></thead>
-<tbody>
-{rows}
-</tbody>
-</table>
-</div>
-</div>
-<script>
-(function(){{
-  const tbl=document.getElementById('tbl'),rows=[...tbl.querySelectorAll('tbody tr')];
-  const fSev=document.getElementById('fSev'),fCat=document.getElementById('fCat'),fSearch=document.getElementById('fSearch');
-  const cats=[...new Set(rows.map(r=>r.children[2].textContent))].sort();
-  cats.forEach(c=>{{const o=document.createElement('option');o.textContent=c;fCat.appendChild(o)}});
-  function apply(){{
-    const s=fSev.value.toLowerCase(),c=fCat.value,q=fSearch.value.toLowerCase();
-    rows.forEach(r=>{{
-      const sv=r.children[0].textContent.trim().toLowerCase(),ct=r.children[2].textContent,txt=r.textContent.toLowerCase();
-      r.style.display=((!s||sv===s)&&(!c||ct===c)&&(!q||txt.includes(q)))?'':'none';
-    }});
-  }}
-  fSev.onchange=fCat.onchange=apply;fSearch.oninput=apply;
-}})();
-</script>
-</body></html>"""
-        with open(output_path, "w", encoding="utf-8") as fh:
-            fh.write(html_content)
-        print(f"[+] HTML report saved to: {output_path}")
+    def save_pdf(self, output_path: str) -> None:
+        """Paginated, print-ready PDF report (stdlib-only, no third-party deps)."""
+        from fortinet_pdf import FortinetPDFReport
+        FortinetPDFReport(self.findings, self._report_meta(), self._report_kb()).generate(output_path)
+        print(f"[+] PDF report saved to: {output_path}")
 
 
 # ========================================================================== #
@@ -1908,6 +1834,20 @@ class FortinetScanner(_ReportMixin):
                             cwe="CWE-326",
                         ))
                         break
+
+            # Private-data (config secret) encryption — CVE-2026-25815
+            pde = glb.get("private-data-encryption", "")
+            if str(pde).lower() != "enable":
+                self._add(Finding(
+                    rule_id="FORTIOS-SYS-018", name="Private-data encryption disabled (config secrets use a shared default key)",
+                    category="System Settings", severity="MEDIUM",
+                    file_path=_host, line_num=None,
+                    line_content=f"private-data-encryption={pde or 'disable'}",
+                    description="private-data-encryption is disabled, so LDAP/RADIUS bind passwords, VPN pre-shared keys and other secrets stored in the configuration are encrypted with a key that is identical across all FortiGate installations. Anyone who obtains a configuration backup can decrypt the stored credentials (CVE-2026-25815, exploited in the wild since Dec 2025).",
+                    recommendation="Enable a device-unique key: config system global / set private-data-encryption enable, then set private-encryption-key <64-hex-key>. Rotate any credentials that were stored in previously exported configs and treat all backups as secrets.",
+                    cwe="CWE-1394",
+                    cve="CVE-2026-25815",
+                ))
 
         # ---- Check management interfaces -----------------------------------
         interfaces = self._api_get("system/interface")
@@ -5288,30 +5228,83 @@ class FortinetScanner(_ReportMixin):
     # ================================================================== #
 
     def save_remediation(self, output_path: str) -> None:
-        """Export FortiOS CLI remediation commands for all findings."""
-        lines: list[str] = [
-            f"# Fortinet FortiOS Remediation Script",
-            f"# Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
-            f"# Target: {self._sys_info.get('hostname', self.host)}",
-            f"# FortiOS: {self._sys_info.get('version', 'N/A')}",
-            f"# Findings: {len(self.findings)}",
-            f"#",
-            f"# WARNING: Review each command before applying to production.",
-            f"# Some commands require a reboot or may disrupt services.",
-            f"",
+        """Export a detailed FortiOS remediation runbook — for every finding: risk,
+        numbered steps, GUI path, CLI block, verification, rollback, service impact
+        and references (from the remediation knowledge base, falling back to the
+        finding's own recommendation / CLI)."""
+        import textwrap
+
+        def wrap(text: str, indent: str = "      ", width: int = 96) -> list[str]:
+            out: list[str] = []
+            for para in str(text).split("\n"):
+                lines = textwrap.wrap(para, width=width - len(indent))
+                if lines:
+                    out.extend(indent + ln for ln in lines)
+                else:
+                    out.append("")
+            return out
+
+        kb = self._report_kb()
+        si = getattr(self, "_sys_info", {}) or {}
+        L: list[str] = [
+            "=" * 96,
+            " Fortinet FortiGate — Remediation Runbook",
+            "=" * 96,
+            f" Generated : {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+            f" Target    : {si.get('hostname', self.host)}  ({getattr(self, 'host', '')})",
+            f" Model     : {si.get('model_name', si.get('model', 'N/A'))}",
+            f" FortiOS   : {si.get('version', 'N/A')}",
+            f" Findings  : {len(self.findings)}",
+            "",
+            " WARNING: Review every command before applying to production. Back up the",
+            "          configuration first (execute backup config). Some changes require a",
+            "          reboot or may disrupt admin / SSL-VPN / IPsec / HA sessions — see the",
+            "          'SERVICE IMPACT' note on each item.",
+            "=" * 96,
+            "",
         ]
-        count = 0
-        for f in sorted(self.findings, key=lambda x: (self.SEVERITY_ORDER.get(x.severity, 4), x.rule_id)):
-            cmd = f.remediation_cmd or REMEDIATION_COMMANDS.get(f.rule_id, "")
-            if cmd:
-                lines.append(f"# [{f.severity}] {f.rule_id} — {f.name}")
-                lines.append(cmd)
-                lines.append("")
-                count += 1
-        lines.append(f"# Total remediation commands: {count}")
+        ordered = sorted(self.findings, key=lambda x: (self.SEVERITY_ORDER.get(x.severity, 4), x.rule_id))
+        for idx, f in enumerate(ordered, 1):
+            d = kb.detail_for(f) if kb else {}
+            L.append(f"[{idx}] [{f.severity}] {f.rule_id} — {f.name}")
+            L.append(f"    Category  : {f.category}     Target: {f.file_path}")
+            if f.line_content:
+                L.append(f"    Evidence  : {f.line_content}")
+            ref = " | ".join(x for x in (f.cwe, f.cve) if x)
+            if ref:
+                L.append(f"    Reference : {ref}")
+            if f.compliance_str:
+                L.append(f"    Compliance: {f.compliance_str}")
+            L.append("")
+            if d.get("risk"):
+                L.append("    RISK"); L.extend(wrap(d["risk"])); L.append("")
+            if d.get("steps"):
+                L.append("    REMEDIATION STEPS")
+                for n, s in enumerate(d["steps"], 1):
+                    L.extend(wrap(f"{n}. {s}"))
+                L.append("")
+            if d.get("gui"):
+                L.append("    GUI PATH"); L.extend(wrap(d["gui"])); L.append("")
+            if d.get("cli"):
+                L.append("    CLI")
+                L.extend("      " + cl for cl in str(d["cli"]).split("\n"))
+                L.append("")
+            if d.get("verify"):
+                L.append("    VERIFY"); L.extend(wrap(d["verify"])); L.append("")
+            if d.get("rollback"):
+                L.append("    ROLLBACK"); L.extend(wrap(d["rollback"])); L.append("")
+            if d.get("impact"):
+                L.append("    SERVICE IMPACT"); L.extend(wrap(d["impact"])); L.append("")
+            if d.get("references"):
+                L.append("    REFERENCES")
+                L.extend(f"      - {r}" for r in d["references"])
+                L.append("")
+            L.append("-" * 96)
+            L.append("")
+        L.append(f"# Runbook covers all {len(self.findings)} finding(s).")
         with open(output_path, "w", encoding="utf-8") as fh:
-            fh.write("\n".join(lines))
-        print(f"[+] Remediation script saved to: {output_path} ({count} commands)")
+            fh.write("\n".join(L))
+        print(f"[+] Remediation runbook saved to: {output_path} ({len(self.findings)} findings)")
 
     def save_compliance_csv(self, output_path: str) -> None:
         """Export compliance mapping as CSV for audit evidence."""
@@ -5501,8 +5494,9 @@ Examples:
     parser.add_argument("--verify-ssl", action="store_true", help="Verify SSL certificate (default: disabled)")
     parser.add_argument("--timeout", type=int, default=30, help="API request timeout in seconds (default: 30)")
     parser.add_argument("--json", metavar="FILE", help="Save JSON report to FILE")
-    parser.add_argument("--html", metavar="FILE", help="Save HTML report to FILE")
-    parser.add_argument("--remediation", metavar="FILE", help="Export FortiOS CLI remediation commands to FILE")
+    parser.add_argument("--html", metavar="FILE", help="Save detailed HTML report to FILE")
+    parser.add_argument("--pdf", metavar="FILE", help="Save detailed PDF report to FILE (stdlib only, no extra deps)")
+    parser.add_argument("--remediation", metavar="FILE", help="Export a detailed remediation runbook to FILE")
     parser.add_argument("--compliance-csv", metavar="FILE", help="Export compliance mapping CSV (CIS, PCI-DSS, NIST, SOC2, HIPAA)")
     parser.add_argument("--inventory", metavar="FILE", help="Multi-device inventory JSON file for batch scanning")
     parser.add_argument(
@@ -5567,6 +5561,7 @@ Examples:
 
     if args.severity:
         scanner.filter_severity(args.severity)
+        scanner._sev_filter = f"{args.severity} and above"
 
     scanner.print_report()
 
@@ -5574,6 +5569,8 @@ Examples:
         scanner.save_json(args.json)
     if args.html:
         scanner.save_html(args.html)
+    if args.pdf:
+        scanner.save_pdf(args.pdf)
     if args.remediation:
         scanner.save_remediation(args.remediation)
     if args.compliance_csv:

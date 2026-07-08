@@ -459,9 +459,11 @@ Examples:
     )
     parser.add_argument("conf", help="Path to a FortiGate .conf backup file")
     parser.add_argument("--json", metavar="FILE", help="Save JSON report to FILE")
-    parser.add_argument("--html", metavar="FILE", help="Save HTML report to FILE")
+    parser.add_argument("--html", metavar="FILE", help="Save detailed HTML report to FILE")
+    parser.add_argument("--pdf", metavar="FILE",
+                        help="Save detailed PDF report to FILE (stdlib only, no extra deps)")
     parser.add_argument("--remediation", metavar="FILE",
-                        help="Export FortiOS CLI remediation commands to FILE")
+                        help="Export a detailed remediation runbook to FILE")
     parser.add_argument("--compliance-csv", metavar="FILE",
                         help="Export compliance CSV (CIS, PCI-DSS, NIST, SOC2, HIPAA)")
     parser.add_argument(
@@ -484,6 +486,7 @@ Examples:
 
     if args.severity:
         scanner.filter_severity(args.severity)
+        scanner._sev_filter = f"{args.severity} and above"
 
     scanner.print_report()
 
@@ -491,6 +494,8 @@ Examples:
         scanner.save_json(args.json)
     if args.html:
         scanner.save_html(args.html)
+    if args.pdf:
+        scanner.save_pdf(args.pdf)
     if args.remediation:
         scanner.save_remediation(args.remediation)
     if args.compliance_csv:

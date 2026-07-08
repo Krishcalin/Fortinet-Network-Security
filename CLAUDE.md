@@ -4,7 +4,7 @@
 
 Fortinet FortiGate Security Scanner — a security posture assessment tool that audits FortiGate
 NGFW configuration against security best practices, 5 compliance frameworks (CIS, PCI-DSS,
-NIST 800-53, SOC 2, HIPAA), 66 known CVEs (2019–2026), and 31 MITRE ATT&CK technique
+NIST 800-53, SOC 2, HIPAA), 67 known CVEs (2019–2026), and 31 MITRE ATT&CK technique
 resilience tests.
 
 Ships in two modes that share the same 18 check methods and rule set:
@@ -13,18 +13,22 @@ Ships in two modes that share the same 18 check methods and rule set:
    OT / air-gapped environments where direct network access is impossible. Stdlib-only.
 
 - **Language**: Python 3.10+ (live mode also needs `requests`; offline mode has no third-party deps)
-- **Scanner files**: `fortinet_scanner.py` (~5,200 lines, all check logic) +
+- **Scanner files**: `fortinet_scanner.py` (~5,500 lines, all check logic) +
   `fortinet_offline_scanner.py` (~340 lines, parser + adapter)
+- **Reporting files** (all stdlib-only, so offline mode keeps zero third-party deps):
+  - `remediation_kb.py` + `remediation_kb.json` — 226-entry detailed remediation knowledge base
+  - `fortinet_html.py` — rich self-contained HTML report (`FortinetHTMLReport`)
+  - `fortinet_pdf.py` + `pdf_writer.py` — paginated PDF report (`FortinetPDFReport`) on a hand-rolled PDF 1.4 writer (no reportlab/weasyprint)
 - **Version**: 4.0.0 (engine) / 1.0.0 (offline adapter)
 - **License**: MIT
 
 ## Architecture
 
-1. **`FORTIOS_CVES` list** — 66 known FortiOS CVEs (2019-2026) with train-based version matching, sourced from FortiGuard PSIRT advisories.
-2. **`COMPLIANCE_MAP` dict** — 76 rule-to-framework mappings (CIS, PCI-DSS, NIST 800-53, SOC 2, HIPAA).
-3. **`REMEDIATION_COMMANDS` dict** — 42 FortiOS CLI config commands mapped to rule IDs.
+1. **`FORTIOS_CVES` list** — 67 known FortiOS CVEs (2019-2026) with train-based version matching, sourced from FortiGuard PSIRT advisories.
+2. **`COMPLIANCE_MAP` dict** — 77 rule-to-framework mappings (CIS, PCI-DSS, NIST 800-53, SOC 2, HIPAA).
+3. **`REMEDIATION_COMMANDS` dict** — 43 FortiOS CLI config commands mapped to rule IDs.
 4. **`Finding` class** — `__slots__` with `rule_id, name, category, severity, description, recommendation, cwe, cve, compliance, remediation_cmd`. Auto-resolves compliance + remediation on init.
-5. **`_ReportMixin`** — `print_report`, `save_json`, `save_html`, `save_remediation`, `save_compliance_csv`, `summary`, `filter_severity`.
+5. **`_ReportMixin`** — `print_report`, `save_json`, `save_html`, `save_pdf`, `save_remediation`, `save_compliance_csv`, `summary`, `filter_severity`, plus `_report_kb()` / `_report_meta()` helpers.
 6. **`FortinetScanner(_ReportMixin)`** — 18 `_check_*` methods producing 260+ possible findings.
 7. **`MultiDeviceScanner`** — batch scanning of multiple FortiGates with unified summary and JSON export.
 8. **CLI** — `argparse` with `host`, `--token`, `--verify-ssl`, `--timeout`, `--json`, `--html`, `--remediation`, `--compliance-csv`, `--inventory`, `--severity`, `--verbose`, `--version`.
@@ -46,7 +50,7 @@ Ships in two modes that share the same 18 check methods and rule set:
 | Category | Prefix | Check Method | Rules |
 |----------|--------|-------------|-------|
 | Admin Access | FORTIOS-ADMIN | `_check_admin_access` | 24 |
-| System Settings | FORTIOS-SYS | `_check_system_settings` | 12 |
+| System Settings | FORTIOS-SYS | `_check_system_settings` | 13 |
 | Firewall Policies | FORTIOS-POLICY | `_check_firewall_policies` | 16 |
 | SSL VPN | FORTIOS-SSLVPN | `_check_ssl_vpn` | 14 |
 | IPsec VPN | FORTIOS-IPSEC | `_check_ipsec_vpn` | 12 |
@@ -62,11 +66,11 @@ Ships in two modes that share the same 18 check methods and rule set:
 | Authentication | FORTIOS-AUTH | `_check_authentication` | 6 |
 | Advanced Hardening | FORTIOS-SYS/NET/POLICY/LOG/CERT/ZTNA | `_check_advanced_hardening` | ~15 |
 | MITRE ATT&CK Resilience | MITRE-T{NNNN}-{NNN} | `_check_mitre_attack_resilience` | 31 |
-| Known CVEs | FORTIOS-CVE | `_check_cves` | 66 |
+| Known CVEs | FORTIOS-CVE | `_check_cves` | 67 |
 
 ## Compliance Framework Mapping
 
-76 rule-to-framework mappings. Every finding auto-resolves compliance on init via `Finding._resolve_compliance()`.
+77 rule-to-framework mappings. Every finding auto-resolves compliance on init via `Finding._resolve_compliance()`.
 
 | Framework | Scope | Controls Mapped |
 |-----------|-------|-----------------|
@@ -78,9 +82,26 @@ Ships in two modes that share the same 18 check methods and rule set:
 
 Output: console (inline), JSON (`compliance` dict), compliance CSV (`--compliance-csv`).
 
-## Remediation Automation
+## Remediation & Reporting
 
-42 FortiOS CLI commands in `REMEDIATION_COMMANDS`. Auto-resolved per finding. Export via `--remediation fix.txt`.
+**Two-tier remediation.** The bare `Finding` carries `recommendation` (one line) + `remediation_cmd`
+(auto-resolved from the 43-entry `REMEDIATION_COMMANDS`). On top of that, `remediation_kb.json`
+(226 entries, loaded by `RemediationKB` in `remediation_kb.py`) supplies the **detailed** fix per
+rule: `risk`, numbered `steps`, `gui` path, canonical `cli`, `verify` command, `rollback`, service
+`impact`, and `references`. `RemediationKB.detail_for(finding)` resolves exact `rule_id` → family
+prefix (e.g. `FORTIOS-CVE` covers every CVE) → graceful fallback to the finding's own text, so a
+report section is never empty. It covers **every** emitted rule_id (0 gaps).
+
+**Reports** (all consume the KB via `_report_kb()` / `_report_meta()` on `_ReportMixin`):
+- `save_html` → `fortinet_html.FortinetHTMLReport`: rich self-contained HTML (risk gauge, severity /
+  compliance / ATT&CK visuals, collapsible per-finding cards with the full remediation, filters,
+  `@media print`).
+- `save_pdf` → `fortinet_pdf.FortinetPDFReport`: paginated PDF (cover + device panel, exec summary,
+  detailed finding blocks) on the stdlib `pdf_writer.PDFWriter`.
+- `save_remediation` → a detailed text **runbook** (risk / steps / GUI / CLI / verify / rollback /
+  impact / references per finding), not a bare CLI dump.
+
+CLI flags: `--html`, `--pdf`, `--remediation`, `--compliance-csv` (both live and offline scanners).
 
 ## Multi-Device Scanning
 
@@ -106,16 +127,16 @@ Output: console (inline), JSON (`compliance` dict), compliance CSV (`--complianc
 
 Scoring: `MITRE-SUMMARY-PASS` (all 31 pass) or `MITRE-SUMMARY-SCORE` (percentage).
 
-## Known CVEs (66 entries, 2019-2026)
+## Known CVEs (67 entries, 2019-2026)
 
 | Range | Count | Severity Mix | Notes |
 |-------|-------|-------------|-------|
 | CVE-001 to 015 | 15 | 8 CRITICAL, 6 HIGH, 1 MEDIUM | KEV-listed SSL VPN / fgfmd RCEs, FortiJump, xortigate |
 | CVE-016 to 030 | 15 | 5 CRITICAL, 7 HIGH, 3 MEDIUM | 2024-2025 CVEs, CSF proxy auth bypass, TACACS+ bypass |
 | CVE-031 to 046 | 16 | 2 CRITICAL, 14 HIGH | 2023-2026 sweep: CAPWAP, IPsec IKE, FGFM, restricted CLI escape, LDAP bypass |
-| CVE-047 to 066 | 20 | 0 CRITICAL, 0 HIGH, 20 MEDIUM | SSL-VPN symlink re-persistence, RADIUS Blast-RADIUS, request smuggling, DNS-65 filter bypass, session expiration |
+| CVE-047 to 067 | 21 | 0 CRITICAL, 0 HIGH, 21 MEDIUM | SSL-VPN symlink re-persistence, RADIUS Blast-RADIUS, request smuggling, DNS-65 filter bypass, session expiration, FSSO policy source-verification bypass |
 
-Totals: **16 CRITICAL, 27 HIGH, 23 MEDIUM** across all 6 supported version trains.
+Totals: **16 CRITICAL, 27 HIGH, 24 MEDIUM** across all 6 supported version trains.
 
 Train-based matching: `_parse_ver()`, `_ver_in_train()`, `_ver_lt()`. Trains: 6.2, 6.4, 7.0, 7.2, 7.4, 7.6.
 
