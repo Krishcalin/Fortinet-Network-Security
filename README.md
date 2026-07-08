@@ -5,7 +5,7 @@
 <h1 align="center">Fortinet FortiGate Security Scanner</h1>
 
 <p align="center">
-  <strong>Agentless FortiGate NGFW posture assessment — live API or offline <code>.conf</code> — with MITRE ATT&CK resilience scoring,<br/>67 CVE checks, 5-framework compliance mapping, and a 226-entry detailed remediation runbook.</strong>
+  <strong>Agentless FortiGate NGFW posture assessment — live API or offline <code>.conf</code> — with MITRE ATT&CK resilience scoring,<br/>70 CVE checks, 5-framework compliance mapping, and a 226-entry detailed remediation runbook.</strong>
 </p>
 
 <p align="center">
@@ -14,7 +14,7 @@
   <img src="https://img.shields.io/badge/FortiOS-6.x%20%7C%207.x-red?style=flat-square" alt="FortiOS"/>
   <img src="https://img.shields.io/badge/rules-260%2B-orange?style=flat-square" alt="Rules"/>
   <img src="https://img.shields.io/badge/MITRE_ATT%26CK-31_techniques-dc2626?style=flat-square" alt="MITRE"/>
-  <img src="https://img.shields.io/badge/CVEs-67-critical?style=flat-square" alt="CVEs"/>
+  <img src="https://img.shields.io/badge/CVEs-70-critical?style=flat-square" alt="CVEs"/>
   <img src="https://img.shields.io/badge/remediation_KB-226_entries-2ea043?style=flat-square" alt="Remediation KB"/>
   <img src="https://img.shields.io/badge/reports-HTML%20%7C%20PDF%20%7C%20JSON%20%7C%20CSV-8957e5?style=flat-square" alt="Reports"/>
   <img src="https://img.shields.io/badge/compliance-CIS%20%7C%20PCI--DSS%20%7C%20NIST%20%7C%20SOC2%20%7C%20HIPAA-blueviolet?style=flat-square" alt="Compliance"/>
@@ -107,7 +107,7 @@ Open `report.html` in any browser, hand `report.pdf` to management, and give `ru
 |-----------|---------|
 | **260+ security rules** | 18 check methods covering every FortiGate security domain |
 | **31 MITRE ATT&CK techniques** | Resilience testing across 11 tactics with a 0–100% score |
-| **67 known CVEs** | FortiGuard PSIRT 2019–2026, train-based firmware version matching (FortiOS 6.2 → 7.6) |
+| **70 known CVEs** | FortiGuard PSIRT 2019–2026, train-based firmware version matching (FortiOS 6.2 → 7.6) |
 | **5 compliance frameworks** | CIS FortiGate, PCI-DSS 4.0, NIST 800-53 Rev 5, SOC 2 Type II, HIPAA — 77 rule-to-control mappings |
 | **226-entry remediation KB** | Per finding: risk · numbered steps · GUI path · verified CLI · verification command · rollback · service impact · references |
 | **HTML + PDF reports** | Rich self-contained HTML and paginated PDF — both **stdlib-only** (no reportlab / weasyprint) |
@@ -132,7 +132,7 @@ Open `report.html` in any browser, hand `report.pdf` to management, and give `ru
                                         ┌───────────────────────────────┐
                                         │  FortinetScanner engine        │
                                         │  18 _check_* methods (260+)     │
-                                        │  + 67 CVE matches               │
+                                        │  + 70 CVE matches               │
                                         │  + 31 MITRE ATT&CK tests        │
                                         │  + compliance auto-mapping      │
                                         └───────────────┬───────────────┘
@@ -278,11 +278,11 @@ The scanner tests **31 MITRE ATT&CK Enterprise techniques across 11 tactics**, v
 
 ### Known CVEs
 
-**67 CVEs (2019–2026)**, sourced from [FortiGuard PSIRT advisories](https://www.fortiguard.com/psirt?product=FortiOS) and matched against the parsed FortiOS version via train-based logic (trains 6.2, 6.4, 7.0, 7.2, 7.4, 7.6).
+**70 CVEs (2019–2026)**, sourced from [FortiGuard PSIRT advisories](https://www.fortiguard.com/psirt?product=FortiOS) and NVD, and matched against the parsed FortiOS version via train-based logic (trains 6.2, 6.4, 7.0, 7.2, 7.4, 7.6). Every entry is verified to affect **FortiOS specifically** (not a sibling Fortinet product).
 
 | Severity | Count | Highlights |
 |----------|:-----:|------------|
-| **CRITICAL** | 16 | CVE-2026-24858 (FortiCloud SSO bypass), CVE-2025-59718 (FortiCloud SSO SAML, CISA KEV), CVE-2024-55591 & CVE-2022-40684 (admin auth bypass, KEV), CVE-2024-47575 (FortiJump), CVE-2024-21762 (SSL-VPN OOB write), CVE-2023-27997 (xortigate), CVE-2022-42475 (sslvpnd) |
+| **CRITICAL** | 19 | CVE-2026-24858 (FortiCloud SSO bypass), CVE-2025-59718 (FortiCloud SSO SAML, CISA KEV), CVE-2024-55591 & CVE-2022-40684 (admin auth bypass, KEV), CVE-2024-21762 (SSL-VPN OOB write), CVE-2023-33308 (proxy-policy stack RCE), CVE-2023-27997 (xortigate), CVE-2022-42475 (sslvpnd RCE), CVE-2022-35843 (SSH/RADIUS bypass), CVE-2021-26109 (SSL-VPN heap RCE) |
 | **HIGH** | 27 | CVE-2026-22153 (LDAP/Agentless VPN bypass), CVE-2025-58325 (restricted CLI bypass), CVE-2025-53844 / CVE-2025-25249 (CAPWAP), CVE-2024-46670 (IPsec IKE OOB), CVE-2024-26009 (FGFM weak auth), CVE-2023-44250 (HA auth) |
 | **MEDIUM** | 24 | CVE-2025-62439 (FSSO policy source-verification bypass), CVE-2025-68686 (SSL-VPN symlink re-persistence), CVE-2025-67862 (Lua CLI escape), CVE-2025-55018 (request smuggling), CVE-2024-3596 (Blast-RADIUS), CVE-2024-55599 (DNS-65 filter bypass), CVE-2024-50562 (SSL-VPN session expiration) |
 
@@ -405,7 +405,7 @@ python fortinet_offline_scanner.py fw1.conf \
 python fortinet_offline_scanner.py fw1.conf --severity HIGH -v
 ```
 
-**Works offline (from the `.conf` alone):** all 18 check categories, all 67 CVEs, all 31 MITRE ATT&CK tests, all 77 compliance mappings, and the full 226-entry remediation runbook. Multi-VDOM configs collapse to the last-seen VDOM as an audit baseline.
+**Works offline (from the `.conf` alone):** all 18 check categories, all 70 CVEs, all 31 MITRE ATT&CK tests, all 77 compliance mappings, and the full 226-entry remediation runbook. Multi-VDOM configs collapse to the last-seen VDOM as an audit baseline.
 
 **Skipped offline** (no runtime data in a static `.conf`): live FortiGuard license/subscription state, HA peer sync status, and current signature-database age. These fire normally in live mode.
 

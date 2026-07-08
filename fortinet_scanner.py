@@ -149,14 +149,17 @@ FORTIOS_CVES: list[dict] = [
         "cwe": "CWE-89",
     },
     {
-        "id": "FORTIOS-CVE-008", "cve": "CVE-2024-0012", "severity": "CRITICAL",
-        "name": "Management interface authentication bypass",
+        "id": "FORTIOS-CVE-008", "cve": "CVE-2021-26109", "severity": "CRITICAL",
+        "name": "SSL-VPN memory allocator integer overflow (heap RCE)",
         "affected": [
-            {"train": "7.0", "fixed": "7.0.17"},
+            {"train": "7.0", "fixed": "7.0.1"},
+            {"train": "6.4", "fixed": "6.4.6"},
+            {"train": "6.2", "fixed": "6.2.10"},
+            {"train": "6.0", "fixed": "6.0.13"},
         ],
-        "description": "An authentication bypass in the FortiOS management interface allows a remote unauthenticated attacker to gain super-admin privileges.",
-        "recommendation": "Upgrade to FortiOS 7.0.17+. Restrict management access to trusted internal networks only.",
-        "cwe": "CWE-288",
+        "description": "An integer overflow in the SSL-VPN memory allocator lets an unauthenticated attacker corrupt heap control data via crafted requests to the SSL-VPN service, leading to potential remote code execution.",
+        "recommendation": "Upgrade to FortiOS 7.0.1 / 6.4.6 / 6.2.10 / 6.0.13 or later. If SSL-VPN is not required, disable it; otherwise restrict SSL-VPN portal access to trusted sources.",
+        "cwe": "CWE-190",
     },
     {
         "id": "FORTIOS-CVE-009", "cve": "CVE-2023-50176", "severity": "HIGH",
@@ -822,6 +825,42 @@ FORTIOS_CVES: list[dict] = [
         "description": "An improper verification of the source of a communication channel in FortiOS lets an authenticated user who knows the FSSO policy configuration reach protected network resources via crafted requests, bypassing the intended source checks.",
         "recommendation": "Upgrade to FortiOS 7.6.5 / 7.4.10 / 7.2.14 / 7.0.20 or later. Review FSSO-based firewall policies and constrain them with additional source-address and identity restrictions.",
         "cwe": "CWE-940",
+    },
+    {
+        "id": "FORTIOS-CVE-068", "cve": "CVE-2022-35843", "severity": "CRITICAL",
+        "name": "SSH login authentication bypass via crafted RADIUS response",
+        "affected": [
+            {"train": "7.2", "fixed": "7.2.2"},
+            {"train": "7.0", "fixed": "7.0.8"},
+            {"train": "6.4", "fixed": "6.4.10"},
+            {"train": "6.2", "fixed": "6.2.13"},
+            {"train": "6.0", "fixed": "6.0.16"},
+        ],
+        "description": "Improper handling of assumed-immutable data in the SSH login path lets a remote unauthenticated attacker bypass authentication when the RADIUS server can be induced to return a crafted Access-Challenge response.",
+        "recommendation": "Upgrade to FortiOS 7.2.2 / 7.0.8 / 6.4.10 / 6.2.13 / 6.0.16 or later. Harden the FortiGate-to-RADIUS path (RadSec/IPsec) and restrict SSH administrative access to trusted networks.",
+        "cwe": "CWE-287",
+    },
+    {
+        "id": "FORTIOS-CVE-069", "cve": "CVE-2023-28001", "severity": "CRITICAL",
+        "name": "REST API session reuse of deleted users",
+        "affected": [
+            {"train": "7.2", "fixed": "7.2.5"},
+            {"train": "7.0", "fixed": "7.0.13"},
+        ],
+        "description": "Insufficient session expiration lets an attacker execute unauthorized commands via the REST API by reusing the session token of a deleted administrator/user.",
+        "recommendation": "Upgrade to FortiOS 7.2.5 / 7.0.13 or later. Rotate REST API tokens and review active API admin sessions after deleting any account.",
+        "cwe": "CWE-613",
+    },
+    {
+        "id": "FORTIOS-CVE-070", "cve": "CVE-2023-33308", "severity": "CRITICAL",
+        "name": "Stack overflow in proxy-mode policies with deep inspection",
+        "affected": [
+            {"train": "7.2", "fixed": "7.2.4"},
+            {"train": "7.0", "fixed": "7.0.11"},
+        ],
+        "description": "A stack-based buffer overflow reachable through proxy-mode firewall/proxy policies with deep or full SSL inspection lets a remote unauthenticated attacker execute arbitrary code via crafted packets.",
+        "recommendation": "Upgrade to FortiOS 7.2.4 / 7.0.11 or later. As an interim workaround, disable deep/full inspection on proxy-mode policies or switch the affected policies to flow mode.",
+        "cwe": "CWE-787",
     },
 ]
 

@@ -4,7 +4,7 @@
 
 Fortinet FortiGate Security Scanner — a security posture assessment tool that audits FortiGate
 NGFW configuration against security best practices, 5 compliance frameworks (CIS, PCI-DSS,
-NIST 800-53, SOC 2, HIPAA), 67 known CVEs (2019–2026), and 31 MITRE ATT&CK technique
+NIST 800-53, SOC 2, HIPAA), 70 known CVEs (2019–2026), and 31 MITRE ATT&CK technique
 resilience tests.
 
 Ships in two modes that share the same 18 check methods and rule set:
@@ -24,7 +24,7 @@ Ships in two modes that share the same 18 check methods and rule set:
 
 ## Architecture
 
-1. **`FORTIOS_CVES` list** — 67 known FortiOS CVEs (2019-2026) with train-based version matching, sourced from FortiGuard PSIRT advisories.
+1. **`FORTIOS_CVES` list** — 70 known FortiOS CVEs (2019-2026) with train-based version matching, sourced from FortiGuard PSIRT + NVD. Every entry is verified to affect FortiOS specifically (a prior bogus PAN-OS entry, CVE-2024-0012, was removed).
 2. **`COMPLIANCE_MAP` dict** — 77 rule-to-framework mappings (CIS, PCI-DSS, NIST 800-53, SOC 2, HIPAA).
 3. **`REMEDIATION_COMMANDS` dict** — 43 FortiOS CLI config commands mapped to rule IDs.
 4. **`Finding` class** — `__slots__` with `rule_id, name, category, severity, description, recommendation, cwe, cve, compliance, remediation_cmd`. Auto-resolves compliance + remediation on init.
@@ -66,7 +66,7 @@ Ships in two modes that share the same 18 check methods and rule set:
 | Authentication | FORTIOS-AUTH | `_check_authentication` | 6 |
 | Advanced Hardening | FORTIOS-SYS/NET/POLICY/LOG/CERT/ZTNA | `_check_advanced_hardening` | ~15 |
 | MITRE ATT&CK Resilience | MITRE-T{NNNN}-{NNN} | `_check_mitre_attack_resilience` | 31 |
-| Known CVEs | FORTIOS-CVE | `_check_cves` | 67 |
+| Known CVEs | FORTIOS-CVE | `_check_cves` | 70 |
 
 ## Compliance Framework Mapping
 
@@ -127,7 +127,7 @@ CLI flags: `--html`, `--pdf`, `--remediation`, `--compliance-csv` (both live and
 
 Scoring: `MITRE-SUMMARY-PASS` (all 31 pass) or `MITRE-SUMMARY-SCORE` (percentage).
 
-## Known CVEs (67 entries, 2019-2026)
+## Known CVEs (70 entries, 2019-2026)
 
 | Range | Count | Severity Mix | Notes |
 |-------|-------|-------------|-------|
@@ -136,7 +136,7 @@ Scoring: `MITRE-SUMMARY-PASS` (all 31 pass) or `MITRE-SUMMARY-SCORE` (percentage
 | CVE-031 to 046 | 16 | 2 CRITICAL, 14 HIGH | 2023-2026 sweep: CAPWAP, IPsec IKE, FGFM, restricted CLI escape, LDAP bypass |
 | CVE-047 to 067 | 21 | 0 CRITICAL, 0 HIGH, 21 MEDIUM | SSL-VPN symlink re-persistence, RADIUS Blast-RADIUS, request smuggling, DNS-65 filter bypass, session expiration, FSSO policy source-verification bypass |
 
-Totals: **16 CRITICAL, 27 HIGH, 24 MEDIUM** across all 6 supported version trains.
+Totals: **19 CRITICAL, 27 HIGH, 24 MEDIUM** across all 6 supported version trains. CVE-068–070 are the 2021–2023 SSL-VPN/SSH/proxy criticals (CVE-2022-35843, CVE-2023-28001, CVE-2023-33308); FORTIOS-CVE-008 was re-slotted to CVE-2021-26109.
 
 Train-based matching: `_parse_ver()`, `_ver_in_train()`, `_ver_lt()`. Trains: 6.2, 6.4, 7.0, 7.2, 7.4, 7.6.
 
