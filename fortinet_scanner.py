@@ -1143,13 +1143,19 @@ class _ReportMixin:
         except (OSError, ValueError) as exc:
             print(f"[!] Could not load baseline '{baseline_path}': {exc}", file=sys.stderr)
             return
-        base_findings = base.get("findings", []) if isinstance(base, dict) else []
+        # Coerce defensively (a null/absent 'findings' must not crash) and exclude the
+        # scanner's own synthetic drift finding from both sides, or it would always be
+        # counted as "resolved" and skew the score on the next scheduled diff.
+        raw = base.get("findings", []) if isinstance(base, dict) else []
+        base_findings = [d for d in (raw if isinstance(raw, list) else [])
+                         if isinstance(d, dict) and d.get("rule_id") != "FORTIOS-DRIFT-SUMMARY"]
 
         def sig_d(d):
             return (d.get("rule_id", ""), d.get("file_path", ""), d.get("line_content", ""))
 
-        base_sigs = {sig_d(d): d for d in base_findings if isinstance(d, dict)}
-        cur_sigs = {(f.rule_id, f.file_path, f.line_content): f for f in self.findings}
+        base_sigs = {sig_d(d): d for d in base_findings}
+        cur_sigs = {(f.rule_id, f.file_path, f.line_content): f
+                    for f in self.findings if f.rule_id != "FORTIOS-DRIFT-SUMMARY"}
         new = [f for s, f in cur_sigs.items() if s not in base_sigs]
         resolved = [d for s, d in base_sigs.items() if s not in cur_sigs]
         new.sort(key=lambda f: self.SEVERITY_ORDER.get(f.severity, 4))
@@ -1157,7 +1163,12 @@ class _ReportMixin:
         new_high = sum(1 for f in new if f.severity == "HIGH")
 
         cur_score = self._risk_score(self.summary())
-        base_score = self._risk_score(base.get("summary", {}) if isinstance(base, dict) else {})
+        # Recompute the baseline score from its (drift-free) findings rather than trusting
+        # base['summary'], which may be null or may have counted a prior drift finding.
+        base_counts: dict = {}
+        for d in base_findings:
+            base_counts[d.get("severity", "")] = base_counts.get(d.get("severity", ""), 0) + 1
+        base_score = self._risk_score(base_counts)
         delta = cur_score - base_score
         base_time = str(base.get("generated", "") if isinstance(base, dict) else "")[:19].replace("T", " ")
 
@@ -2282,7 +2293,10 @@ class FortinetScanner(_ReportMixin):
     _RB_UNIVERSAL: dict[str, set] = {
         "srcintf": {"any"}, "dstintf": {"any"},
         "srcaddr": {"all"}, "dstaddr": {"all"},
-        "service": {"ALL", "ALL_TCP", "ALL_UDP", "ANY", "all"},
+        # NOTE: ALL_TCP / ALL_UDP are NOT universal — they are protocol-specific and
+        # cannot cover a service on the other protocol (else a TCP-only rule would be
+        # reported as shadowing a UDP deny). Only "ALL"/"ANY" match every service.
+        "service": {"ALL", "ANY", "all"},
     }
     _RB_FIELDS = ("srcintf", "dstintf", "srcaddr", "dstaddr", "service")
     _RB_UTM_KEYS = ("av-profile", "webfilter-profile", "ips-sensor", "application-list",
@@ -2403,7 +2417,10 @@ class FortinetScanner(_ReportMixin):
                 part_perm += 1
             if str(p.get("logtraffic", "")).lower() in ("all", "utm"):
                 logged += 1
-            if any(p.get(k) for k in self._RB_UTM_KEYS):
+            # A bare ssl-ssh-profile of no-inspection/certificate-inspection is not real UTM.
+            real_utm = any(p.get(k) for k in self._RB_UTM_KEYS if k != "ssl-ssh-profile")
+            ssl_prof = str(p.get("ssl-ssh-profile", "")).lower()
+            if real_utm or (ssl_prof and ssl_prof not in ("no-inspection", "certificate-inspection")):
                 protected += 1
         disabled = sum(1 for p in policies if str(p.get("status", "enable")).lower() == "disable")
 
@@ -2537,21 +2554,30 @@ class FortinetScanner(_ReportMixin):
                 if isinstance(v, str) and v:
                     prof_refs[pf].add(v)
 
-        # Expand group membership (a referenced group uses its members).
+        # Expand group membership transitively to a fixpoint (a referenced group uses
+        # its members, recursively — nested groups, any config/API ordering).
+        def _expand(refs: set, groups) -> None:
+            gmap = {g.get("name"): g for g in groups
+                    if isinstance(g, dict) and g.get("name")}
+            changed = True
+            while changed:
+                changed = False
+                for gname in list(refs):
+                    g = gmap.get(gname)
+                    if not g:
+                        continue
+                    for m in (g.get("member") or []):
+                        nm = m.get("name") if isinstance(m, dict) else None
+                        if nm and nm not in refs:
+                            refs.add(nm)
+                            changed = True
+
         addrgrps = self._api_get("firewall/addrgrp")
         if isinstance(addrgrps, list):
-            for g in addrgrps:
-                if g.get("name") in addr_refs:
-                    for m in (g.get("member") or []):
-                        if isinstance(m, dict) and m.get("name"):
-                            addr_refs.add(m["name"])
+            _expand(addr_refs, addrgrps)
         svcgrps = self._api_get("firewall.service/group")
         if isinstance(svcgrps, list):
-            for g in svcgrps:
-                if g.get("name") in svc_refs:
-                    for m in (g.get("member") or []):
-                        if isinstance(m, dict) and m.get("name"):
-                            svc_refs.add(m["name"])
+            _expand(svc_refs, svcgrps)
         # VIPs referenced as a destination are "used"; VIPs never referenced are orphaned.
         vips = self._api_get("firewall/vip")
         vip_names = {v.get("name") for v in vips if isinstance(v, dict)} if isinstance(vips, list) else set()
@@ -2560,11 +2586,16 @@ class FortinetScanner(_ReportMixin):
             names = sorted(names)
             return ", ".join(names[:k]) + (f", +{len(names) - k} more" if len(names) > k else "")
 
-        # Unused address objects
+        # Unused address objects (excluding built-in system defaults used implicitly
+        # by features rather than by firewall policies).
+        default_addrs = {"all", "none", "SSLVPN_TUNNEL_ADDR", "SSLVPN_TUNNEL_IPv6_ADDR",
+                         "FIREWALL_AUTH_PORTAL_ADDRESS", "FABRIC_DEVICE", "metadata"}
         addrs = self._api_get("firewall/address")
         if isinstance(addrs, list):
             unused = {a.get("name") for a in addrs
-                      if a.get("name") and a["name"] not in addr_refs and a["name"] != "all"}
+                      if a.get("name") and a["name"] not in addr_refs
+                      and a["name"] not in default_addrs
+                      and str(a.get("is-factory-setting", "")).lower() not in ("enable", "true")}
             if len(unused) >= 3:
                 self._add(Finding(
                     rule_id="FORTIOS-OBJECT-001", name=f"{len(unused)} unused address objects",
@@ -2622,17 +2653,29 @@ class FortinetScanner(_ReportMixin):
     # ================================================================== #
 
     # Services that should essentially never be directly reachable from the internet.
+    # Matched at word boundaries (see _risky_label) so e.g. "gRPC-API" is not flagged
+    # as RPC and "NoSQL-Proxy" is not flagged as SQL.
     _EXPO_RISKY = {
-        "ssh": "SSH", "telnet": "Telnet", "rdp": "RDP", "ms-rdp": "RDP",
-        "smb": "SMB", "samba": "SMB", "netbios": "NetBIOS", "cifs": "SMB",
-        "ms-sql": "MS-SQL", "mssql": "MS-SQL", "mysql": "MySQL", "sql": "SQL",
-        "postgres": "PostgreSQL", "mongo": "MongoDB", "redis": "Redis",
-        "vnc": "VNC", "ftp": "FTP", "tftp": "TFTP", "rlogin": "rlogin",
-        "ldap": "LDAP", "winrm": "WinRM", "snmp": "SNMP", "rpc": "RPC",
-        "elasticsearch": "Elasticsearch", "kibana": "Kibana", "docker": "Docker",
-        "rexec": "rexec", "rsh": "rsh", "x11": "X11",
+        "ssh": "SSH", "telnet": "Telnet", "rdp": "RDP", "smb": "SMB",
+        "samba": "SMB", "netbios": "NetBIOS", "cifs": "SMB", "mssql": "MS-SQL",
+        "mysql": "MySQL", "sql": "SQL", "postgres": "PostgreSQL", "postgresql": "PostgreSQL",
+        "mongo": "MongoDB", "mongodb": "MongoDB", "redis": "Redis", "vnc": "VNC",
+        "ftp": "FTP", "tftp": "TFTP", "rlogin": "rlogin", "ldap": "LDAP",
+        "winrm": "WinRM", "snmp": "SNMP", "rpc": "RPC", "elasticsearch": "Elasticsearch",
+        "kibana": "Kibana", "docker": "Docker", "rexec": "rexec", "rsh": "rsh", "x11": "X11",
     }
     _EXPO_ALL_SVC = {"ALL", "ALL_TCP", "ALL_UDP", "ALL_ICMP", "ANY"}
+
+    @classmethod
+    def _risky_label(cls, service_name: str):
+        """Return the risk label if the service name contains a high-risk token as a
+        whole word (delimiter-bounded), else None. Whole-word match avoids false
+        positives like gRPC->RPC or NoSQL->SQL."""
+        parts = {p for p in re.split(r"[^a-z0-9]+", service_name.lower()) if p}
+        for tok, label in cls._EXPO_RISKY.items():
+            if tok in parts:
+                return label
+        return None
 
     def _wan_interfaces(self) -> set:
         """Best-effort set of internet-facing interface names (role=wan, or a
@@ -2645,10 +2688,14 @@ class FortinetScanner(_ReportMixin):
                     continue
                 nm = i.get("name", "")
                 role = str(i.get("role", "")).lower()
+                mode = str(i.get("mode", "")).lower()
                 if role == "wan":
                     names.add(nm)
-                elif role in ("", "undefined") and any(
-                        t in nm.lower() for t in ("wan", "internet", "outside", "ppp", "wwan")):
+                elif role in ("", "undefined") and (
+                        any(t in nm.lower() for t in ("wan", "internet", "outside", "ppp", "wwan"))
+                        or mode in ("dhcp", "pppoe")):
+                    # Best-effort: an interface obtaining its address via DHCP/PPPoE and
+                    # with no LAN role is very likely an internet uplink (e.g. 'port1').
                     names.add(nm)
         return names
 
@@ -2661,14 +2708,20 @@ class FortinetScanner(_ReportMixin):
 
         exposed = []       # (pid, name, src_all, svc_names)
         risky_count = 0
+        all_svc_count = 0
         for pol in policies:
             if str(pol.get("status", "enable")).lower() == "disable":
                 continue
             if str(pol.get("action", "")).lower() != "accept":
                 continue
             srcintf = {i.get("name", "") for i in (pol.get("srcintf") or []) if isinstance(i, dict)}
-            inbound = ("any" in srcintf) or bool(srcintf & wan)
-            if not inbound:
+            dstintf = {i.get("name", "") for i in (pol.get("dstintf") or []) if isinstance(i, dict)}
+            # A policy is internet-inbound only if its source is the WAN/any AND it is
+            # NOT purely egress (dstintf entirely within the WAN set). This excludes
+            # ordinary outbound internet-access rules (any -> wan) and wan->wan transit.
+            src_internet = ("any" in srcintf) or bool(srcintf & wan)
+            egress_wan_only = bool(dstintf) and "any" not in dstintf and dstintf <= wan
+            if not src_internet or egress_wan_only:
                 continue
             src_names = {a.get("name", "") for a in (pol.get("srcaddr") or []) if isinstance(a, dict)}
             svc_names = [s.get("name", "") for s in (pol.get("service") or []) if isinstance(s, dict)]
@@ -2676,13 +2729,13 @@ class FortinetScanner(_ReportMixin):
             pid = pol.get("policyid", "?")
             name = pol.get("name") or f"policy-{pid}"
             exposed.append((pid, name, src_all, svc_names))
+            src_desc = "ANY internet source" if src_all else "a restricted external source"
 
-            # Named high-risk services reachable from the internet.
+            # Named high-risk services reachable from the internet (whole-word match).
             for sv in svc_names:
                 if sv.upper() in self._EXPO_ALL_SVC:
                     continue  # handled by EXPOSURE-001 below
-                key = sv.lower()
-                label = next((lab for tok, lab in self._EXPO_RISKY.items() if tok in key), None)
+                label = self._risky_label(sv)
                 if not label:
                     continue
                 risky_count += 1
@@ -2692,30 +2745,29 @@ class FortinetScanner(_ReportMixin):
                     name=f"High-risk service exposed to the internet: {label}",
                     category="Attack Surface", severity=sev,
                     file_path=_host, line_num=None,
-                    line_content=f"policy {pid} ({name}): {'ANY internet source' if src_all else 'restricted source'} -> service {sv} via WAN",
-                    description=("Inbound WAN policy {p} '{n}' permits internet traffic to the high-risk service '{s}' "
-                                 "({lab}). ".format(p=pid, n=name, s=sv, lab=label)
-                                 + ("It is open to ANY source on the internet. " if src_all
-                                    else "It is restricted to specific sources, but ")
-                                 + f"{label} is a common initial-access / lateral-movement target and should not be "
-                                 "directly internet-facing."),
+                    line_content=f"policy {pid} ({name}): {src_desc} -> service {sv} via WAN",
+                    description=(f"Inbound WAN policy {pid} '{name}' permits internet traffic to the high-risk service "
+                                 f"'{sv}' ({label}) from {src_desc}. {label} is a common initial-access / lateral-movement "
+                                 "target and should not be directly internet-facing."),
                     recommendation=(f"Remove '{sv}' from inbound WAN policy {pid}, or restrict srcaddr to specific trusted "
                                     "IP objects and require VPN/ZTNA for administrative access. Front web apps with a WAF and "
                                     "publish management only via VPN — never expose SSH/RDP/SMB/database ports to the internet."),
                     cwe="CWE-284",
                 ))
 
-            # Any-source to all-services inbound from the internet.
-            if src_all and any(s.upper() in self._EXPO_ALL_SVC for s in svc_names):
+            # Inbound policy permitting ALL services (any protocol) from the internet —
+            # fires regardless of source; CRITICAL for any-source, HIGH for restricted.
+            if any(s.upper() in self._EXPO_ALL_SVC for s in svc_names):
+                all_svc_count += 1
                 self._add(Finding(
                     rule_id="FORTIOS-EXPOSURE-001",
-                    name="Inbound internet policy allows ANY source to ALL services",
-                    category="Attack Surface", severity="CRITICAL",
+                    name="Inbound internet policy allows ALL services",
+                    category="Attack Surface", severity=("CRITICAL" if src_all else "HIGH"),
                     file_path=_host, line_num=None,
-                    line_content=f"policy {pid} ({name}): srcintf=WAN, srcaddr=all, service=ALL, action=accept",
-                    description=(f"Inbound WAN policy {pid} '{name}' allows ANY source on the internet to reach ALL services "
-                                 "on the destination(s). This is effectively no perimeter for the covered destinations and "
-                                 "exposes every open port to internet-wide scanning and exploitation."),
+                    line_content=f"policy {pid} ({name}): srcintf=WAN, src={'all' if src_all else 'restricted'}, service=ALL, action=accept",
+                    description=(f"Inbound WAN policy {pid} '{name}' allows {src_desc} to reach ALL services on the "
+                                 "destination(s). This is effectively no perimeter for the covered destinations and exposes "
+                                 "every open port to scanning and exploitation."),
                     recommendation=("Replace this rule with least-privilege policies: specific destination objects, only the "
                                     "required services, and — for admin — trusted source IPs behind VPN/ZTNA. Add UTM inspection "
                                     "and logging."),
@@ -2724,8 +2776,10 @@ class FortinetScanner(_ReportMixin):
 
         # Attack-surface summary.
         internet_open = sum(1 for e in exposed if e[2])
-        sev = "HIGH" if risky_count else ("MEDIUM" if internet_open else "LOW" if exposed else "INFO")
-        wan_note = f"WAN interfaces: {', '.join(sorted(wan)) or '(none identified — used any-source policies)'}"
+        any_all = any(e[2] and any(s.upper() in self._EXPO_ALL_SVC for s in e[3]) for e in exposed)
+        sev = ("CRITICAL" if any_all else "HIGH" if risky_count
+               else "MEDIUM" if internet_open else "LOW" if exposed else "INFO")
+        wan_note = f"WAN interfaces: {', '.join(sorted(wan)) or '(none identified — checked any-source policies only)'}"
         self._add(Finding(
             rule_id="FORTIOS-EXPOSURE-SUMMARY",
             name=f"Attack surface: {len(exposed)} inbound internet policy(ies), {risky_count} high-risk exposure(s)",

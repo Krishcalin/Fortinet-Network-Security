@@ -245,5 +245,87 @@ def test_drift_identical_is_zero(tmp_path):
     assert drift.severity == "INFO"
 
 
+# ------------------------------------------------- regression (review fixes) --
+
+def test_all_tcp_is_not_universal_service():
+    # ALL_TCP is TCP-only and must NOT be treated as covering a UDP service (SNMP),
+    # so an accept ALL_TCP does not falsely shadow a later deny SNMP.
+    pols = [_pol(1, action="accept", service="ALL_TCP"), _pol(2, action="deny", service="SNMP")]
+    s = StubScanner({"firewall/policy": pols})
+    s._check_rulebase()
+    assert "FORTIOS-RULEBASE-001" not in _ids(s.findings)
+
+
+def test_exposure_egress_and_transit_not_flagged():
+    # any -> wan1 (normal outbound internet access) must NOT be flagged as inbound exposure.
+    s = StubScanner(_idata([_pol(1, srcintf="any", dstintf="wan1", srcaddr="all", service="ALL")]))
+    s._check_exposure()
+    assert "FORTIOS-EXPOSURE-001" not in _ids(s.findings)
+
+
+def test_exposure_grpc_and_nosql_not_risky():
+    s = StubScanner(_idata([
+        _pol(1, srcintf="wan1", dstintf="lan", srcaddr="all", service="gRPC-API"),
+        _pol(2, srcintf="wan1", dstintf="lan", srcaddr="all", service="NoSQL-Proxy"),
+    ]))
+    s._check_exposure()
+    assert "FORTIOS-EXPOSURE-002" not in _ids(s.findings)
+
+
+def test_exposure_restricted_all_services_is_high():
+    s = StubScanner(_idata([_pol(1, srcintf="wan1", dstintf="lan", srcaddr="partner", service="ALL")]))
+    s._check_exposure()
+    e1 = [f for f in s.findings if f.rule_id == "FORTIOS-EXPOSURE-001"]
+    assert e1 and e1[0].severity == "HIGH"
+
+
+def test_object_hygiene_default_system_addresses_not_flagged():
+    d = {
+        "firewall/policy": [_pol(1, srcaddr="lan-net", dstaddr="web", service="HTTPS")],
+        "firewall/address": [{"name": "lan-net"}, {"name": "web"}, {"name": "none"},
+                             {"name": "SSLVPN_TUNNEL_ADDR"}, {"name": "FIREWALL_AUTH_PORTAL_ADDRESS"},
+                             {"name": "FABRIC_DEVICE"}],
+    }
+    s = StubScanner(d)
+    s._check_object_hygiene()
+    assert "FORTIOS-OBJECT-001" not in _ids(s.findings)  # only defaults unused
+
+
+def test_object_hygiene_nested_group_resolved_any_order():
+    # G1 -> G2 -> host_a; groups returned in reverse order. host_a must NOT be 'unused'.
+    d = {
+        "firewall/policy": [_pol(1, srcaddr="G1", dstaddr="web", service="HTTPS")],
+        "firewall/addrgrp": [{"name": "G2", "member": [{"name": "host_a"}]},
+                             {"name": "G1", "member": [{"name": "G2"}]}],
+        "firewall/address": [{"name": "web"}, {"name": "host_a"},
+                             {"name": "x1"}, {"name": "x2"}, {"name": "x3"}],
+    }
+    s = StubScanner(d)
+    s._check_object_hygiene()
+    o1 = [f for f in s.findings if f.rule_id == "FORTIOS-OBJECT-001"]
+    assert o1 and "host_a" not in o1[0].line_content  # x1/x2/x3 unused, host_a used via nesting
+
+
+def test_drift_ignores_prior_drift_summary(tmp_path):
+    base = _write_baseline(tmp_path,
+                           [("R-1", "LOW", "f1"), ("FORTIOS-DRIFT-SUMMARY", "HIGH", "prior drift")],
+                           {"LOW": 1, "HIGH": 1})
+    s = StubScanner({})
+    s.findings = [_finding("R-1", "LOW", "f1")]
+    s.apply_drift(base)
+    drift = [f for f in s.findings if f.rule_id == "FORTIOS-DRIFT-SUMMARY"][0]
+    assert "new=0" in drift.line_content and "resolved=0" in drift.line_content
+
+
+def test_drift_survives_null_findings(tmp_path):
+    import json as _json
+    p = tmp_path / "null.json"
+    p.write_text(_json.dumps({"generated": "2026-01-01T00:00:00", "summary": None, "findings": None}), encoding="utf-8")
+    s = StubScanner({})
+    s.findings = [_finding("R-1", "HIGH", "f1")]
+    s.apply_drift(str(p))  # must not raise
+    assert any(f.rule_id == "FORTIOS-DRIFT-SUMMARY" for f in s.findings)
+
+
 if __name__ == "__main__":
     sys.exit(pytest.main([__file__, "-v"]))
