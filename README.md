@@ -65,7 +65,7 @@ It runs in **two modes that share one engine, one rule set, and one report layer
 
 Offline mode exists for the places live scanning cannot reach: **OT / ICS networks, air-gapped enclaves, and locked-down operator workstations** where you cannot open a socket to the firewall or `pip install` anything.
 
-> **260+ checks · 22 domains · rule-base analysis + Policy Control Index · attack-surface + config-drift · 31 MITRE ATT&CK techniques · 70 FortiOS CVEs · 5 compliance frameworks · 237-entry remediation knowledge base · HTML + PDF + JSON + CSV reports**
+> **260+ checks · 22 domains · risk-prioritization engine (P1–P4, KEV + EPSS) · rule-base analysis + Policy Control Index · attack-surface + config-drift · 31 MITRE ATT&CK techniques · 70 FortiOS CVEs · 5 compliance frameworks · 237-entry remediation knowledge base · HTML + PDF + JSON + CSV reports**
 
 ---
 
@@ -77,6 +77,7 @@ Most config checkers stop at *"you have a problem."* This one is built around *"
 - 🔌 **True offline / air-gapped operation.** The offline scanner reconstructs the REST-API data shape from a `.conf` backup and runs the *identical* checks — with **zero third-party dependencies**, so it works on a hardened OT jump box.
 - 📄 **Board-ready reports with no heavy dependencies.** A rich self-contained **HTML** report (risk gauge, severity/compliance/ATT&CK visuals, collapsible per-finding remediation) and a paginated **PDF** — both generated with the **Python standard library only** (a hand-rolled PDF writer; no reportlab, weasyprint, or headless browser).
 - 🎯 **Attack-aware, not just checklist-aware.** A dedicated MITRE ATT&CK resilience pass scores how well the device would actually *withstand* real techniques (IPS coverage, SSL inspection, DLP, DGA/C2 blocking, ...), not just whether a box is ticked.
+- 🚦 **Tells you what to fix *first*, with evidence.** A [Risk-Prioritization Engine](#risk-prioritized-remediation-queue) fuses base severity with **real-world exploitability** — CISA **KEV** (known-exploited) membership and **FIRST.org EPSS** scores for CVE findings — and the scanner's own **internet-reachability** analysis into transparent **P1–P4 fix-first tiers**. Every ranking shows the exact factors that produced it. A bundled threat-intel snapshot keeps this working **offline**; `--refresh-intel` updates it when online.
 - 🧩 **Fleet-scale & pipeline-native.** Scan a JSON inventory of devices with a unified report, and gate CI/CD on the exit code.
 
 ---
@@ -106,6 +107,7 @@ Open `report.html` in any browser, hand `report.pdf` to management, and give `ru
 | Capability | Details |
 |-----------|---------|
 | **260+ security rules** | 22 check methods covering every FortiGate security domain |
+| **Risk-prioritization engine** | **P1–P4 fix-first tiers** fusing severity × exploitability (**CISA KEV** + **FIRST.org EPSS**) × internet-reachability; bundled offline threat-intel snapshot, `--refresh-intel` to update, `--top N` fix-first queue, and a "Top Risks" section in every report |
 | **Rule-base analysis (FireMon-style)** | Shadowed & redundant rule detection, a 0–100 **Policy Control Index**, dormant-rule cleanup (live), orphaned object hygiene, **internet attack-surface** modelling, and **config-drift** diffing between scans |
 | **31 MITRE ATT&CK techniques** | Resilience testing across 11 tactics with a 0–100% score |
 | **70 known CVEs** | FortiGuard PSIRT 2019–2026, train-based firmware version matching (FortiOS 6.2 → 7.6) |
@@ -132,23 +134,23 @@ Open `report.html` in any browser, hand `report.pdf` to management, and give `ru
                                                        ▼
                                         ┌───────────────────────────────┐
                                         │  FortinetScanner engine        │
-                                        │  18 _check_* methods (260+)     │
+                                        │  22 _check_* methods (260+)     │
                                         │  + 70 CVE matches               │
                                         │  + 31 MITRE ATT&CK tests        │
                                         │  + compliance auto-mapping      │
                                         └───────────────┬───────────────┘
                                                         ▼
-                                        ┌───────────────────────────────┐
-                                        │  RemediationKB (233 entries)    │
-                                        │  detail_for(finding)            │
-                                        └───────────────┬───────────────┘
+                            ┌───────────────────────────────────────────────┐
+                            │  RemediationKB (237)  ·  RiskPrioritizer (P1–P4)│
+                            │  detail_for(finding)  ·  KEV+EPSS+reachability  │
+                            └───────────────────────┬───────────────────────┘
                                                         ▼
                      Console · JSON · HTML · PDF · Compliance CSV · Remediation runbook · ATT&CK score
 ```
 
 The two scanners share the same engine through a single seam: the offline scanner subclasses the live one and overrides **only** `_api_get()`, feeding it configuration parsed from the `.conf` file instead of live HTTP responses. Every check, CVE match, compliance mapping, and report format therefore behaves identically in both modes.
 
-**Scan flow:** Connect → Discover firmware → Collect (30+ endpoints) → Audit (22 methods) → Rule-base + attack-surface analysis → CVE match → MITRE resilience → Compliance map → *(optional drift diff vs baseline)* → **Report**.
+**Scan flow:** Connect → Discover firmware → Collect (30+ endpoints) → Audit (22 methods) → Rule-base + attack-surface analysis → CVE match → MITRE resilience → Compliance map → *(optional drift diff vs baseline)* → **Risk-prioritize (P1–P4)** → **Report**.
 
 ---
 
@@ -216,13 +218,57 @@ The same content is rendered as collapsible cards in the HTML report and as deta
 
 ---
 
+## Risk-Prioritized Remediation Queue
+
+A long list of findings — even a well-remediated one — still leaves the real question unanswered: *which of these 40 do I fix on Monday morning?* Severity alone can't answer it: a `CRITICAL` CVE that no one is exploiting and that isn't reachable on your device may be less urgent than a `HIGH` that is on CISA's actively-exploited list **and** sitting on your internet edge.
+
+The **Risk-Prioritization Engine** answers it by fusing three independent signals into a single **P1–P4 fix-first tier** per finding:
+
+| Signal | Source | What it captures |
+|--------|--------|------------------|
+| **Base severity** | The finding itself | Intrinsic weakness rating (CRITICAL → INFO) |
+| **Real-world exploitability** | **CISA KEV** + **FIRST.org EPSS** | Is the CVE *proven exploited in the wild* (KEV), and its *probability of exploitation in the next 30 days* (EPSS)? |
+| **Reachability** | The scanner's own attack-surface analysis | Is the affected surface actually reachable from the internet **on this device** — modelled separately for the **data plane** (exposed services) and the **management plane** (admin on WAN)? |
+
+Each finding is scored 0–100 and placed in a tier — and the ranking is **fully transparent**: every finding shows the exact factors and points that produced it.
+
+| Tier | Meaning | Window |
+|:----:|---------|--------|
+| **P1** | Fix Now — actively exploited, or critical & internet-reachable | 24–72 hours |
+| **P2** | Fix This Week — critical weakness or a high-risk internet exposure | 7 days |
+| **P3** | Planned Remediation — meaningful hardening gap | 30 days |
+| **P4** | Backlog / Accept — low residual risk | next review cycle |
+
+```bash
+# Print the fix-first queue (top 15) to the console
+python fortinet_offline_scanner.py fortigate.conf --top 15
+
+#   P1  Fix Now              13   (24–72 hours)
+#   P2  Fix This Week        20   (within 7 days)
+#   ...
+#    1. P1 CRITICAL FORTIOS-CVE-001  Authentication bypass ...  [KEV, EPSS 98%, internet-exposed]
+#       score 100/100 · HQ-EDGE-FW
+```
+
+The HTML and PDF reports open with a **"Top Risks to Fix Now"** section (tier counts + the ranked queue), and every finding card carries its **P-badge, score, and rationale**.
+
+**Offline-first, like the rest of the tool.** A bundled `threat_intel.json` snapshot (KEV flags + EPSS for all 70 tracked CVEs) keeps the engine fully functional on **air-gapped / OT** networks — no live feed required. When you *are* online, refresh it from the authoritative sources:
+
+```bash
+python fortinet_scanner.py --refresh-intel      # pulls current CISA KEV + FIRST.org EPSS, stdlib-only
+```
+
+If the snapshot is ever missing, the engine degrades gracefully and ranks by severity + reachability alone.
+
+---
+
 ## Reports & Output Formats
 
 | Format | Flag | Description |
 |--------|------|-------------|
 | **Console** | *(default)* | Colour-coded findings with compliance refs and a CLI-fix preview |
-| **HTML** | `--html` | Rich **self-contained** report: risk-score gauge, severity / compliance / ATT&CK visuals, collapsible per-finding cards with the full detailed remediation, live filtering/search, and a print stylesheet. No external assets — opens anywhere, even offline. |
-| **PDF** | `--pdf` | Paginated, **board-ready** PDF: cover page + device panel, executive summary, and detailed findings with step-by-step remediation. Built on a hand-rolled PDF engine — **stdlib only**, no reportlab/weasyprint/headless-browser. |
+| **HTML** | `--html` | Rich **self-contained** report: risk-score gauge, a **Risk-Prioritized "Top Risks to Fix Now"** section (P1–P4 tiers + KEV/EPSS/exposure tags), severity / compliance / ATT&CK visuals, collapsible per-finding cards (each with its **P-badge + rationale** and the full detailed remediation), live filtering/search, and a print stylesheet. No external assets — opens anywhere, even offline. |
+| **PDF** | `--pdf` | Paginated, **board-ready** PDF: cover page + device panel, executive summary, a **Risk-Prioritized Remediation Queue** page (tier cards + fix-first table), and detailed findings — each tagged with its **priority tier** and step-by-step remediation. Built on a hand-rolled PDF engine — **stdlib only**, no reportlab/weasyprint/headless-browser. |
 | **Remediation runbook** | `--remediation` | The per-finding runbook shown above — risk, steps, GUI, CLI, verify, rollback, impact, references. |
 | **JSON** | `--json` | Full machine-readable report: findings, compliance map, and remediation commands. |
 | **Compliance CSV** | `--compliance-csv` | Audit-evidence spreadsheet with per-framework control columns (CIS, PCI-DSS, NIST, SOC2, HIPAA). |
@@ -444,7 +490,8 @@ python fortinet_offline_scanner.py fw1.conf --severity HIGH -v
 ```
 usage: fortinet_scanner.py [-h] [--token TOKEN] [--verify-ssl] [--timeout SEC]
                            [--json FILE] [--html FILE] [--pdf FILE] [--remediation FILE]
-                           [--compliance-csv FILE] [--inventory FILE]
+                           [--compliance-csv FILE] [--baseline FILE] [--inventory FILE]
+                           [--top [N]] [--refresh-intel]
                            [--severity {CRITICAL,HIGH,MEDIUM,LOW,INFO}]
                            [--verbose] [--version]
                            [host]
@@ -460,16 +507,19 @@ usage: fortinet_scanner.py [-h] [--token TOKEN] [--verify-ssl] [--timeout SEC]
   --compliance-csv FILE   Export compliance mapping CSV (CIS/PCI/NIST/SOC2/HIPAA)
   --baseline FILE         Diff against a prior --json report (config drift)
   --inventory FILE        Multi-device JSON inventory for batch scanning
+  --top [N]               Print the risk-prioritized fix-first queue (top N, default 10)
+  --refresh-intel         Refresh the bundled KEV+EPSS threat-intel snapshot, then exit (needs internet)
   --severity LEVEL        Minimum severity to report (default: LOW)
   --verbose, -v           Verbose output
   --version               Show version
 ```
 
-**Offline scanner** — same reporting flags, minus the API/inventory options:
+**Offline scanner** — same reporting flags (including `--top` and `--refresh-intel`), minus the API/inventory options:
 
 ```
 usage: fortinet_offline_scanner.py [-h] [--json FILE] [--html FILE] [--pdf FILE]
                                    [--remediation FILE] [--compliance-csv FILE]
+                                   [--baseline FILE] [--top [N]] [--refresh-intel]
                                    [--severity {CRITICAL,HIGH,MEDIUM,LOW,INFO}]
                                    [--verbose] [--version]
                                    conf
@@ -515,12 +565,16 @@ Fortinet-Network-Security/
 ├── fortinet_offline_scanner.py   # Offline adapter: .conf parser + _api_get override (stdlib only)
 ├── remediation_kb.json           # 237-entry detailed remediation knowledge base
 ├── remediation_kb.py             # RemediationKB loader (exact + family-prefix resolution)
+├── risk_prioritizer.py           # Risk-Prioritization Engine (P1–P4: severity × KEV/EPSS × reachability)
+├── threat_intel.json             # Bundled offline KEV+EPSS snapshot for the 70 tracked CVEs
 ├── fortinet_html.py              # Rich self-contained HTML report generator
 ├── fortinet_pdf.py               # Paginated PDF report layout
 ├── pdf_writer.py                 # Minimal, dependency-free PDF 1.4 writer (stdlib only)
 ├── test_data/
-│   ├── test_offline_parser.py    # 28 pytest cases for the .conf parser + end-to-end smoke
-│   └── sample_insecure.conf      # Intentionally insecure config (~118 findings) for demos/tests
+│   ├── test_offline_parser.py    # pytest cases for the .conf parser + end-to-end smoke
+│   ├── test_rulebase.py          # rule-base / exposure / drift / object-hygiene tests
+│   ├── test_risk_prioritizer.py  # risk-prioritization engine + threat-intel + report tests
+│   └── sample_insecure.conf      # Intentionally insecure config for demos/tests
 ├── README.md
 ├── CLAUDE.md                     # Architecture & contributor notes
 └── LICENSE
@@ -529,7 +583,7 @@ Fortinet-Network-Security/
 Run the tests with:
 
 ```bash
-python -m pytest test_data/test_offline_parser.py -v
+python -m pytest test_data/ -v
 ```
 
 ---

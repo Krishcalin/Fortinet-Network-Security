@@ -461,7 +461,9 @@ Examples:
   python fortinet_offline_scanner.py fw1.conf --compliance-csv audit.csv -v
 """,
     )
-    parser.add_argument("conf", help="Path to a FortiGate .conf backup file")
+    parser.add_argument("conf", nargs="?", default=None,
+                        help="Path to a FortiGate .conf backup file "
+                             "(optional when using --refresh-intel)")
     parser.add_argument("--json", metavar="FILE", help="Save JSON report to FILE")
     parser.add_argument("--html", metavar="FILE", help="Save detailed HTML report to FILE")
     parser.add_argument("--pdf", metavar="FILE",
@@ -472,6 +474,11 @@ Examples:
                         help="Export compliance CSV (CIS, PCI-DSS, NIST, SOC2, HIPAA)")
     parser.add_argument("--baseline", metavar="FILE",
                         help="Prior --json report to diff against (config drift: new vs resolved + posture delta)")
+    parser.add_argument("--top", type=int, nargs="?", const=10, default=None, metavar="N",
+                        help="Print the risk-prioritized fix-first queue, showing the top N (default 10)")
+    parser.add_argument("--refresh-intel", action="store_true",
+                        help="Refresh the bundled threat-intel snapshot (CISA KEV + FIRST.org EPSS), then exit. "
+                             "Requires internet access (not available on air-gapped hosts).")
     parser.add_argument(
         "--severity",
         choices=["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"],
@@ -482,6 +489,13 @@ Examples:
     parser.add_argument("--version", action="version",
                         version=f"%(prog)s {VERSION} (engine {ENGINE_VERSION})")
     args = parser.parse_args(argv)
+
+    if args.refresh_intel:
+        return _refresh_intel_offline()
+
+    if not args.conf:
+        parser.error("conf is required (path to a FortiGate .conf backup), "
+                     "unless using --refresh-intel")
 
     if not os.path.isfile(args.conf):
         print(f"[!] Config file not found: {args.conf}", file=sys.stderr)
@@ -498,6 +512,7 @@ Examples:
         scanner.apply_drift(args.baseline)
 
     scanner.print_report()
+    scanner.print_priorities(args.top if args.top is not None else 10)
 
     if args.json:
         scanner.save_json(args.json)
@@ -513,6 +528,27 @@ Examples:
     counts = scanner.summary()
     if counts.get("CRITICAL", 0) or counts.get("HIGH", 0):
         return 1
+    return 0
+
+
+def _refresh_intel_offline() -> int:
+    """Refresh the bundled threat-intel snapshot (CISA KEV + FIRST.org EPSS)."""
+    try:
+        from risk_prioritizer import refresh_threat_intel
+        from fortinet_scanner import FORTIOS_CVES
+    except Exception as exc:
+        print(f"[!] Risk-prioritization module unavailable: {exc}", file=sys.stderr)
+        return 1
+    cves = sorted({c["cve"] for c in FORTIOS_CVES if c.get("cve")})
+    print(f"[*] Refreshing threat intel for {len(cves)} tracked CVE(s) from CISA KEV + FIRST.org EPSS …")
+    try:
+        meta = refresh_threat_intel(cves)
+    except Exception as exc:
+        print(f"[!] Threat-intel refresh failed: {exc}\n"
+              f"    (offline/air-gapped? The bundled snapshot remains in use.)", file=sys.stderr)
+        return 1
+    print(f"[+] Snapshot updated: {meta['cve_count']} CVE(s), {meta['kev_count']} KEV-listed "
+          f"(snapshot {meta['snapshot_date']}).")
     return 0
 
 

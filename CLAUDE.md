@@ -16,7 +16,8 @@ Ships in two modes that share the same 22 check methods and rule set:
 - **Scanner files**: `fortinet_scanner.py` (~5,500 lines, all check logic) +
   `fortinet_offline_scanner.py` (~340 lines, parser + adapter)
 - **Reporting files** (all stdlib-only, so offline mode keeps zero third-party deps):
-  - `remediation_kb.py` + `remediation_kb.json` — 233-entry detailed remediation knowledge base
+  - `remediation_kb.py` + `remediation_kb.json` — 237-entry detailed remediation knowledge base
+  - `risk_prioritizer.py` + `threat_intel.json` — Risk-Prioritization Engine (P1–P4) + bundled KEV/EPSS snapshot
   - `fortinet_html.py` — rich self-contained HTML report (`FortinetHTMLReport`)
   - `fortinet_pdf.py` + `pdf_writer.py` — paginated PDF report (`FortinetPDFReport`) on a hand-rolled PDF 1.4 writer (no reportlab/weasyprint)
 - **Version**: 4.0.0 (engine) / 1.0.0 (offline adapter)
@@ -28,11 +29,12 @@ Ships in two modes that share the same 22 check methods and rule set:
 2. **`COMPLIANCE_MAP` dict** — 77 rule-to-framework mappings (CIS, PCI-DSS, NIST 800-53, SOC 2, HIPAA).
 3. **`REMEDIATION_COMMANDS` dict** — 43 FortiOS CLI config commands mapped to rule IDs.
 4. **`Finding` class** — `__slots__` with `rule_id, name, category, severity, description, recommendation, cwe, cve, compliance, remediation_cmd`. Auto-resolves compliance + remediation on init.
-5. **`_ReportMixin`** — `print_report`, `save_json`, `save_html`, `save_pdf`, `save_remediation`, `save_compliance_csv`, `summary`, `filter_severity`, plus `_report_kb()` / `_report_meta()` helpers.
-6. **`FortinetScanner(_ReportMixin)`** — 18 `_check_*` methods producing 260+ possible findings.
-7. **`MultiDeviceScanner`** — batch scanning of multiple FortiGates with unified summary and JSON export.
-8. **CLI** — `argparse` with `host`, `--token`, `--verify-ssl`, `--timeout`, `--json`, `--html`, `--remediation`, `--compliance-csv`, `--inventory`, `--severity`, `--verbose`, `--version`.
-9. **Exit code**: `1` if CRITICAL or HIGH findings, `0` otherwise.
+5. **`_ReportMixin`** — `print_report`, `save_json`, `save_html`, `save_pdf`, `save_remediation`, `save_compliance_csv`, `summary`, `filter_severity`, `prioritize()` / `print_priorities()`, plus `_report_kb()` / `_report_meta()` helpers.
+6. **`FortinetScanner(_ReportMixin)`** — 22 `_check_*` methods producing 260+ possible findings.
+7. **`RiskPrioritizer` + `ThreatIntel`** (`risk_prioritizer.py`) — post-scan engine that ranks every finding into P1–P4 fix-first tiers by fusing severity + CISA KEV + FIRST.org EPSS + internet-reachability. See [Risk-Prioritization Engine](#risk-prioritization-engine).
+8. **`MultiDeviceScanner`** — batch scanning of multiple FortiGates with unified summary and JSON export.
+9. **CLI** — `argparse` with `host`, `--token`, `--verify-ssl`, `--timeout`, `--json`, `--html`, `--pdf`, `--remediation`, `--compliance-csv`, `--baseline`, `--inventory`, `--top [N]`, `--refresh-intel`, `--severity`, `--verbose`, `--version`.
+10. **Exit code**: `1` if CRITICAL or HIGH findings, `0` otherwise.
 
 ## API Connection
 
@@ -90,7 +92,7 @@ Output: console (inline), JSON (`compliance` dict), compliance CSV (`--complianc
 
 **Two-tier remediation.** The bare `Finding` carries `recommendation` (one line) + `remediation_cmd`
 (auto-resolved from the 43-entry `REMEDIATION_COMMANDS`). On top of that, `remediation_kb.json`
-(233 entries, loaded by `RemediationKB` in `remediation_kb.py`) supplies the **detailed** fix per
+(237 entries, loaded by `RemediationKB` in `remediation_kb.py`) supplies the **detailed** fix per
 rule: `risk`, numbered `steps`, `gui` path, canonical `cli`, `verify` command, `rollback`, service
 `impact`, and `references`. `RemediationKB.detail_for(finding)` resolves exact `rule_id` → family
 prefix (e.g. `FORTIOS-CVE` covers every CVE) → graceful fallback to the finding's own text, so a
@@ -105,7 +107,24 @@ report section is never empty. It covers **every** emitted rule_id (0 gaps).
 - `save_remediation` → a detailed text **runbook** (risk / steps / GUI / CLI / verify / rollback /
   impact / references per finding), not a bare CLI dump.
 
-CLI flags: `--html`, `--pdf`, `--remediation`, `--compliance-csv`, `--baseline` (both live and offline scanners).
+CLI flags: `--html`, `--pdf`, `--remediation`, `--compliance-csv`, `--baseline`, `--top`, `--refresh-intel` (both live and offline scanners).
+
+## Risk-Prioritization Engine
+
+`risk_prioritizer.py` — a **post-scan overlay** (like `RemediationKB`; never mutates `Finding`, works on objects *or* dicts) that answers "what do I fix first?" by fusing three signals into a **P1–P4** tier per finding:
+
+1. **Base severity** → `BASE_POINTS` (CRITICAL 50 / HIGH 30 / MEDIUM 15 / LOW 6 / INFO 0).
+2. **Real-world exploitability** (CVE findings) → `+35` if on the **CISA KEV** catalog, `+round(EPSS×20)` from **FIRST.org EPSS**. Data comes from the bundled `threat_intel.json`.
+3. **Reachability** → the scanner's own attack-surface findings, modelled on **two planes**: `data` (from `FORTIOS-EXPOSURE-*`: WIDE_OPEN / EXPOSED / NONE) and `mgmt` (from `MITRE-T1595/T1557`: management on WAN). A finding takes the plane it lives on — Admin Access → mgmt only; Attack-Surface/SSL-VPN → data; **Known CVEs take the stronger** of the two. Bonus `+20` (wide-open/mgmt) or `+14` (exposed).
+
+Score is capped at 100 and mapped by `TIER_THRESHOLDS` (P1≥70, P2≥42, P3≥20, else P4), with one **floor**: a KEV-listed CVE is never below P2. Every `PriorityResult` carries `factors` (label + points + detail) and a `rationale` string, so the ranking is fully explainable. `RiskPrioritizer.prioritize(findings)` returns them ordered fix-first.
+
+- **`threat_intel.json`** — bundled snapshot (`meta` + `cves{CVE: {epss, epss_pct, kev, kev_date?}}`) for all 70 tracked CVEs (14 KEV-listed). Keeps the engine working **offline**; loader degrades to empty (severity+reachability only) if missing/corrupt.
+- **`--refresh-intel`** (`_refresh_intel` / `_refresh_intel_offline`) — rebuilds the snapshot from the live CISA KEV catalog + FIRST.org EPSS API via **`urllib` (stdlib only)**, then exits. Handled *before* host/inventory validation so it runs standalone. EPSS is batched (60/req).
+- **`--top [N]`** — `print_priorities(N)` prints the tier summary + fix-first queue to the console (default 10).
+- **Reports**: `FortinetHTMLReport` / `FortinetPDFReport` take an optional `priorities` list (else compute it), key it by `id(finding)`, and render a "Top Risks to Fix Now" section + per-finding P-badge/rationale. `_report_meta()` adds `intel_snapshot` / `intel_kev_count`.
+- **GOTCHA**: prioritization runs *after* `filter_severity` in `main()`; a very high `--severity` filter can drop exposure findings and weaken the reachability signal. Default `--severity LOW` keeps all CRITICAL/HIGH exposure findings, so this is a non-issue in normal use.
+- **Tests**: `test_data/test_risk_prioritizer.py` (24 cases) — snapshot load, KEV/EPSS lookup, plane-aware reachability, scoring/tiers/floor, dict-vs-object, graceful degradation, HTML integration.
 
 **Config drift** (`_ReportMixin.apply_drift`, `--baseline prior.json`): diffs current findings vs a prior `--json` report by signature `(rule_id, file_path, line_content)`, prints new/resolved + posture-score delta, and adds a `FORTIOS-DRIFT-SUMMARY` finding. **Line_content must be deterministic** for signatures to match — sort any set before joining it into `line_content` (fixed `wan_bad`/`versions`).
 
@@ -244,8 +263,14 @@ python fortinet_offline_scanner.py /backups/fw1.conf
 python fortinet_offline_scanner.py fw1.conf --json r.json --html r.html --compliance-csv audit.csv
 python fortinet_offline_scanner.py fw1.conf --severity HIGH --remediation fix.txt -v
 
-# Tests
-python -m pytest test_data/test_offline_parser.py -v
+# Threat-intel refresh (KEV + EPSS), then exit
+python fortinet_scanner.py --refresh-intel
+
+# Fix-first queue to the console
+python fortinet_offline_scanner.py fw1.conf --top 15
+
+# Tests (76 cases: parser + rulebase + risk-prioritizer)
+python -m pytest test_data/ -v
 ```
 
 ## Conventions

@@ -44,6 +44,13 @@ SEV_COLOR = {
 }
 SEV_ORDER = {"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3, "INFO": 4}
 
+TIER_COLOR = {
+    "P1": (0.72, 0.11, 0.11),
+    "P2": (0.79, 0.29, 0.05),
+    "P3": (0.11, 0.35, 0.72),
+    "P4": (0.09, 0.50, 0.20),
+}
+
 
 def _g(f: Any, key: str, default: Any = "") -> Any:
     """Read a field from a Finding object or a dict."""
@@ -68,10 +75,19 @@ class FortinetPDFReport:
     ML, MR, MT, MB = 45, 45, 56, 44
 
     def __init__(self, findings: List[Any], meta: Dict[str, Any],
-                 kb: Optional[RemediationKB] = None):
+                 kb: Optional[RemediationKB] = None,
+                 priorities: Optional[List[Any]] = None):
         self.findings = findings
         self.meta = meta or {}
         self.kb = kb or RemediationKB()
+        if priorities is None:
+            try:
+                from risk_prioritizer import RiskPrioritizer, ThreatIntel
+                priorities = RiskPrioritizer(ThreatIntel()).prioritize(findings)
+            except Exception:
+                priorities = []
+        self.priorities = priorities or []
+        self.prio_by_id = {id(p.finding): p for p in self.priorities}
         self.w = PDFWriter()
         self.pw, self.ph = self.w.pw, self.w.ph
         self.cw = self.pw - self.ML - self.MR
@@ -172,6 +188,7 @@ class FortinetPDFReport:
     def generate(self, output_path: str):
         self._cover_page()
         self._exec_summary()
+        self._priority_page()
         self._detailed_findings()
         self._footers()
         self.w.save(output_path)
@@ -303,6 +320,93 @@ class FortinetPDFReport:
                 self._para(f"... and {len(crits) - 18} more Critical/High finding(s) in the detailed section.",
                            font="HO", size=8, color=MUTED)
 
+    def _priority_page(self):
+        if not self.priorities:
+            return
+        try:
+            from risk_prioritizer import TIER_META
+        except Exception:
+            return
+        counts: Dict[str, int] = {t: 0 for t in TIER_META}
+        for r in self.priorities:
+            counts[r.tier] = counts.get(r.tier, 0) + 1
+
+        self._new_content_page()
+        self._section_title("Risk-Prioritized Remediation Queue")
+        snap = self.meta.get("intel_snapshot")
+        kevn = self.meta.get("intel_kev_count")
+        intro = ("Findings below are ranked into fix-first tiers by fusing three signals: the intrinsic "
+                 "severity of the weakness, its real-world exploitability (CISA Known-Exploited-Vulnerabilities "
+                 "membership and the FIRST.org EPSS exploitation-probability score for CVE findings), and whether "
+                 "the affected surface is actually reachable from the internet on this device. This answers not "
+                 "just 'how bad' but 'what to fix first'.")
+        if snap:
+            intro += (f" Threat-intel snapshot: {snap}"
+                      + (f" ({kevn} KEV-listed CVE(s) applicable)." if kevn else "."))
+        self._para(intro, gap_after=10)
+
+        # tier cards row
+        self._ensure(64)
+        cw4 = (self.cw - 3 * 10) / 4
+        top = self.y
+        for i, t in enumerate(("P1", "P2", "P3", "P4")):
+            m = TIER_META[t]
+            col = TIER_COLOR[t]
+            cx = self.ML + i * (cw4 + 10)
+            self.w.rect(cx, top - 58, cw4, 58, fill=LIGHT, stroke=RULE, line_width=0.7)
+            self.w.rect(cx, top - 4, cw4, 4, fill=col)
+            self.w.text(cx + 10, top - 26, t, font="HB", size=17, color=col)
+            self.w.text(cx + 40, top - 26, str(counts[t]), font="HB", size=15, color=INK)
+            self.w.text(cx + 10, top - 40, m["label"][:22], font="HB", size=7.5, color=INK)
+            self.w.text(cx + 10, top - 50, m["window"][:24], font="H", size=7, color=MUTED)
+        self.y = top - 58 - 16
+
+        # top risks table
+        top_risks = [r for r in self.priorities if r.tier in ("P1", "P2")][:16]
+        if not top_risks:
+            top_risks = self.priorities[:10]
+        if top_risks:
+            self._label("Fix-first order")
+            # header
+            self._ensure(16)
+            self.w.rect(self.ML, self.y - 15, self.cw, 15, fill=BAND)
+            self.w.text(self.ML + 6, self.y - 11, "#", font="HB", size=7.5, color=WHITE)
+            self.w.text(self.ML + 26, self.y - 11, "TIER", font="HB", size=7.5, color=WHITE)
+            self.w.text(self.ML + 62, self.y - 11, "SCORE", font="HB", size=7.5, color=WHITE)
+            self.w.text(self.ML + 100, self.y - 11, "FINDING", font="HB", size=7.5, color=WHITE)
+            self.w.text(self.ML + self.cw - 96, self.y - 11, "EXPLOITABILITY", font="HB", size=7.5, color=WHITE)
+            self.y -= 15
+            for i, r in enumerate(top_risks, 1):
+                f = r.finding
+                rowh = 15
+                self._ensure(rowh)
+                if i % 2 == 0:
+                    self.w.rect(self.ML, self.y - rowh, self.cw, rowh, fill=LIGHT)
+                col = TIER_COLOR.get(r.tier, MUTED)
+                self.w.text(self.ML + 6, self.y - 11, str(i), font="H", size=8, color=MUTED)
+                self.w.rect(self.ML + 24, self.y - 12, 24, 10, fill=col)
+                self.w.text(self.ML + 28, self.y - 10.5, r.tier, font="HB", size=7, color=WHITE)
+                self.w.text(self.ML + 64, self.y - 11, str(r.score), font="HB", size=8.5, color=col)
+                nm = str(_g(f, "name"))
+                self.w.text(self.ML + 100, self.y - 11,
+                            self._fit(nm, "H", 8, self.cw - 100 - 100), font="H", size=8, color=INK)
+                tags = []
+                if r.kev:
+                    tags.append("KEV")
+                if r.epss is not None and r.epss >= 0.10:
+                    tags.append(f"EPSS {r.epss*100:.0f}%")
+                if r.reachable:
+                    tags.append("exposed")
+                tstr = ", ".join(tags) if tags else "-"
+                self.w.text(self.ML + self.cw - 96, self.y - 11,
+                            self._fit(tstr, "H", 7.5, 94), font="HB", size=7.5, color=col if tags else FAINT)
+                self.y -= rowh
+            self.y -= 6
+            legend = ("P1 Fix now (24-72h)   P2 Fix this week   P3 Planned (30d)   P4 Backlog/accept. "
+                      "KEV = on CISA's actively-exploited list; EPSS = FIRST.org 30-day exploitation probability; "
+                      "exposed = internet-reachable on this device.")
+            self._para(legend, font="HO", size=7.5, color=MUTED, leading=10.5)
+
     def _detailed_findings(self):
         self._new_content_page()
         self._section_title("Detailed Findings & Remediation")
@@ -330,6 +434,19 @@ class FortinetPDFReport:
         self.w.text(self.pw - self.MR - 10 - self.w.string_width(cid, "H", 8.5), top - 19,
                     cid, font="H", size=8.5, color=MUTED)
         self.y = top - 38
+
+        # priority tier line (fix-first rank + rationale)
+        pr = self.prio_by_id.get(id(f))
+        if pr is not None:
+            pcol = TIER_COLOR.get(pr.tier, MUTED)
+            self.w.rect(self.ML, self.y - 10, 26, 11, fill=pcol)
+            self.w.text(self.ML + 4, self.y - 8.5, pr.tier, font="HB", size=7.5, color=WHITE)
+            head = f"Priority {pr.tier}  -  score {pr.score}/100"
+            self.w.text(self.ML + 32, self.y - 8, head, font="HB", size=8, color=pcol)
+            self.y -= 13
+            self.w.text(self.ML, self.y, self._fit(pr.rationale, "H", 7.8, self.cw),
+                        font="HO", size=7.8, color=MUTED)
+            self.y -= 12
 
         # context line: category | target
         ctx = "Category: " + str(_g(f, "category", "")) + "     Target: " + str(_g(f, "file_path", ""))

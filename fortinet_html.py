@@ -82,6 +82,45 @@ code,pre{font-family:'Cascadia Code','Consolas','JetBrains Mono',monospace}
 .bar-row .val{color:var(--muted);font-weight:700;text-align:right}
 .mitre-note{font-size:.82rem;color:var(--sub);margin-top:6px}
 
+/* risk-prioritization */
+.prio-wrap{margin-bottom:26px}
+.prio-tiers{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+@media(max-width:680px){.prio-tiers{grid-template-columns:repeat(2,1fr)}}
+.tier-card{background:var(--bg2);border:1px solid var(--surf0);border-radius:12px;padding:14px 16px;border-top:3px solid var(--surf1)}
+.tier-card .t{font-size:1.7rem;font-weight:800;letter-spacing:-.02em}
+.tier-card .n{font-size:1.05rem;font-weight:700;margin-left:6px}
+.tier-card .lab{font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:var(--sub);font-weight:700;margin-top:4px}
+.tier-card .win{font-size:.72rem;color:var(--muted);margin-top:2px}
+.tier-card.p1{border-top-color:var(--crit)} .tier-card.p1 .t{color:var(--crit)}
+.tier-card.p2{border-top-color:var(--high)} .tier-card.p2 .t{color:var(--high)}
+.tier-card.p3{border-top-color:var(--med)} .tier-card.p3 .t{color:var(--med)}
+.tier-card.p4{border-top-color:var(--low)} .tier-card.p4 .t{color:var(--low)}
+.toprisks{background:var(--bg2);border:1px solid var(--surf0);border-radius:14px;padding:8px 6px}
+.tr-row{display:grid;grid-template-columns:34px 60px 1fr auto;align-items:center;gap:12px;padding:11px 14px;border-bottom:1px solid var(--surf0)}
+.tr-row:last-child{border-bottom:none}
+.tr-rank{font-size:.9rem;font-weight:800;color:var(--muted);text-align:center}
+.tr-score{text-align:center}
+.tr-score .sv{font-size:1.15rem;font-weight:800;line-height:1}
+.tr-score .sl{font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.tr-main .nm{font-weight:700;font-size:.9rem}
+.tr-main .rid{font-family:monospace;font-size:.72rem;color:var(--muted)}
+.tr-main .why{font-size:.76rem;color:var(--sub);margin-top:3px}
+.tr-tags{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;max-width:230px}
+.tag{font-size:.64rem;font-weight:800;text-transform:uppercase;letter-spacing:.03em;padding:3px 8px;border-radius:100px;white-space:nowrap}
+.tag.kev{background:rgba(243,139,168,.2);color:var(--crit)}
+.tag.epss{background:rgba(250,179,135,.18);color:var(--high)}
+.tag.exp{background:rgba(203,166,247,.18);color:var(--mauve)}
+.pbadge{display:inline-block;padding:3px 9px;border-radius:7px;font-size:.68rem;font-weight:800;letter-spacing:.02em;flex-shrink:0}
+.pbadge.p1{background:rgba(243,139,168,.2);color:var(--crit)}
+.pbadge.p2{background:rgba(250,179,135,.18);color:var(--high)}
+.pbadge.p3{background:rgba(137,180,250,.16);color:var(--med)}
+.pbadge.p4{background:rgba(166,227,161,.16);color:var(--low)}
+.f-prio{margin:10px 0 2px;padding:9px 12px;background:var(--mantle);border-radius:8px;border-left:3px solid var(--surf1);font-size:.8rem;color:var(--sub)}
+.f-prio b{color:var(--text)}
+.f-facts{display:flex;flex-wrap:wrap;gap:6px 10px;margin-top:6px}
+.f-facts span{font-size:.72rem;color:var(--muted)}
+.f-facts .pt{color:var(--teal);font-weight:700}
+
 /* filters */
 .filters{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;align-items:center}
 .filters label{color:var(--muted);font-size:.82rem}
@@ -169,10 +208,21 @@ _JS = r"""
 
 class FortinetHTMLReport:
     def __init__(self, findings: List[Any], meta: Dict[str, Any],
-                 kb: Optional[RemediationKB] = None):
+                 kb: Optional[RemediationKB] = None,
+                 priorities: Optional[List[Any]] = None):
         self.findings = findings
         self.meta = meta or {}
         self.kb = kb or RemediationKB()
+        # Risk-prioritization overlay (P1–P4). Compute here if not supplied so the
+        # report works standalone; map by id(finding) for per-card lookup.
+        if priorities is None:
+            try:
+                from risk_prioritizer import RiskPrioritizer, ThreatIntel
+                priorities = RiskPrioritizer(ThreatIntel()).prioritize(findings)
+            except Exception:
+                priorities = []
+        self.priorities = priorities or []
+        self.prio_by_id = {id(p.finding): p for p in self.priorities}
 
     def _stats(self):
         by_sev: Dict[str, int] = {}
@@ -249,6 +299,9 @@ class FortinetHTMLReport:
             p.append("<div class=\"kpi " + cls + "\"><div class=\"n\">" + str(n) + "</div><div class=\"l\">" + label + "</div></div>")
         p.append("</div></div></div>")
 
+        # risk-prioritized "fix first" section
+        p.append(self._priority_section())
+
         # category + compliance columns
         p.append("<div class=\"cols\">")
         p.append("<div class=\"panel\"><h2>Findings by Category</h2>")
@@ -294,17 +347,99 @@ class FortinetHTMLReport:
             fh.write("".join(p))
         print(f"[+] HTML report saved to: {output_path}")
 
+    def _priority_section(self) -> str:
+        if not self.priorities:
+            return ""
+        try:
+            from risk_prioritizer import TIER_META
+        except Exception:
+            return ""
+        counts: Dict[str, int] = {t: 0 for t in TIER_META}
+        for r in self.priorities:
+            counts[r.tier] = counts.get(r.tier, 0) + 1
+
+        h: List[str] = ["<div class=\"prio-wrap\">"]
+        snap = self.meta.get("intel_snapshot")
+        kevn = self.meta.get("intel_kev_count")
+        sub = ("Findings ranked by severity &times; real-world exploitability (CISA KEV + FIRST.org EPSS) "
+               "&times; internet-reachability")
+        if snap:
+            sub += (f" &middot; threat-intel snapshot {esc(snap)}"
+                    + (f", {esc(kevn)} KEV-listed CVE(s) applicable" if kevn else ""))
+        h.append("<div class=\"panel\" style=\"margin-bottom:16px\"><h2>Risk-Prioritized Remediation Queue</h2>")
+        h.append("<div style=\"font-size:.8rem;color:var(--sub);margin:-6px 0 14px\">" + sub + "</div>")
+        h.append("<div class=\"prio-tiers\">")
+        for t in ("P1", "P2", "P3", "P4"):
+            m = TIER_META[t]
+            h.append("<div class=\"tier-card " + t.lower() + "\">"
+                     "<div><span class=\"t\">" + t + "</span><span class=\"n\">" + str(counts[t]) + "</span></div>"
+                     "<div class=\"lab\">" + esc(m["label"]) + "</div>"
+                     "<div class=\"win\">" + esc(m["window"]) + "</div></div>")
+        h.append("</div>")
+
+        top = [r for r in self.priorities if r.tier in ("P1", "P2")][:12]
+        if not top:
+            top = self.priorities[:8]
+        if top:
+            h.append("<div style=\"font-size:.72rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);"
+                     "font-weight:700;margin:6px 0 8px\">Top " + str(len(top)) + " to fix first</div>")
+            h.append("<div class=\"toprisks\">")
+            for i, r in enumerate(top, 1):
+                f = r.finding
+                sev = _g(f, "severity", "INFO")
+                col = {"CRITICAL": "var(--crit)", "HIGH": "var(--high)", "MEDIUM": "var(--med)",
+                       "LOW": "var(--low)", "INFO": "var(--info)"}.get(sev, "var(--info)")
+                tags = []
+                if r.kev:
+                    tags.append("<span class=\"tag kev\">KEV" + (" " + esc(r.kev_date) if r.kev_date else "") + "</span>")
+                if r.epss is not None and r.epss >= 0.10:
+                    tags.append("<span class=\"tag epss\">EPSS " + f"{r.epss*100:.0f}%" + "</span>")
+                if r.reachable:
+                    tags.append("<span class=\"tag exp\">Internet-exposed</span>")
+                h.append("<div class=\"tr-row\">")
+                h.append("<div class=\"tr-rank\">" + str(i) + "</div>")
+                h.append("<div class=\"tr-score\"><div class=\"sv\" style=\"color:" + col + "\">" + str(r.score) +
+                         "</div><div class=\"sl\">" + esc(r.tier) + "</div></div>")
+                h.append("<div class=\"tr-main\"><span class=\"nm\">" + esc(_g(f, "name")) + "</span> "
+                         "<span class=\"rid\">" + esc(_g(f, "rule_id")) + "</span>"
+                         "<div class=\"why\">" + esc(r.rationale) + "</div></div>")
+                h.append("<div class=\"tr-tags\">" + "".join(tags) + "</div>")
+                h.append("</div>")
+            h.append("</div>")
+        h.append("</div></div>")
+        return "".join(h)
+
     def _card(self, f: Any) -> str:
         sev = _g(f, "severity", "INFO"); scls = sev.lower()
         d = self.kb.detail_for(f)
         rid = esc(_g(f, "rule_id")); name = esc(_g(f, "name"))
         cat = esc(_g(f, "category"))
+        pr = self.prio_by_id.get(id(f))
+        pbadge = ""
+        if pr is not None:
+            pbadge = ("<span class=\"pbadge " + pr.tier.lower() + "\">" + esc(pr.tier) +
+                      " &middot; " + str(pr.score) + "</span>")
         h: List[str] = []
         h.append("<div class=\"finding " + scls + "\" data-sev=\"" + scls + "\" data-cat=\"" + esc(_g(f, "category")) + "\">")
         h.append("<div class=\"f-head\"><span class=\"chip " + scls + "\">" + esc(sev) + "</span>"
+                 + pbadge +
                  "<span class=\"f-title\">" + name + "</span><span class=\"f-id\">" + rid + "</span>"
                  "<span class=\"f-chev\">&#9656;</span></div>")
         h.append("<div class=\"f-body\">")
+        # priority rationale (why this ranks where it does)
+        if pr is not None:
+            try:
+                from risk_prioritizer import TIER_META
+                tlabel = TIER_META[pr.tier]["label"]
+            except Exception:
+                tlabel = pr.tier
+            facts = "".join(
+                "<span><b class=\"pt\">+" + str(fc.get("points", 0)) + "</b> " + esc(fc.get("label", "")) +
+                (" — " + esc(fc.get("detail", "")) if fc.get("detail") else "") + "</span>"
+                for fc in pr.factors)
+            h.append("<div class=\"f-prio\"><b>Priority " + esc(pr.tier) + " — " + esc(tlabel) +
+                     "</b> (score " + str(pr.score) + "/100). " + esc(pr.rationale) +
+                     "<div class=\"f-facts\">" + facts + "</div></div>")
         # meta line
         cwe = _g(f, "cwe", None); cve = _g(f, "cve", None)
         meta_bits = ["<b>Category:</b> " + cat, "<b>Target:</b> " + esc(_g(f, "file_path"))]

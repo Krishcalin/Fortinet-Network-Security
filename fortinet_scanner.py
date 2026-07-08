@@ -1121,6 +1121,12 @@ class _ReportMixin:
 
     def filter_severity(self, min_severity: str) -> None:
         threshold = self.SEVERITY_ORDER.get(min_severity, 4)
+        # Preserve the full, unfiltered set so the risk prioritizer can still see
+        # the attack-surface findings that signal internet-reachability even when
+        # a high --severity threshold would otherwise drop them (reachability is a
+        # property of the device, not a display concern).
+        if not getattr(self, "_all_findings", None):
+            self._all_findings = list(self.findings)
         self.findings = [
             f for f in self.findings
             if self.SEVERITY_ORDER.get(f.severity, 4) <= threshold
@@ -1290,7 +1296,7 @@ class _ReportMixin:
 
     def _report_meta(self) -> dict:
         si = getattr(self, "_sys_info", {}) or {}
-        return {
+        meta = {
             "host": getattr(self, "host", ""),
             "hostname": si.get("hostname", "N/A"),
             "model": si.get("model_name", si.get("model", "N/A")),
@@ -1299,17 +1305,96 @@ class _ReportMixin:
             "generated": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "severity_filter": getattr(self, "_sev_filter", "ALL"),
         }
+        try:
+            from risk_prioritizer import ThreatIntel
+            intel = getattr(self, "_intel_cache", None) or ThreatIntel()
+            self._intel_cache = intel
+            if intel.available:
+                meta["intel_snapshot"] = intel.snapshot_date
+                meta["intel_kev_count"] = intel.kev_count
+        except Exception:
+            pass
+        return meta
 
     def save_html(self, output_path: str) -> None:
         """Rich, self-contained HTML report with detailed per-finding remediation."""
         from fortinet_html import FortinetHTMLReport
-        FortinetHTMLReport(self.findings, self._report_meta(), self._report_kb()).generate(output_path)
+        FortinetHTMLReport(self.findings, self._report_meta(), self._report_kb(),
+                           self.prioritize()).generate(output_path)
 
     def save_pdf(self, output_path: str) -> None:
         """Paginated, print-ready PDF report (stdlib-only, no third-party deps)."""
         from fortinet_pdf import FortinetPDFReport
-        FortinetPDFReport(self.findings, self._report_meta(), self._report_kb()).generate(output_path)
+        FortinetPDFReport(self.findings, self._report_meta(), self._report_kb(),
+                          self.prioritize()).generate(output_path)
         print(f"[+] PDF report saved to: {output_path}")
+
+    # ---- Risk-Prioritization Engine -----------------------------------------
+
+    def prioritize(self):
+        """Rank findings into P1–P4 *fix-first* tiers by fusing base severity,
+        real-world exploitability (CISA KEV membership + FIRST.org EPSS for CVE
+        findings) and internet-reachability from the attack-surface analysis.
+        Returns a list of ``PriorityResult`` ordered fix-first, or ``[]`` if the
+        engine is unavailable. Cheap (O(n)); safe to call more than once."""
+        try:
+            from risk_prioritizer import RiskPrioritizer, ThreatIntel
+            intel = getattr(self, "_intel_cache", None)
+            if intel is None:
+                intel = ThreatIntel()
+                self._intel_cache = intel
+            # Derive reachability from the full (pre-severity-filter) set if we
+            # captured one, so a high --severity threshold can't strip the
+            # attack-surface findings that signal internet exposure.
+            context = getattr(self, "_all_findings", None) or self.findings
+            return RiskPrioritizer(intel).prioritize(self.findings, context_findings=context)
+        except Exception as exc:  # pragma: no cover - defensive
+            self._warn(f"risk prioritization unavailable: {exc}")
+            return []
+
+    def print_priorities(self, top: int | None = None) -> None:
+        """Print the fix-first work queue (top N, or the tier summary) to the console."""
+        results = self.prioritize()
+        if not results:
+            return
+        try:
+            from risk_prioritizer import TIER_META
+        except Exception:  # pragma: no cover - defensive (module unavailable)
+            return
+        counts: dict = {t: 0 for t in TIER_META}
+        for r in results:
+            counts[r.tier] = counts.get(r.tier, 0) + 1
+        sep = "=" * 72
+        print(f"\n{self.BOLD}{sep}")
+        print("  Risk-Prioritized Remediation Queue  (severity × exploitability × exposure)")
+        print(f"{sep}{self.RESET}")
+        for t in ("P1", "P2", "P3", "P4"):
+            m = TIER_META[t]
+            print(f"    {self.BOLD}{t}{self.RESET} {m['label']:<20} {counts[t]:>3}   ({m['window']})")
+        intel = getattr(self, "_intel_cache", None)
+        if intel is not None and getattr(intel, "available", False):
+            print(f"    {self.SEVERITY_COLOR['INFO']}threat-intel snapshot {intel.snapshot_date} · "
+                  f"{intel.kev_count} KEV-listed CVE(s){self.RESET}")
+        n = top if top and top > 0 else 10
+        shown = [r for r in results if r.tier in ("P1", "P2")][:n]
+        if not shown:
+            shown = results[:n]
+        print(f"\n  {self.BOLD}Top {len(shown)} to fix first:{self.RESET}")
+        for i, r in enumerate(shown, 1):
+            f = r.finding
+            sc = self.SEVERITY_COLOR.get(f.severity, "")
+            tags = []
+            if r.kev:
+                tags.append("KEV")
+            if r.epss is not None and r.epss >= 0.10:
+                tags.append(f"EPSS {r.epss*100:.0f}%")
+            if r.reachable:
+                tags.append("internet-exposed")
+            tagstr = ("  [" + ", ".join(tags) + "]") if tags else ""
+            print(f"    {i:>2}. {self.BOLD}{r.tier}{self.RESET} "
+                  f"{sc}{f.severity:<8}{self.RESET} {f.rule_id}  {f.name[:60]}{tagstr}")
+            print(f"        score {r.score}/100 · {f.file_path}")
+        print()
 
 
 # ========================================================================== #
@@ -6140,6 +6225,11 @@ Examples:
     parser.add_argument("--compliance-csv", metavar="FILE", help="Export compliance mapping CSV (CIS, PCI-DSS, NIST, SOC2, HIPAA)")
     parser.add_argument("--baseline", metavar="FILE", help="Prior --json report to diff against (config drift: new vs resolved findings + posture delta)")
     parser.add_argument("--inventory", metavar="FILE", help="Multi-device inventory JSON file for batch scanning")
+    parser.add_argument("--top", type=int, nargs="?", const=10, default=None, metavar="N",
+                        help="Print the risk-prioritized fix-first queue, showing the top N (default 10)")
+    parser.add_argument("--refresh-intel", action="store_true",
+                        help="Refresh the bundled threat-intel snapshot (CISA KEV + FIRST.org EPSS) "
+                             "for all tracked CVEs, then exit. Requires internet access.")
     parser.add_argument(
         "--severity",
         choices=["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"],
@@ -6150,6 +6240,10 @@ Examples:
     parser.add_argument("--version", action="version", version=f"%(prog)s {VERSION}")
 
     args = parser.parse_args()
+
+    # ── Threat-intel refresh (standalone maintenance action) ───────
+    if args.refresh_intel:
+        sys.exit(_refresh_intel())
 
     # ── Multi-device mode ──────────────────────────────────────────
     if args.inventory:
@@ -6208,6 +6302,7 @@ Examples:
         scanner.apply_drift(args.baseline)
 
     scanner.print_report()
+    scanner.print_priorities(args.top if args.top is not None else 10)
 
     if args.json:
         scanner.save_json(args.json)
@@ -6222,6 +6317,27 @@ Examples:
 
     counts = scanner.summary()
     sys.exit(1 if (counts.get("CRITICAL", 0) or counts.get("HIGH", 0)) else 0)
+
+
+def _refresh_intel() -> int:
+    """Refresh the bundled threat-intel snapshot from the live CISA KEV + EPSS
+    feeds for every tracked CVE. Returns a process exit code."""
+    try:
+        from risk_prioritizer import refresh_threat_intel
+    except Exception as exc:  # pragma: no cover
+        print(f"[!] Risk-prioritization module unavailable: {exc}", file=sys.stderr)
+        return 1
+    cves = sorted({c["cve"] for c in FORTIOS_CVES if c.get("cve")})
+    print(f"[*] Refreshing threat intel for {len(cves)} tracked CVE(s) from CISA KEV + FIRST.org EPSS …")
+    try:
+        meta = refresh_threat_intel(cves)
+    except Exception as exc:
+        print(f"[!] Threat-intel refresh failed: {exc}\n"
+              f"    (offline/air-gapped? The bundled snapshot remains in use.)", file=sys.stderr)
+        return 1
+    print(f"[+] Snapshot updated: {meta['cve_count']} CVE(s), {meta['kev_count']} KEV-listed "
+          f"(snapshot {meta['snapshot_date']}).")
+    return 0
 
 
 if __name__ == "__main__":
