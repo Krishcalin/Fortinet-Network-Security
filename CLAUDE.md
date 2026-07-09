@@ -54,19 +54,19 @@ Ships in two modes that share the same 22 check methods and rule set:
 
 | Category | Prefix | Check Method | Rules |
 |----------|--------|-------------|-------|
-| Admin Access | FORTIOS-ADMIN | `_check_admin_access` | 24 |
+| Admin Access | FORTIOS-ADMIN | `_check_admin_access` | 25 |
 | System Settings | FORTIOS-SYS | `_check_system_settings` | 13 |
 | Firewall Policies | FORTIOS-POLICY | `_check_firewall_policies` | 16 |
 | Rule-Base Analysis | FORTIOS-RULEBASE | `_check_rulebase` | shadow/redundant + Policy Control Index (SCORE) |
 | Rule Usage (live) | FORTIOS-USAGE | `_check_rule_usage` | dormant-rule cleanup via `monitor/firewall/policy` |
 | Object Hygiene | FORTIOS-OBJECT | `_check_object_hygiene` | orphaned address/service/profile objects |
 | Attack Surface | FORTIOS-EXPOSURE | `_check_exposure` | WAN→internal reachability; internet-exposed high-risk services + summary |
-| SSL VPN | FORTIOS-SSLVPN | `_check_ssl_vpn` | 14 |
+| SSL VPN | FORTIOS-SSLVPN | `_check_ssl_vpn` | 16 |
 | IPsec VPN | FORTIOS-IPSEC | `_check_ipsec_vpn` | 12 |
 | Security Profiles | FORTIOS-PROFILE/AV/IPS/WF/APP/DLP/DNS | `_check_security_profiles` | 11 |
 | Logging & Monitoring | FORTIOS-LOG | `_check_logging` | 18 |
 | High Availability | FORTIOS-HA | `_check_ha` | 8 |
-| Certificates | FORTIOS-CERT | `_check_certificates` | 11 |
+| Certificates | FORTIOS-CERT | `_check_certificates` (+ CERT-012 admin-server-cert in `_check_admin_access`) | 12 |
 | Network Hardening | FORTIOS-NET | `_check_network` | 18 |
 | FortiGuard Updates | FORTIOS-UPDATE | `_check_fortiguard` | 7 |
 | ZTNA / SASE / SD-WAN | FORTIOS-ZTNA | `_check_ztna` | 6 |
@@ -74,12 +74,12 @@ Ships in two modes that share the same 22 check methods and rule set:
 | Backup & DR | FORTIOS-BACKUP | `_check_backup` | 5 |
 | Authentication | FORTIOS-AUTH | `_check_authentication` | 6 |
 | Advanced Hardening | FORTIOS-SYS/NET/POLICY/LOG/CERT/ZTNA | `_check_advanced_hardening` | ~15 |
-| MITRE ATT&CK Resilience | MITRE-T{NNNN}-{NNN} | `_check_mitre_attack_resilience` | 31 |
-| Known CVEs | FORTIOS-CVE | `_check_cves` | 70 |
+| MITRE ATT&CK Resilience | MITRE-T{NNNN}-{NNN} | `_check_mitre_attack_resilience` | 34 |
+| Known CVEs | FORTIOS-CVE | `_check_cves` | 75 |
 
 ## Compliance Framework Mapping
 
-77 rule-to-framework mappings. Every finding auto-resolves compliance on init via `Finding._resolve_compliance()`.
+89 rule-to-framework mappings. Every finding auto-resolves compliance on init via `Finding._resolve_compliance()`.
 
 | Framework | Scope | Controls Mapped |
 |-----------|-------|-----------------|
@@ -137,7 +137,7 @@ CLI flags: `--html`, `--pdf`, `--csv`, `--compliance-csv`, `--sarif`, `--ocsf`, 
 
 Score is capped at 100 and mapped by `TIER_THRESHOLDS` (P1≥70, P2≥42, P3≥20, else P4), with one **floor**: a KEV-listed CVE is never below P2. Every `PriorityResult` carries `factors` (label + points + detail) and a `rationale` string, so the ranking is fully explainable. `RiskPrioritizer.prioritize(findings)` returns them ordered fix-first.
 
-- **`threat_intel.json`** — bundled snapshot (`meta` + `cves{CVE: {epss, epss_pct, kev, kev_date?}}`) for all 70 tracked CVEs (14 KEV-listed). Keeps the engine working **offline**; loader degrades to empty (severity+reachability only) if missing/corrupt.
+- **`threat_intel.json`** — bundled snapshot (`meta` + `cves{CVE: {epss, epss_pct, kev, kev_date?}}`) for all 75 tracked CVEs (19 KEV-listed). Keeps the engine working **offline**; loader degrades to empty (severity+reachability only) if missing/corrupt.
 - **`--refresh-intel`** (`_refresh_intel` / `_refresh_intel_offline`) — rebuilds the snapshot from the live CISA KEV catalog + FIRST.org EPSS API via **`urllib` (stdlib only)**, then exits. Handled *before* host/inventory validation so it runs standalone. EPSS is batched (60/req). Captures KEV `knownRansomwareCampaignUse` -> per-entry `ransomware` flag.
 - **`--export-intel FILE` / `--import-intel FILE`** (`_transfer_intel`, `export_intel`/`import_intel`) — sneakernet a snapshot to/from an air-gapped host; import **validates** (`_validate_intel_doc`) before overwriting so a corrupt file can't replace a good snapshot. Staleness: `ThreatIntel.age_days()`/`is_stale(threshold=45)`; console + reports show a stale warning.
 - **`--top [N]`** — `print_priorities(N)` prints the tier summary + fix-first queue (KEV/ransomware/EPSS/exposed tags) to the console (default 10).
@@ -145,7 +145,7 @@ Score is capped at 100 and mapped by `TIER_THRESHOLDS` (P1≥70, P2≥42, P3≥2
 - **GOTCHA**: prioritization runs *after* `filter_severity` in `main()`; `filter_severity` snapshots `self._all_findings` (pre-filter) and `prioritize()` derives reachability from that, so a high `--severity` cannot strip the exposure signal.
 
 **CVE reachability gating** (`cve_reachability.py` — stdlib, offline-safe): version-matched CVEs fire on firmware math alone, so `_check_cves` also assesses, from the parsed config, whether each CVE's vulnerable feature is enabled/internet-facing. Each CVE is tagged in `CVE_COMPONENTS` (fortinet_scanner.py, next to FORTIOS_CVES) with a component (sslvpn / admin-gui / admin-ssh / admin-auth / rest-api / fgfm / ipsec / capwap / proxy / ips / radius / tacacs / ldap / fsso / ha / dnsfilter / captive-portal / bluetooth / forticloud-sso / ecosystem); `build_view(scanner)` reads the needed endpoints once (via `_api_get`, same in live/offline) and per-component predicates return a verdict (`CONFIRMED_REACHABLE` / `CONFIGURED_NOT_EXPOSED` / `FEATURE_DISABLED` / `INDETERMINATE`) + cited evidence. `_check_cves` stashes `self._cve_reachability = {cve: {verdict, evidence, component}}`; `prioritize()` passes it to `RiskPrioritizer.prioritize(..., cve_reachability=)`. In `assess()`, a CVE with a decisive verdict uses it INSTEAD of the plane heuristic: CONFIRMED -> +20; DISABLED -> −25 **and tier capped at P3 (P2 if KEV)**; NOT_EXPOSED -> no bonus; INDETERMINATE -> plane fallback. **Safe by design: only downranks, never suppresses; KEV floor (>=P2) holds; evidence shown so an operator can override.** Component tags are **conservative** — ambiguous CVEs (038/045/057/061) and FortiManager/FortiClient ecosystem CVEs (006/007/010 = `ecosystem`) are INDETERMINATE. GOTCHA: `build_view` must read the same keys/shapes the offline parser and live API produce (e.g. `system/interface` list `allowaccess` string, phase1 `interface` str-or-list, `system/settings` VDOM `inspection-mode` for proxy) — verified against the parser. **SSL-VPN `set status` toggle only exists from FortiOS 7.4.1**: `_sslvpn` is version-aware (uses `view["fw_version"]`) — on <7.4.1 a configured block = in-use (absent status is NOT read as disabled); on >=7.4.1 absent status = disabled-by-default. `_names` splits space-joined multi-value strings (offline parser joins `source-interface` tokens). **Adversarial review round 2 (2026-07-09) fixed 7 confirmed bugs + 3 NVD-verified CVE mis-tags**: CVE-2024-35279 fgfm→**capwap** (crafted UDP via CAPWAP control), CVE-2025-22252 radius→**tacacs** (TACACS+ auth bypass, not RADIUS empty-secret — description/CWE corrected), CVE-2024-26010 ips→**untagged** (NVD names no component); import_intel now validates meta+every entry & writes only after normalizing (can't clobber a good snapshot); unknown verdict falls back to plane heuristic.
-- **Tests**: `test_data/test_risk_prioritizer.py` (snapshot/KEV/EPSS/ransomware, plane reachability, scoring/tiers/floor, staleness, import/export hardening, dict-vs-object, graceful degradation, HTML) + `test_data/test_cve_reachability.py` (predicates per component incl. version-aware SSL-VPN / multi-WAN / proxy-vdom / tacacs, CVE_COMPONENTS+NVD-tag sanity, gating/cap/floor, unknown-verdict fallback, offline integration). **116 tests total green.**
+- **Tests**: `test_data/test_risk_prioritizer.py` (snapshot/KEV/EPSS/ransomware, plane reachability, scoring/tiers/floor, staleness, import/export hardening, dict-vs-object, graceful degradation, HTML) + `test_data/test_cve_reachability.py` (predicates per component incl. version-aware SSL-VPN / multi-WAN / proxy-vdom / tacacs, CVE_COMPONENTS+NVD-tag sanity, gating/cap/floor, unknown-verdict fallback, offline integration) + `test_bugfixes.py` / `test_new_checks.py` / `test_exports.py` / `test_reporting.py` (2026-07 regressions, new checks, SARIF/OCSF/fix-script, reporting/UX). **166 tests total green.**
 
 **Config drift** (`_ReportMixin.apply_drift`, `--baseline prior.json`): diffs current findings vs a prior `--json` report by signature `(rule_id, file_path, line_content)`, prints new/resolved + posture-score delta, and adds a `FORTIOS-DRIFT-SUMMARY` finding. **Line_content must be deterministic** for signatures to match — sort any set before joining it into `line_content` (fixed `wan_bad`/`versions`).
 
@@ -213,7 +213,8 @@ delegates to `FortinetScanner` so every existing check runs unchanged.
      `isinstance(x, int) and x > N` checks fire (otherwise ~30 findings silently no-op).
    - Reference fields (`srcaddr`, `dstaddr`, `service`, `srcintf`, `dstintf`, `member`, `groups`,
      `users`, `match`, `ip-pools`, `tunnel-ip-pools`, `ssl-vpn-client-cert`, `api-gateway`,
-     `split-tunneling-routing-address`) shaped as `[{"name": X}]` lists to match the live API.
+     `split-tunneling-routing-address`, `source-address`, `source-address6`) shaped as
+     `[{"name": X}]` lists to match the live API.
    - VDOM/global wrappers (`config vdom; edit "root"; …; next; end`) transparently lifted —
      nested configs promoted to top-level endpoints (multi-VDOM configs collapse to last-seen).
    - Tolerant of: empty blocks, missing trailing `end`, mid-block `#` comments, blank lines,
@@ -229,8 +230,10 @@ delegates to `FortinetScanner` so every existing check runs unchanged.
      sync state, signature DB age) are silently omitted; static config findings all fire.
 
 3. **CLI** — same flags as live scanner minus `--token`/`--verify-ssl`/`--timeout`/`--inventory`:
-   `python fortinet_offline_scanner.py <conf> [--json …] [--html …] [--remediation …]
-   [--compliance-csv …] [--severity …] [-v]`.
+   `python fortinet_offline_scanner.py <conf> [--json …] [--html …] [--pdf …] [--csv …]
+   [--compliance-csv …] [--sarif …] [--ocsf …] [--remediation …] [--fix-script …]
+   [--rollback-script …] [--fix-tier P2] [--fix-script-force] [--baseline …] [--severity …]
+   [--no-color] [--summary-only] [--top N] [-v]`.
    At startup reconfigures stdout/stderr to UTF-8 with `errors='replace'` so finding text with
    non-ASCII characters doesn't crash on Windows cp1252 consoles.
 
@@ -288,13 +291,24 @@ python fortinet_offline_scanner.py /backups/fw1.conf
 python fortinet_offline_scanner.py fw1.conf --json r.json --html r.html --compliance-csv audit.csv
 python fortinet_offline_scanner.py fw1.conf --severity HIGH --remediation fix.txt -v
 
+# Machine-ingestible exports (SARIF -> GitHub code-scanning/CI; OCSF -> SIEM) + full CSV
+python fortinet_offline_scanner.py fw1.conf --sarif fw1.sarif --ocsf fw1.ocsf.json --csv findings.csv
+
+# Generate a fix-first FortiOS CLI batch + paired rollback from the KB (P1-P2 only)
+python fortinet_offline_scanner.py fw1.conf --fix-script fix.conf --rollback-script rollback.conf --fix-tier P2
+#   disruptive fixes (reboot/HA/VPN-drop) are commented out unless --fix-script-force
+
+# Compact console output (scorecard + fix-first queue only); disable colour for pipes
+python fortinet_offline_scanner.py fw1.conf --summary-only --no-color
+
 # Threat-intel refresh (KEV + EPSS), then exit
 python fortinet_scanner.py --refresh-intel
 
 # Fix-first queue to the console
 python fortinet_offline_scanner.py fw1.conf --top 15
 
-# Tests (116 cases: parser + rulebase + risk-prioritizer + cve-reachability)
+# Tests (166 cases: parser + rulebase + risk-prioritizer + cve-reachability +
+#   bug-fix regressions + new checks + exports + reporting)
 python -m pytest test_data/ -v
 ```
 

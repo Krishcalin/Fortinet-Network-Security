@@ -96,9 +96,14 @@ python fortinet_scanner.py 10.1.1.1 --token <API-TOKEN> \
 # --- Offline scan (no network, no pip install) ---
 python fortinet_offline_scanner.py fortigate.conf \
     --html report.html --pdf report.pdf --remediation runbook.txt
+
+# --- Pipeline / SIEM ingestion + ready-to-run fix scripts ---
+python fortinet_offline_scanner.py fortigate.conf \
+    --sarif report.sarif --ocsf report.ocsf.json --csv findings.csv \
+    --fix-script fix.conf --rollback-script rollback.conf --fix-tier P2
 ```
 
-Open `report.html` in any browser, hand `report.pdf` to management, and give `runbook.txt` to whoever owns the firewall.
+Open `report.html` in any browser, hand `report.pdf` to management, give `runbook.txt` to whoever owns the firewall, upload `report.sarif` to GitHub code-scanning, and stream `report.ocsf.json` into your SIEM.
 
 ---
 
@@ -106,7 +111,7 @@ Open `report.html` in any browser, hand `report.pdf` to management, and give `ru
 
 | Capability | Details |
 |-----------|---------|
-| **260+ security rules** | 22 check methods covering every FortiGate security domain |
+| **270+ security rules** | 22 check methods covering every FortiGate security domain |
 | **Risk-prioritization engine** | **P1–P4 fix-first tiers** fusing severity × exploitability (**CISA KEV** + **FIRST.org EPSS**) × internet-reachability; bundled offline threat-intel snapshot, `--refresh-intel` to update, `--top N` fix-first queue, and a "Top Risks" section in every report |
 | **Rule-base analysis (FireMon-style)** | Shadowed & redundant rule detection, a 0–100 **Policy Control Index**, dormant-rule cleanup (live), orphaned object hygiene, **internet attack-surface** modelling, and **config-drift** diffing between scans |
 | **34 MITRE ATT&CK techniques** | Resilience testing across 11 tactics with a 0–100% score |
@@ -292,8 +297,12 @@ If the snapshot is ever missing or corrupt, the engine degrades gracefully and r
 | **HTML** | `--html` | Rich **self-contained** report: risk-score gauge, a **Risk-Prioritized "Top Risks to Fix Now"** section (P1–P4 tiers + KEV/ransomware/EPSS/exposure tags, stale-snapshot warning), severity / compliance / ATT&CK visuals, collapsible per-finding cards (each with its **P-badge + rationale** and the full detailed remediation), live filtering/search, and a print stylesheet. No external assets — opens anywhere, even offline. |
 | **PDF** | `--pdf` | Paginated, **board-ready** PDF: cover page + device panel, executive summary, a **Risk-Prioritized Remediation Queue** page (tier cards + fix-first table), and detailed findings — each tagged with its **priority tier** and step-by-step remediation. Built on a hand-rolled PDF engine — **stdlib only**, no reportlab/weasyprint/headless-browser. |
 | **Remediation runbook** | `--remediation` | The per-finding runbook shown above — risk, steps, GUI, CLI, verify, rollback, impact, references. |
-| **JSON** | `--json` | Full machine-readable report: findings, compliance map, and remediation commands. |
+| **Fix + rollback scripts** | `--fix-script` / `--rollback-script` | Fix-first FortiOS CLI batch assembled from the KB (P1→P4; `--fix-tier` to cap). Disruptive fixes (reboot/HA/VPN-drop) are commented out unless `--fix-script-force`; a paired rollback batch is written too. Generation only — never executes. |
+| **JSON** (schema v2) | `--json` | Full machine-readable report: findings, per-finding **priority** (P-tier/KEV/EPSS/reachability), `tier_summary`, `risk_score`, and a per-framework `compliance_scorecard`. |
+| **Findings CSV** | `--csv` | Full findings spreadsheet: severity, tier, KEV, EPSS, CVE, CWE, compliance, evidence, remediation CLI. |
 | **Compliance CSV** | `--compliance-csv` | Audit-evidence spreadsheet with per-framework control columns (CIS, PCI-DSS, NIST, SOC2, HIPAA). |
+| **SARIF 2.1.0** | `--sarif` | Static-analysis format for **GitHub code-scanning** / any SARIF viewer — per-rule, dedup, PR annotations, with P-tier/KEV/EPSS in each result's properties. |
+| **OCSF** | `--ocsf` | Open Cybersecurity Schema Framework Compliance Finding events for **SIEM** ingestion (Splunk, Sentinel, Security Lake, Elastic). |
 | **Unified JSON** | `--inventory + --json` | Aggregated multi-device fleet report. |
 
 All reports are self-contained and dependency-free — the exact same output is produced in live and offline mode.
@@ -450,6 +459,18 @@ python fortinet_scanner.py 10.1.1.1 --token <TOKEN> \
     --json report.json --html report.html --pdf report.pdf \
     --remediation runbook.txt --compliance-csv audit.csv
 
+# CI / SIEM ingestion: SARIF (GitHub code-scanning) + OCSF + full findings CSV
+python fortinet_scanner.py 10.1.1.1 --token <TOKEN> \
+    --sarif report.sarif --ocsf report.ocsf.json --csv findings.csv
+
+# Generate a fix-first CLI batch + paired rollback from the KB (P1-P2 only)
+python fortinet_scanner.py 10.1.1.1 --token <TOKEN> \
+    --fix-script fix.conf --rollback-script rollback.conf --fix-tier P2
+#   add --fix-script-force to include disruptive (reboot/HA/VPN-drop) fixes uncommented
+
+# Compact console (scorecard + fix-first queue only); no colour for pipes/CI logs
+python fortinet_scanner.py 10.1.1.1 --token <TOKEN> --summary-only --no-color
+
 # Token via environment variable
 export FORTIOS_API_TOKEN="your-api-token-here"
 python fortinet_scanner.py 10.1.1.1
@@ -592,15 +613,20 @@ Fortinet-Network-Security/
 ├── remediation_kb.py             # RemediationKB loader (exact + family-prefix resolution)
 ├── risk_prioritizer.py           # Risk-Prioritization Engine (P1–P4: severity × KEV/EPSS × reachability)
 ├── cve_reachability.py           # Per-CVE config-reachability gating (feature enabled/internet-facing?)
-├── threat_intel.json             # Bundled offline KEV+ransomware+EPSS snapshot for the 70 tracked CVEs
+├── threat_intel.json             # Bundled offline KEV+ransomware+EPSS snapshot for the 75 tracked CVEs
 ├── fortinet_html.py              # Rich self-contained HTML report generator
 ├── fortinet_pdf.py               # Paginated PDF report layout
 ├── pdf_writer.py                 # Minimal, dependency-free PDF 1.4 writer (stdlib only)
+├── fortinet_export.py            # SARIF 2.1.0 + OCSF export builders (stdlib only)
 ├── test_data/
 │   ├── test_offline_parser.py    # pytest cases for the .conf parser + end-to-end smoke
 │   ├── test_rulebase.py          # rule-base / exposure / drift / object-hygiene tests
 │   ├── test_risk_prioritizer.py  # risk-prioritization engine + threat-intel + report tests
 │   ├── test_cve_reachability.py  # CVE reachability predicates + gating scoring tests
+│   ├── test_bugfixes.py          # regressions for the 10 adversarial-review bug fixes
+│   ├── test_new_checks.py        # new config checks + MITRE techniques + legacy KEV CVEs
+│   ├── test_exports.py           # SARIF / OCSF / remediation-script generation
+│   ├── test_reporting.py         # colour gating, compliance scorecard, enriched JSON, findings CSV
 │   └── sample_insecure.conf      # Intentionally insecure config for demos/tests
 ├── README.md
 ├── CLAUDE.md                     # Architecture & contributor notes
