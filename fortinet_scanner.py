@@ -1365,8 +1365,19 @@ class _ReportMixin:
             "system_info": sys_info,
             "total_findings": len(self.findings),
             "summary": self.summary(),
+            "risk_score": self._risk_score(self.summary()),
             "findings": [f.to_dict() for f in self.findings],
         }
+        # Embed the risk-prioritization overlay so downstream consumers (e.g. the
+        # fleet report aggregating many per-device JSONs) get tiers + reachability
+        # without re-running the engine. Best-effort; absent if the engine is off.
+        pr = self.prioritize()
+        if pr:
+            report["priorities"] = [p.to_dict() for p in pr]
+            tiers: dict = {"P1": 0, "P2": 0, "P3": 0, "P4": 0}
+            for p in pr:
+                tiers[p.tier] = tiers.get(p.tier, 0) + 1
+            report["tier_summary"] = tiers
         with open(output_path, "w", encoding="utf-8") as fh:
             json.dump(report, fh, indent=2, ensure_ascii=False)
         print(f"[+] JSON report saved to: {output_path}")

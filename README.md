@@ -65,7 +65,7 @@ It runs in **two modes that share one engine, one rule set, and one report layer
 
 Offline mode exists for the places live scanning cannot reach: **OT / ICS networks, air-gapped enclaves, and locked-down operator workstations** where you cannot open a socket to the firewall or `pip install` anything.
 
-> **260+ checks · 22 domains · risk-prioritization engine (P1–P4, KEV + EPSS) · rule-base analysis + Policy Control Index · attack-surface + config-drift · 31 MITRE ATT&CK techniques · 70 FortiOS CVEs · 5 compliance frameworks · 237-entry remediation knowledge base · HTML + PDF + JSON + CSV reports**
+> **260+ checks · 22 domains · risk-prioritization engine (P1–P4, KEV + EPSS + reachability gating) · fleet analysis console · rule-base analysis + Policy Control Index · attack-surface + config-drift · 31 MITRE ATT&CK techniques · 70 FortiOS CVEs · 5 compliance frameworks · 237-entry remediation knowledge base · HTML + PDF + JSON + CSV reports**
 
 ---
 
@@ -78,7 +78,7 @@ Most config checkers stop at *"you have a problem."* This one is built around *"
 - 📄 **Board-ready reports with no heavy dependencies.** A rich self-contained **HTML** report (risk gauge, severity/compliance/ATT&CK visuals, collapsible per-finding remediation) and a paginated **PDF** — both generated with the **Python standard library only** (a hand-rolled PDF writer; no reportlab, weasyprint, or headless browser).
 - 🎯 **Attack-aware, not just checklist-aware.** A dedicated MITRE ATT&CK resilience pass scores how well the device would actually *withstand* real techniques (IPS coverage, SSL inspection, DLP, DGA/C2 blocking, ...), not just whether a box is ticked.
 - 🚦 **Tells you what to fix *first*, with evidence.** A [Risk-Prioritization Engine](#risk-prioritized-remediation-queue) fuses base severity with **real-world exploitability** — CISA **KEV** (known-exploited) membership and **FIRST.org EPSS** scores for CVE findings — and the scanner's own **internet-reachability** analysis into transparent **P1–P4 fix-first tiers**. Every ranking shows the exact factors that produced it. A bundled threat-intel snapshot keeps this working **offline**; `--refresh-intel` updates it when online.
-- 🧩 **Fleet-scale & pipeline-native.** Scan a JSON inventory of devices with a unified report, and gate CI/CD on the exit code.
+- 🧩 **Fleet-scale & pipeline-native.** Scan a JSON inventory of devices with a unified report, and gate CI/CD on the exit code. A [Fleet Analysis Console](#fleet-analysis-console) aggregates a whole folder of `.conf` backups into a **worst-device ranking** and **"one fix clears N firewalls"** campaigns — offline and stdlib-only.
 
 ---
 
@@ -279,6 +279,30 @@ python fortinet_offline_scanner.py --import-intel intel-2026.json   # air-gapped
 ```
 
 If the snapshot is ever missing or corrupt, the engine degrades gracefully and ranks by severity + reachability alone.
+
+---
+
+## Fleet Analysis Console
+
+Auditing one firewall is a per-device report. Auditing **50** is a different job — and the two questions a firewall team actually asks each week are *"which of my 50 boxes are worst?"* and *"which single fix clears the most firewalls?"*. The **Fleet Analysis Console** answers both from a folder of `.conf` backups (or a set of per-device JSON reports), producing one board-ready fleet report:
+
+```bash
+# Scan a whole directory of .conf backups into one fleet report
+python fortinet_offline_scanner.py --conf-dir /backups \
+    --html fleet.html --pdf fleet.pdf --json fleet.json
+
+# Or aggregate existing per-device --json reports (from live OR offline scans, on any box)
+python fortinet_offline_scanner.py --fleet-inputs reports/ --html fleet.html
+```
+
+It computes:
+
+- **Worst-device ranking** — every device sorted worst-first by risk score, P1/P2 counts and critical/high mix, so you know which boxes to touch first.
+- **Remediation campaigns** — *"one fix, many firewalls"*: each finding grouped across the fleet (`FORTIOS-ADMIN-003 on 34/50 devices`) with the **verbatim CLI fix from the knowledge base**, ranked by how many firewalls a single change clears. CVE campaigns are **reachability-gated** — `34 affected / 21 internet-reachable` — using the per-device reachability verdict, so a fleet-wide count is never a version-only over-count.
+- **Systemic findings** — configuration gaps present across most of the fleet (a policy problem, not a per-box one).
+- **Firmware distribution** — how fragmented the fleet's FortiOS versions are.
+
+**Honest device counting.** Offline backups all carry the same placeholder serial, so identity is **hostname-first** (falling back to a real serial when present). Duplicate hostnames across inputs are **surfaced and disambiguated** (`fw#2`) rather than silently merged or double-counted — a mis-merge can't quietly inflate or hide a device. One unparseable backup is skipped with a warning, never aborting the fleet run. Everything is **stdlib-only**, so the whole fleet report runs on an air-gapped OT jump box.
 
 ---
 
@@ -536,16 +560,22 @@ usage: fortinet_scanner.py [-h] [--token TOKEN] [--verify-ssl] [--timeout SEC]
   --version               Show version
 ```
 
-**Offline scanner** — same reporting flags (including `--top`, `--refresh-intel`, `--export-intel`, `--import-intel`), minus the API/inventory options:
+**Offline scanner** — same reporting flags (including `--top`, `--refresh-intel`, `--export-intel`, `--import-intel`), plus **fleet mode**, minus the API/inventory options:
 
 ```
-usage: fortinet_offline_scanner.py [-h] [--json FILE] [--html FILE] [--pdf FILE]
+usage: fortinet_offline_scanner.py [-h] [--conf-dir DIR] [--fleet-inputs PATH ...]
+                                   [--json FILE] [--html FILE] [--pdf FILE]
                                    [--remediation FILE] [--compliance-csv FILE]
                                    [--baseline FILE] [--top [N]] [--refresh-intel]
                                    [--export-intel FILE] [--import-intel FILE]
                                    [--severity {CRITICAL,HIGH,MEDIUM,LOW,INFO}]
                                    [--verbose] [--version]
                                    [conf]
+
+  --conf-dir DIR          Fleet mode: scan every *.conf in DIR into one fleet report
+  --fleet-inputs PATH ..  Fleet mode: aggregate existing per-device --json reports
+                          (files, globs, or directories of *.json)
+  # In fleet mode, --html/--pdf/--json write the aggregated FLEET report.
 ```
 
 **Exit codes:** `0` = no CRITICAL/HIGH findings · `1` = one or more CRITICAL/HIGH findings (for CI/CD gating).
@@ -591,6 +621,9 @@ Fortinet-Network-Security/
 ├── risk_prioritizer.py           # Risk-Prioritization Engine (P1–P4: severity × KEV/EPSS × reachability)
 ├── cve_reachability.py           # Per-CVE config-reachability gating (feature enabled/internet-facing?)
 ├── threat_intel.json             # Bundled offline KEV+ransomware+EPSS snapshot for the 70 tracked CVEs
+├── fleet_report.py               # Fleet Analysis Console: aggregate many scans (ranking + campaigns)
+├── fleet_html.py                 # Fleet HTML report generator (stdlib, self-contained)
+├── fleet_pdf.py                  # Fleet PDF report generator (stdlib pdf_writer)
 ├── fortinet_html.py              # Rich self-contained HTML report generator
 ├── fortinet_pdf.py               # Paginated PDF report layout
 ├── pdf_writer.py                 # Minimal, dependency-free PDF 1.4 writer (stdlib only)
@@ -599,6 +632,7 @@ Fortinet-Network-Security/
 │   ├── test_rulebase.py          # rule-base / exposure / drift / object-hygiene tests
 │   ├── test_risk_prioritizer.py  # risk-prioritization engine + threat-intel + report tests
 │   ├── test_cve_reachability.py  # CVE reachability predicates + gating scoring tests
+│   ├── test_fleet_report.py      # fleet aggregation / de-dup / campaigns / rendering tests
 │   └── sample_insecure.conf      # Intentionally insecure config for demos/tests
 ├── README.md
 ├── CLAUDE.md                     # Architecture & contributor notes

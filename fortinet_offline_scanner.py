@@ -459,11 +459,22 @@ Examples:
   python fortinet_offline_scanner.py fw1.conf --json report.json --html report.html
   python fortinet_offline_scanner.py fw1.conf --remediation fix.txt --severity HIGH
   python fortinet_offline_scanner.py fw1.conf --compliance-csv audit.csv -v
+
+  # Fleet analysis — scan a whole folder of .conf backups into one report
+  python fortinet_offline_scanner.py --conf-dir /backups --html fleet.html --pdf fleet.pdf --json fleet.json
+  # Fleet analysis — aggregate existing per-device --json reports (from live or offline scans)
+  python fortinet_offline_scanner.py --fleet-inputs reports/ --html fleet.html
 """,
     )
     parser.add_argument("conf", nargs="?", default=None,
                         help="Path to a FortiGate .conf backup file "
-                             "(optional when using --refresh-intel)")
+                             "(optional when using --refresh-intel / --conf-dir / --fleet-inputs)")
+    parser.add_argument("--conf-dir", metavar="DIR",
+                        help="Fleet mode: scan every *.conf in DIR and aggregate into one fleet report "
+                             "(--html/--pdf/--json then write the FLEET report).")
+    parser.add_argument("--fleet-inputs", nargs="+", metavar="PATH",
+                        help="Fleet mode: aggregate existing per-device --json reports (files, globs, or "
+                             "directories of *.json) into one fleet report.")
     parser.add_argument("--json", metavar="FILE", help="Save JSON report to FILE")
     parser.add_argument("--html", metavar="FILE", help="Save detailed HTML report to FILE")
     parser.add_argument("--pdf", metavar="FILE",
@@ -502,9 +513,12 @@ Examples:
             return _transfer_intel("export", args.export_intel)
         return _transfer_intel("import", args.import_intel)
 
+    if args.conf_dir or args.fleet_inputs:
+        return _fleet_mode(args)
+
     if not args.conf:
         parser.error("conf is required (path to a FortiGate .conf backup), "
-                     "unless using --refresh-intel")
+                     "unless using --refresh-intel / --conf-dir / --fleet-inputs")
 
     if not os.path.isfile(args.conf):
         print(f"[!] Config file not found: {args.conf}", file=sys.stderr)
@@ -559,6 +573,156 @@ def _refresh_intel_offline() -> int:
     print(f"[+] Snapshot updated: {meta['cve_count']} CVE(s), {meta['kev_count']} KEV-listed "
           f"(snapshot {meta['snapshot_date']}).")
     return 0
+
+
+# ========================================================================== #
+#  FLEET ANALYSIS CONSOLE                                                     #
+# ========================================================================== #
+
+def _record_from_conf(path: str, verbose: bool = False):
+    """Scan one .conf into a fleet record; return None (with a warning) on any
+    failure so a single bad backup can't abort the whole fleet run."""
+    from fleet_report import build_record
+    try:
+        s = OfflineFortinetScanner(path, verbose=verbose)
+        s.scan()
+    except SystemExit:
+        print(f"[!] Skipped {os.path.basename(path)}: could not parse "
+              f"(missing '#config-version=' header?)", file=sys.stderr)
+        return None
+    except Exception as exc:
+        print(f"[!] Skipped {os.path.basename(path)}: {exc}", file=sys.stderr)
+        return None
+    # The offline scanner synthesizes a system-status for ANY readable file, so a
+    # truncated/garbage/non-FortiGate .conf would otherwise scan to a phantom
+    # score-100 device and pollute the fleet. Require a parsed FortiOS version
+    # (from the '#config-version=' header) to count it as a real device.
+    if not str(s._sys_info.get("version", "")).strip().lstrip("v"):
+        print(f"[!] Skipped {os.path.basename(path)}: not a recognizable FortiGate backup "
+              f"(no '#config-version=' header / FortiOS version).", file=sys.stderr)
+        return None
+    findings = [f.to_dict() for f in s.findings]
+    try:
+        priorities = [p.to_dict() for p in s.prioritize()]
+    except Exception:
+        priorities = None
+    return build_record(s._sys_info, findings, priorities, source=os.path.basename(path))
+
+
+def _records_from_confdir(directory: str, verbose: bool = False) -> list:
+    import glob
+    confs = sorted(glob.glob(os.path.join(directory, "*.conf")))
+    if not confs:
+        print(f"[!] No *.conf files found in {directory}", file=sys.stderr)
+    else:
+        print(f"[*] Fleet: scanning {len(confs)} .conf backup(s) in {directory} ...")
+    records = []
+    for i, c in enumerate(confs, 1):
+        print(f"[*] ({i}/{len(confs)}) {os.path.basename(c)}")
+        r = _record_from_conf(c, verbose)
+        if r:
+            records.append(r)
+    return records
+
+
+def _records_from_json_inputs(inputs: list) -> list:
+    import glob
+    import json
+    from fleet_report import record_from_json
+    paths: list = []
+    for item in inputs:
+        if os.path.isdir(item):
+            paths.extend(sorted(glob.glob(os.path.join(item, "*.json"))))
+        else:
+            matched = sorted(glob.glob(item))
+            paths.extend(matched if matched else [item])
+    # De-duplicate resolved paths so overlapping inputs (a directory + an explicit
+    # file, overlapping globs, or the same file twice) don't double-count a device.
+    seen_real: set = set()
+    unique: list = []
+    for p in paths:
+        rp = os.path.realpath(p)
+        if rp in seen_real:
+            continue
+        seen_real.add(rp)
+        unique.append(p)
+    paths = unique
+    records = []
+    for p in paths:
+        try:
+            with open(p, encoding="utf-8") as fh:
+                doc = json.load(fh)
+        except (OSError, ValueError) as exc:
+            print(f"[!] Skipped {os.path.basename(p)}: {exc}", file=sys.stderr)
+            continue
+        if not isinstance(doc, dict) or "findings" not in doc:
+            print(f"[!] Skipped {os.path.basename(p)}: not a single-device --json report "
+                  f"(use per-device reports, not a fleet/unified export)", file=sys.stderr)
+            continue
+        records.append(record_from_json(doc, source=os.path.basename(p)))
+    return records
+
+
+def _print_fleet_summary(fleet) -> None:
+    a = fleet.agg
+    sep = "=" * 72
+    print(f"\n{sep}")
+    print(f"  Fortinet FortiGate — Fleet Analysis  ({a['device_count']} device(s))")
+    print(sep)
+    st, tt = a["severity_totals"], a["tier_totals"]
+    print(f"  Findings: {a['total_findings']}   Critical {st.get('CRITICAL',0)}  "
+          f"High {st.get('HIGH',0)}  Medium {st.get('MEDIUM',0)}")
+    print(f"  Fix-first: P1 {tt.get('P1',0)}  P2 {tt.get('P2',0)}  P3 {tt.get('P3',0)}  P4 {tt.get('P4',0)}")
+    print(f"  Risk score: avg {a['risk_avg']}   worst {a['risk_max']}")
+    if a["collisions"]:
+        print(f"  [!] {len(a['collisions'])} duplicate hostname(s) disambiguated — verify they are distinct devices")
+    print("\n  Worst devices (fix first):")
+    for i, r in enumerate(a["worst_devices"][:8], 1):
+        print(f"    {i:>2}. score {r['risk_score']:>3}  {r['hostname'][:26]:<26} "
+              f"{r['model']} FortiOS {r['version']}  (P1 {r['tiers'].get('P1',0)})")
+    print("\n  Top remediation campaigns (one fix, many firewalls):")
+    for c in a["campaigns"][:8]:
+        reach = f", {c['reachable']} reachable" if c.get("reachable") else ""
+        tags = (" [KEV]" if c.get("kev") else "") + (" [RW]" if c.get("ransomware") else "")
+        print(f"    [{c['severity']:<8}] {c['device_count']}/{a['device_count']} dev{reach}{tags}  "
+              f"{c['rule_id']}  {c['name'][:44]}")
+    print()
+
+
+def _fleet_mode(args) -> int:
+    from fleet_report import FleetReport
+    records: list = []
+    # A positional conf given alongside fleet flags is folded in rather than
+    # silently dropped.
+    if args.conf:
+        if os.path.isfile(args.conf):
+            r = _record_from_conf(args.conf, args.verbose)
+            if r:
+                records.append(r)
+        else:
+            print(f"[!] conf not found (ignored): {args.conf}", file=sys.stderr)
+    if args.conf_dir:
+        if not os.path.isdir(args.conf_dir):
+            print(f"[!] --conf-dir is not a directory: {args.conf_dir}", file=sys.stderr)
+            return 2
+        records += _records_from_confdir(args.conf_dir, args.verbose)
+    if args.fleet_inputs:
+        records += _records_from_json_inputs(args.fleet_inputs)
+    if not records:
+        print("[!] Fleet mode: no device scans/reports could be loaded.", file=sys.stderr)
+        return 2
+
+    fleet = FleetReport(records)
+    _print_fleet_summary(fleet)
+    if args.json:
+        fleet.save_json(args.json)
+    if args.html:
+        fleet.save_html(args.html)
+    if args.pdf:
+        fleet.save_pdf(args.pdf)
+
+    st = fleet.agg["severity_totals"]
+    return 1 if (st.get("CRITICAL", 0) or st.get("HIGH", 0)) else 0
 
 
 if __name__ == "__main__":
