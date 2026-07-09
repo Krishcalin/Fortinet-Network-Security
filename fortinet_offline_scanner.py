@@ -485,6 +485,12 @@ Examples:
                         help="Export compliance CSV (CIS, PCI-DSS, NIST, SOC2, HIPAA)")
     parser.add_argument("--baseline", metavar="FILE",
                         help="Prior --json report to diff against (config drift: new vs resolved + posture delta)")
+    parser.add_argument("--history", metavar="FILE",
+                        help="Continuous posture: update the file-based system of record and report what changed "
+                             "since last scan (new/resolved/accepted/SLA/newly-weaponized/trend).")
+    parser.add_argument("--exceptions", metavar="FILE",
+                        help="Risk-acceptance file (JSON) for the posture report: accepted/deferred findings stop "
+                             "nagging until their exception expires (fail-open).")
     parser.add_argument("--top", type=int, nargs="?", const=10, default=None, metavar="N",
                         help="Print the risk-prioritized fix-first queue, showing the top N (default 10)")
     parser.add_argument("--refresh-intel", action="store_true",
@@ -526,6 +532,10 @@ Examples:
 
     scanner = OfflineFortinetScanner(args.conf, verbose=args.verbose)
     scanner.scan()
+
+    # Posture tracking runs on the FULL finding set, before any severity filter.
+    if args.history:
+        scanner.update_posture(args.history, args.exceptions)
 
     if args.severity:
         scanner.filter_severity(args.severity)

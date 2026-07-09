@@ -1244,11 +1244,26 @@ class _ReportMixin:
         base_findings = [d for d in (raw if isinstance(raw, list) else [])
                          if isinstance(d, dict) and d.get("rule_id") != "FORTIOS-DRIFT-SUMMARY"]
 
+        # Match findings by a STABLE identity (rule_id + stable entity + host),
+        # NOT by line_content — which embeds volatile values (admintimeout=30),
+        # so a cosmetic config change would otherwise read as resolved+new.
+        try:
+            from posture import finding_fingerprint
+        except Exception:
+            finding_fingerprint = None
+
+        def _fp_field(o, key):
+            return o.get(key, "") if isinstance(o, dict) else getattr(o, key, "")
+
         def sig_d(d):
-            return (d.get("rule_id", ""), d.get("file_path", ""), d.get("line_content", ""))
+            if finding_fingerprint:
+                fp = finding_fingerprint(d)
+            else:
+                fp = str(_fp_field(d, "rule_id")) + "|" + str(_fp_field(d, "line_content"))
+            return (fp, _fp_field(d, "file_path"))
 
         base_sigs = {sig_d(d): d for d in base_findings}
-        cur_sigs = {(f.rule_id, f.file_path, f.line_content): f
+        cur_sigs = {sig_d(f): f
                     for f in self.findings if f.rule_id != "FORTIOS-DRIFT-SUMMARY"}
         new = [f for s, f in cur_sigs.items() if s not in base_sigs]
         resolved = [d for s, d in base_sigs.items() if s not in cur_sigs]
@@ -1506,6 +1521,87 @@ class _ReportMixin:
             print(f"    {i:>2}. {self.BOLD}{r.tier}{self.RESET} "
                   f"{sc}{f.severity:<8}{self.RESET} {f.rule_id}  {f.name[:60]}{tagstr}")
             print(f"        score {r.score}/100 · {f.file_path}")
+        print()
+
+    # ---- Continuous Posture State -------------------------------------------
+
+    def update_posture(self, history_path: str, exceptions_path: str | None = None):
+        """Update the file-based posture system of record for this device and
+        print what changed since last scan (new / resolved / accepted / SLA /
+        newly-weaponized / trend). MUST be called on the FULL, pre-severity-filter
+        finding set so a display filter can't record findings as resolved.
+        Returns the PostureDelta, or None if the module is unavailable."""
+        try:
+            from posture import PostureStore, Exceptions
+        except Exception as exc:  # pragma: no cover - defensive
+            self._warn(f"posture tracking unavailable: {exc}")
+            return None
+        # Device identity for the history key: a real hardware serial makes two
+        # boxes that share a hostname distinct (avoids cross-device contamination).
+        # Offline backups carry the "OFFLINE-CONFIG" placeholder, so they fall back
+        # to the config hostname — stable across renamed backups when 'set hostname'
+        # is present (a config without a hostname keys on the filename stem).
+        si = getattr(self, "_sys_info", {}) or {}
+        hostname = si.get("hostname") or getattr(self, "host", "unknown")
+        serial = str(si.get("serial", "") or "")
+        host = f"{hostname}|{serial}" if serial and serial != "OFFLINE-CONFIG" else hostname
+        store = PostureStore(history_path)
+        exceptions = Exceptions.load(exceptions_path)
+        delta = store.update(host, list(self.findings), self.prioritize(), exceptions,
+                             risk_score=self._risk_score(self.summary()))
+        try:
+            store.save()
+        except OSError as exc:
+            self._warn(f"could not write posture history '{history_path}': {exc}")
+        self._print_posture(delta)
+        return delta
+
+    def _print_posture(self, delta) -> None:
+        sep = "=" * 72
+        since = f"since {delta.prev_date[:10]}" if delta.prev_date else "first scan — baseline recorded"
+        print(f"\n{self.BOLD}{sep}")
+        print(f"  Posture Update — {delta.host}   ({since})")
+        print(f"{sep}{self.RESET}")
+        print(f"  Open: {self.BOLD}{delta.open_active}{self.RESET} active"
+              + (f" + {delta.open_accepted} accepted-risk" if delta.open_accepted else "")
+              + f"    New +{len(delta.new)}  Resolved -{len(delta.resolved)}"
+              + (f"  Reopened ~{len(delta.reopened)}" if delta.reopened else "")
+              + f"  (Carried {len(delta.carried)})")
+        if delta.risk_delta is not None:
+            arrow = "+" if delta.risk_delta > 0 else ""
+            print(f"  Risk score: {delta.prev_risk_score} -> {delta.risk_score}  (delta {arrow}{delta.risk_delta})")
+        if delta.sla_breaches:
+            w = delta.sla_breaches[0]
+            print(f"  {self.SEVERITY_COLOR['CRITICAL']}{self.BOLD}[!] SLA breaches: {len(delta.sla_breaches)}"
+                  f"  (worst: [{w['rec'].get('tier','?')}] {w['rec']['rule_id']} open {w['age_days']}d / SLA {w['window']}d){self.RESET}")
+        if delta.newly_weaponized:
+            print(f"  {self.SEVERITY_COLOR['CRITICAL']}{self.BOLD}[!] Newly weaponized: {len(delta.newly_weaponized)}"
+                  f"  ({', '.join(r['rule_id'] for r in delta.newly_weaponized[:4])} now CISA-KEV){self.RESET}")
+        if delta.accepted:
+            print(f"  Accepted risk: {delta.open_accepted}")
+        if delta.expired_exceptions:
+            print(f"  {self.SEVERITY_COLOR['HIGH']}[!] Expired exceptions: {len(delta.expired_exceptions)} "
+                  f"— re-approve or remediate ({', '.join(e['rule_id'] for e in delta.expired_exceptions[:4])}){self.RESET}")
+
+        def _show(label, items, mark, color=""):
+            if not items:
+                return
+            print(f"\n  {self.BOLD}{label}:{self.RESET}")
+            for r in items[:10]:
+                print(f"    {color}{mark}{self.RESET} {r.get('tier','') or r.get('severity',''):<4} "
+                      f"{r['rule_id']}  {str(r.get('name',''))[:56]}")
+            if len(items) > 10:
+                print(f"      … and {len(items)-10} more")
+
+        _show("New this scan", delta.new, "+", self.SEVERITY_COLOR["HIGH"])
+        if delta.sla_breaches:
+            print(f"\n  {self.BOLD}SLA breached — fix now:{self.RESET}")
+            for b in delta.sla_breaches[:10]:
+                r = b["rec"]
+                print(f"    {self.SEVERITY_COLOR['CRITICAL']}!{self.RESET} {r.get('tier','?'):<4} "
+                      f"{r['rule_id']}  open {b['age_days']}d (SLA {b['window']}d)  {str(r.get('name',''))[:48]}")
+        _show("Resolved", delta.resolved, "-", self.SEVERITY_COLOR["LOW"])
+        _show("Reopened", delta.reopened, "~", self.SEVERITY_COLOR["HIGH"])
         print()
 
 
@@ -6357,6 +6453,12 @@ Examples:
     parser.add_argument("--compliance-csv", metavar="FILE", help="Export compliance mapping CSV (CIS, PCI-DSS, NIST, SOC2, HIPAA)")
     parser.add_argument("--baseline", metavar="FILE", help="Prior --json report to diff against (config drift: new vs resolved findings + posture delta)")
     parser.add_argument("--inventory", metavar="FILE", help="Multi-device inventory JSON file for batch scanning")
+    parser.add_argument("--history", metavar="FILE",
+                        help="Continuous posture: update the file-based system of record and report what changed "
+                             "since last scan (new/resolved/accepted/SLA/newly-weaponized/trend).")
+    parser.add_argument("--exceptions", metavar="FILE",
+                        help="Risk-acceptance file (JSON) for the posture report: accepted/deferred findings stop "
+                             "nagging until their exception expires (fail-open).")
     parser.add_argument("--top", type=int, nargs="?", const=10, default=None, metavar="N",
                         help="Print the risk-prioritized fix-first queue, showing the top N (default 10)")
     parser.add_argument("--refresh-intel", action="store_true",
@@ -6433,6 +6535,11 @@ Examples:
         verbose=args.verbose,
     )
     scanner.scan()
+
+    # Posture tracking runs on the FULL finding set, before any severity filter,
+    # so a display filter can never record findings as resolved in the record.
+    if args.history:
+        scanner.update_posture(args.history, args.exceptions)
 
     if args.severity:
         scanner.filter_severity(args.severity)

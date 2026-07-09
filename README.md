@@ -65,7 +65,7 @@ It runs in **two modes that share one engine, one rule set, and one report layer
 
 Offline mode exists for the places live scanning cannot reach: **OT / ICS networks, air-gapped enclaves, and locked-down operator workstations** where you cannot open a socket to the firewall or `pip install` anything.
 
-> **260+ checks · 22 domains · risk-prioritization engine (P1–P4, KEV + EPSS + reachability gating) · fleet analysis console · rule-base analysis + Policy Control Index · attack-surface + config-drift · 31 MITRE ATT&CK techniques · 70 FortiOS CVEs · 5 compliance frameworks · 237-entry remediation knowledge base · HTML + PDF + JSON + CSV reports**
+> **260+ checks · 22 domains · risk-prioritization engine (P1–P4, KEV + EPSS + reachability gating) · fleet analysis console · continuous posture state (exceptions + SLA + trend) · rule-base analysis + Policy Control Index · attack-surface + config-drift · 31 MITRE ATT&CK techniques · 70 FortiOS CVEs · 5 compliance frameworks · 237-entry remediation knowledge base · HTML + PDF + JSON + CSV reports**
 
 ---
 
@@ -79,6 +79,7 @@ Most config checkers stop at *"you have a problem."* This one is built around *"
 - 🎯 **Attack-aware, not just checklist-aware.** A dedicated MITRE ATT&CK resilience pass scores how well the device would actually *withstand* real techniques (IPS coverage, SSL inspection, DLP, DGA/C2 blocking, ...), not just whether a box is ticked.
 - 🚦 **Tells you what to fix *first*, with evidence.** A [Risk-Prioritization Engine](#risk-prioritized-remediation-queue) fuses base severity with **real-world exploitability** — CISA **KEV** (known-exploited) membership and **FIRST.org EPSS** scores for CVE findings — and the scanner's own **internet-reachability** analysis into transparent **P1–P4 fix-first tiers**. Every ranking shows the exact factors that produced it. A bundled threat-intel snapshot keeps this working **offline**; `--refresh-intel` updates it when online.
 - 🧩 **Fleet-scale & pipeline-native.** Scan a JSON inventory of devices with a unified report, and gate CI/CD on the exit code. A [Fleet Analysis Console](#fleet-analysis-console) aggregates a whole folder of `.conf` backups into a **worst-device ranking** and **"one fix clears N firewalls"** campaigns — offline and stdlib-only.
+- 🧠 **It remembers.** A [Continuous Posture State](#continuous-posture-state) turns each run into a **system of record** — new/resolved since last scan, **risk-acceptance exceptions** that stop nagging until they expire, **SLA aging** against the P1–P4 windows, and **newly-weaponized** alerts — all keyed on a stable finding identity so a cosmetic config edit never corrupts the history.
 
 ---
 
@@ -303,6 +304,36 @@ It computes:
 - **Firmware distribution** — how fragmented the fleet's FortiOS versions are.
 
 **Honest device counting.** Offline backups all carry the same placeholder serial, so identity is **hostname-first** (falling back to a real serial when present). Duplicate hostnames across inputs are **surfaced and disambiguated** (`fw#2`) rather than silently merged or double-counted — a mis-merge can't quietly inflate or hide a device. One unparseable backup is skipped with a warning, never aborting the fleet run. Everything is **stdlib-only**, so the whole fleet report runs on an air-gapped OT jump box.
+
+---
+
+## Continuous Posture State
+
+Every scan, on its own, is **amnesiac**: a risk you formally accepted last week re-nags at full severity today, burying the handful of genuinely-new findings — and eventually people stop running the tool. Point `--history` at a file and the scanner gains a **system of record** that, run after run, tells you *what changed and what needs attention now*:
+
+```bash
+python fortinet_offline_scanner.py fortigate.conf --history posture.json --exceptions accepted.json
+```
+```text
+========================================================================
+  Posture Update — HQ-EDGE-FW   (since 2026-07-02)
+========================================================================
+  Open: 38 active + 4 accepted-risk    New +2  Resolved -3  (Carried 36)
+  Risk score: 100 -> 92  (delta -8)
+  [!] SLA breaches: 3   (worst: [P1] FORTIOS-CVE-002 open 9d / SLA 3d)
+  [!] Newly weaponized: 1  (FORTIOS-CVE-023 now CISA-KEV)
+  [!] Expired exceptions: 1 — re-approve or remediate (FORTIOS-ADMIN-003)
+```
+
+It tracks:
+
+- **New / carried / resolved / reopened** since the last scan, per device.
+- **Risk acceptance (exceptions)** — accept or defer a finding with a reason, approver and expiry (`--exceptions`); it stops nagging until the exception **expires**, at which point it automatically resurfaces. Expired or malformed exceptions **fail open** — a suppression can never outlive its approval or hide a finding through a typo.
+- **SLA aging** — each open finding is clocked against its fix-first tier's window (P1 = 72h, P2 = 7d, P3 = 30d) and breaches are surfaced worst-first.
+- **Newly weaponized** — a still-open finding whose CVE has *just* landed on CISA's actively-exploited list since you last scanned.
+- **Trend** — each device's risk score over time.
+
+**Built on a stable identity.** Findings are matched across scans by `host | rule_id | entity` — **never by the raw evidence line**, which embeds volatile values (`admintimeout=30`). Keying on the value would record a live finding as "resolved" the moment someone changes `30` to `20` (both still weak), silently corrupting the record. The entity is a *stable identifier* (policy id / interface / object name) extracted conservatively; singletons key on `host|rule_id`. The same fix hardens the existing `--baseline` config-drift diff. Everything is a plain JSON file, stdlib-only — no database, works air-gapped.
 
 ---
 
@@ -551,6 +582,8 @@ usage: fortinet_scanner.py [-h] [--token TOKEN] [--verify-ssl] [--timeout SEC]
   --compliance-csv FILE   Export compliance mapping CSV (CIS/PCI/NIST/SOC2/HIPAA)
   --baseline FILE         Diff against a prior --json report (config drift)
   --inventory FILE        Multi-device JSON inventory for batch scanning
+  --history FILE          Continuous posture: update the system of record, report what changed
+  --exceptions FILE       Risk-acceptance file for the posture report (accept/defer, fail-open)
   --top [N]               Print the risk-prioritized fix-first queue (top N, default 10)
   --refresh-intel         Refresh the bundled KEV+EPSS threat-intel snapshot, then exit (needs internet)
   --export-intel FILE     Copy the current threat-intel snapshot to FILE (sneakernet), then exit
@@ -566,7 +599,8 @@ usage: fortinet_scanner.py [-h] [--token TOKEN] [--verify-ssl] [--timeout SEC]
 usage: fortinet_offline_scanner.py [-h] [--conf-dir DIR] [--fleet-inputs PATH ...]
                                    [--json FILE] [--html FILE] [--pdf FILE]
                                    [--remediation FILE] [--compliance-csv FILE]
-                                   [--baseline FILE] [--top [N]] [--refresh-intel]
+                                   [--baseline FILE] [--history FILE] [--exceptions FILE]
+                                   [--top [N]] [--refresh-intel]
                                    [--export-intel FILE] [--import-intel FILE]
                                    [--severity {CRITICAL,HIGH,MEDIUM,LOW,INFO}]
                                    [--verbose] [--version]
@@ -575,6 +609,8 @@ usage: fortinet_offline_scanner.py [-h] [--conf-dir DIR] [--fleet-inputs PATH ..
   --conf-dir DIR          Fleet mode: scan every *.conf in DIR into one fleet report
   --fleet-inputs PATH ..  Fleet mode: aggregate existing per-device --json reports
                           (files, globs, or directories of *.json)
+  --history FILE          Continuous posture: system of record + what-changed report
+  --exceptions FILE       Risk-acceptance file for the posture report (fail-open)
   # In fleet mode, --html/--pdf/--json write the aggregated FLEET report.
 ```
 
@@ -624,6 +660,7 @@ Fortinet-Network-Security/
 ├── fleet_report.py               # Fleet Analysis Console: aggregate many scans (ranking + campaigns)
 ├── fleet_html.py                 # Fleet HTML report generator (stdlib, self-contained)
 ├── fleet_pdf.py                  # Fleet PDF report generator (stdlib pdf_writer)
+├── posture.py                    # Continuous Posture State: stable identity + history/exceptions/SLA/trend
 ├── fortinet_html.py              # Rich self-contained HTML report generator
 ├── fortinet_pdf.py               # Paginated PDF report layout
 ├── pdf_writer.py                 # Minimal, dependency-free PDF 1.4 writer (stdlib only)
@@ -633,6 +670,7 @@ Fortinet-Network-Security/
 │   ├── test_risk_prioritizer.py  # risk-prioritization engine + threat-intel + report tests
 │   ├── test_cve_reachability.py  # CVE reachability predicates + gating scoring tests
 │   ├── test_fleet_report.py      # fleet aggregation / de-dup / campaigns / rendering tests
+│   ├── test_posture.py           # posture identity / lifecycle / exceptions / SLA / drift tests
 │   └── sample_insecure.conf      # Intentionally insecure config for demos/tests
 ├── README.md
 ├── CLAUDE.md                     # Architecture & contributor notes

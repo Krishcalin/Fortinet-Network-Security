@@ -20,6 +20,7 @@ Ships in two modes that share the same 22 check methods and rule set:
   - `risk_prioritizer.py` + `threat_intel.json` — Risk-Prioritization Engine (P1–P4) + bundled KEV/ransomware/EPSS snapshot
   - `cve_reachability.py` — per-CVE config-reachability gating (is the vulnerable feature enabled/internet-facing?)
   - `fleet_report.py` + `fleet_html.py` + `fleet_pdf.py` — Fleet Analysis Console (aggregate many scans → ranking + campaigns)
+  - `posture.py` — Continuous Posture State (stable finding identity + history store + exceptions + SLA + trend)
   - `fortinet_html.py` — rich self-contained HTML report (`FortinetHTMLReport`)
   - `fortinet_pdf.py` + `pdf_writer.py` — paginated PDF report (`FortinetPDFReport`) on a hand-rolled PDF 1.4 writer (no reportlab/weasyprint)
 - **Version**: 4.0.0 (engine) / 1.0.0 (offline adapter)
@@ -138,6 +139,15 @@ Score is capped at 100 and mapped by `TIER_THRESHOLDS` (P1≥70, P2≥42, P3≥2
 - **`FleetReport(records)`** computes: worst-device ranking (risk_score, P1, crit), **prevalence campaigns** (one entry per rule_id, counted once per device even if it fires multiple times, ranked by device coverage then severity; CVE campaigns show `reachable` count from the per-device verdict; verbatim fix from RemediationKB), **systemic** findings (≥`ceil(0.75*n)` devices), firmware/model distribution.
 - **De-dup is hostname-first** (offline serial is the placeholder `"OFFLINE-CONFIG"`, useless for identity): a real serial disambiguates same-hostname devices; else hostname collisions get a `#N` suffix and are surfaced in `collisions` so counts are neither inflated nor collapsed. GOTCHA: `_record_from_conf` catches `SystemExit`+`Exception` so one unparseable backup can't abort the whole fleet run; `filter_severity` is NOT applied in fleet mode (aggregate needs all findings).
 - **Tests**: `test_data/test_fleet_report.py` (record/counts, dedup+collision, ranking, campaign prevalence+reachability gating, systemic, JSON ingest, render JSON/HTML/PDF, empty-fleet safety, + review regressions: INFO-excluded, systemic float-rounding, phantom-config skip, realpath input dedup). **134 tests total green.** Adversarial review (11 agents) found 8 confirmed issues, all fixed — notably: an unparseable/garbage `.conf` was mis-scanned as a phantom score-100 device (the offline scanner never `sys.exit`s, so the SystemExit skip was dead code) → now requires a parsed FortiOS version; INFO dropped for cross-path consistency; `dict|dict` union replaced (py3.8-safe); systemic threshold `ceil(round(...))`; realpath input de-dup; positional conf folded into fleet mode.
+
+## Continuous Posture State
+
+`posture.py` (stdlib) — gives the scanner memory so it stops being amnesiac. CLI on BOTH scanners: `--history FILE` (the system-of-record JSON) + `--exceptions FILE` (risk-acceptance). `_ReportMixin.update_posture(history, exceptions)` + `_print_posture(delta)`; called in `main()` **before `filter_severity`** so a display filter can't record findings as resolved.
+- **Stable identity (the prerequisite)**: `finding_fingerprint(f)` = `rule_id` or `rule_id|entity`, where `finding_entity()` extracts a *stable identifier* (`policy:N` / `iface:X` / `name:"..."`) — **NEVER line_content values** (which embed volatile `admintimeout=30`). Keying on the raw line would record a live finding as resolved+new on a cosmetic edit, corrupting the record. `apply_drift` was **refactored onto the same fingerprint** (fixing its identical latent bug); `sig_d` uses a `_fp_field` helper to read from dicts (baseline) or Finding objects (current).
+- **`PostureStore.update(host, findings, priorities, exceptions, now, risk_score)`** → `PostureDelta`: new/carried/resolved/reopened (reopen restarts the SLA clock), SLA breaches (age vs `TIER_SLA_DAYS` {P1:3,P2:7,P3:30,P4:None}, accepted excluded), `newly_weaponized` (a carried finding whose stored `kev` was False and is now True), trend snapshot + risk_delta vs the previous snapshot. History JSON keyed by host; capped at 200 snapshots/device. Loads fail-open (corrupt/missing store → fresh, never crash).
+- **`Exceptions`** (accept/defer + reason/approver/expiry): matches host(+`*` wildcard) + rule_id (+ entity if specified). **Fail open**: an expired or malformed exception suppresses nothing and expired ones are reported for re-approval. Scoping decision: exceptions affect the posture digest (active vs accepted), NOT the base scan/exit-code.
+- **`now` is injectable** for deterministic tests (defaults to `datetime.now()`).
+- **Tests**: `test_data/test_posture.py` (identity stability + entity extraction against REAL scanner formats, lifecycle, exceptions incl. wildcard/entity-scope/expired-fail-open/malformed-fail-open, SLA per-tier + boundary + accepted-excluded, newly-weaponized transition-only + sticky-KEV, priority-overlay-unwrap, trend/risk-delta, corrupt-store fail-open, drift-refactor regression). **159 tests total green.** Adversarial review (13 agents) found 10 confirmed issues, all fixed — notably (HIGH): the entity regexes didn't match the scanner's actual `policy=Name (ID n)` / single-quote / `key=name` formats so per-instance findings collapsed (hid live findings); and `finding_fingerprint(PriorityResult)` returned "" (tier/kev live on `.finding`) so the SLA/weaponization overlay was DEAD in production — unit tests missed it by passing dicts. Also: malformed `expires` now fails open (was permanent suppression), accepted excluded from new/carried, SLA uses `>=` full-timedelta, KEV sticky, host key adds a real serial, resolved records pruned at 180d.
 
 **Config drift** (`_ReportMixin.apply_drift`, `--baseline prior.json`): diffs current findings vs a prior `--json` report by signature `(rule_id, file_path, line_content)`, prints new/resolved + posture-score delta, and adds a `FORTIOS-DRIFT-SUMMARY` finding. **Line_content must be deterministic** for signatures to match — sort any set before joining it into `line_content` (fixed `wan_bad`/`versions`).
 
@@ -286,7 +296,10 @@ python fortinet_offline_scanner.py fw1.conf --top 15
 python fortinet_offline_scanner.py --conf-dir /backups --html fleet.html --pdf fleet.pdf --json fleet.json
 python fortinet_offline_scanner.py --fleet-inputs reports/ --html fleet.html
 
-# Tests (134 cases: parser + rulebase + risk-prioritizer + cve-reachability + fleet)
+# Continuous posture (system of record + what-changed since last scan)
+python fortinet_offline_scanner.py fw1.conf --history posture.json --exceptions accepted.json
+
+# Tests (159 cases: parser + rulebase + risk-prioritizer + cve-reachability + fleet + posture)
 python -m pytest test_data/ -v
 ```
 
