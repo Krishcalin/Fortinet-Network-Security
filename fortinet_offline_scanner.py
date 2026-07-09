@@ -56,6 +56,8 @@ REF_LIST_FIELDS = frozenset({
     "api-gateway",
     # VPN portal split-tunnel address objects
     "split-tunneling-routing-address",
+    # SSL-VPN source restriction (address-object references)
+    "source-address", "source-address6",
 })
 
 # Sections whose `edit <id>` ID maps to a numeric ``policyid`` field instead
@@ -472,6 +474,18 @@ Examples:
                         help="Export a detailed remediation runbook to FILE")
     parser.add_argument("--compliance-csv", metavar="FILE",
                         help="Export compliance CSV (CIS, PCI-DSS, NIST, SOC2, HIPAA)")
+    parser.add_argument("--sarif", metavar="FILE",
+                        help="Export findings as SARIF 2.1.0 (GitHub code-scanning / CI ingestion)")
+    parser.add_argument("--ocsf", metavar="FILE",
+                        help="Export findings as OCSF Compliance Finding events (SIEM ingestion)")
+    parser.add_argument("--fix-script", metavar="FILE",
+                        help="Generate a fix-first FortiOS CLI remediation script from the knowledge base")
+    parser.add_argument("--rollback-script", metavar="FILE",
+                        help="Also write the paired rollback script (use with --fix-script)")
+    parser.add_argument("--fix-tier", choices=["P1", "P2", "P3", "P4"], default="P4",
+                        help="Highest priority tier to include in the fix script (default: P4 = all)")
+    parser.add_argument("--fix-script-force", action="store_true",
+                        help="Include disruptive fixes (reboot/HA/VPN-drop) uncommented in the fix script")
     parser.add_argument("--baseline", metavar="FILE",
                         help="Prior --json report to diff against (config drift: new vs resolved + posture delta)")
     parser.add_argument("--top", type=int, nargs="?", const=10, default=None, metavar="N",
@@ -489,6 +503,12 @@ Examples:
         default="LOW",
         help="Minimum severity to report (default: LOW)",
     )
+    parser.add_argument("--csv", metavar="FILE",
+                        help="Export a full findings CSV (severity, tier, KEV, EPSS, CVE, compliance, evidence)")
+    parser.add_argument("--no-color", action="store_true",
+                        help="Disable ANSI colour in console output (also honours the NO_COLOR env var)")
+    parser.add_argument("--summary-only", "--quiet", dest="summary_only", action="store_true",
+                        help="Print only the scorecard + fix-first queue (skip the full per-finding dump)")
     parser.add_argument("--verbose", "-v", action="store_true", help="Verbose output")
     parser.add_argument("--version", action="version",
                         version=f"%(prog)s {VERSION} (engine {ENGINE_VERSION})")
@@ -512,6 +532,7 @@ Examples:
 
     scanner = OfflineFortinetScanner(args.conf, verbose=args.verbose)
     scanner.scan()
+    scanner.set_color(False if args.no_color else None)
 
     if args.severity:
         scanner.filter_severity(args.severity)
@@ -520,11 +541,17 @@ Examples:
     if args.baseline:
         scanner.apply_drift(args.baseline)
 
-    scanner.print_report()
-    scanner.print_priorities(args.top if args.top is not None else 10)
+    if args.summary_only:
+        scanner.print_summary_only()
+    else:
+        scanner.print_report()
+        scanner.print_compliance_scorecard()
+        scanner.print_priorities(args.top if args.top is not None else 10)
 
     if args.json:
         scanner.save_json(args.json)
+    if args.csv:
+        scanner.save_findings_csv(args.csv)
     if args.html:
         scanner.save_html(args.html)
     if args.pdf:
@@ -533,6 +560,13 @@ Examples:
         scanner.save_remediation(args.remediation)
     if args.compliance_csv:
         scanner.save_compliance_csv(args.compliance_csv)
+    if args.sarif:
+        scanner.save_sarif(args.sarif)
+    if args.ocsf:
+        scanner.save_ocsf(args.ocsf)
+    if args.fix_script:
+        scanner.save_remediation_script(args.fix_script, args.rollback_script,
+                                        tier_max=args.fix_tier, force=args.fix_script_force)
 
     counts = scanner.summary()
     if counts.get("CRITICAL", 0) or counts.get("HIGH", 0):

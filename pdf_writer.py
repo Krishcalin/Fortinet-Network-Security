@@ -106,28 +106,43 @@ class PDFWriter:
         return sum(self.char_width(c, font, size) for c in _sanitize(s))
 
     def wrap(self, text: str, font: str, size: float, max_width: float) -> List[str]:
-        """Word-wrap `text` (honouring existing newlines) to `max_width` points."""
+        """Word-wrap `text` (honouring existing newlines) to `max_width` points.
+        A single token wider than the column is hard-split at the character level
+        whether it starts a line OR lands mid-line, so a long unbroken string
+        (e.g. a 90-char object name) never overflows the right margin."""
         out: List[str] = []
-        for raw_line in text.split("\n"):
-            words = raw_line.split(" ")
-            line = ""
-            for word in words:
-                candidate = word if not line else line + " " + word
-                if self.string_width(candidate, font, size) <= max_width or not line:
-                    # hard-split a single word longer than the column
-                    if not line and self.string_width(word, font, size) > max_width:
-                        chunk = ""
-                        for ch in word:
-                            if self.string_width(chunk + ch, font, size) > max_width and chunk:
-                                out.append(chunk)
-                                chunk = ch
-                            else:
-                                chunk += ch
-                        line = chunk
-                    else:
-                        line = candidate
+
+        def _chunks(word: str) -> List[str]:
+            """Break an over-wide word into <=max_width-point pieces; the final
+            element is the trailing remainder (may be narrower than max_width)."""
+            pieces: List[str] = []
+            chunk = ""
+            for ch in word:
+                if chunk and self.string_width(chunk + ch, font, size) > max_width:
+                    pieces.append(chunk)
+                    chunk = ch
                 else:
+                    chunk += ch
+            pieces.append(chunk)
+            return pieces
+
+        for raw_line in text.split("\n"):
+            line = ""
+            for word in raw_line.split(" "):
+                candidate = word if not line else line + " " + word
+                if self.string_width(candidate, font, size) <= max_width:
+                    line = candidate
+                    continue
+                # `candidate` overflows: flush the line in progress, then place the
+                # word — hard-splitting it if the word alone exceeds the column.
+                if line:
                     out.append(line)
+                    line = ""
+                if self.string_width(word, font, size) > max_width:
+                    parts = _chunks(word)
+                    out.extend(parts[:-1])
+                    line = parts[-1]
+                else:
                     line = word
             out.append(line)
         return out

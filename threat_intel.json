@@ -2,8 +2,8 @@
   "meta": {
     "schema": "fortinet-threat-intel/1",
     "snapshot_date": "2026-07-09",
-    "cve_count": 70,
-    "kev_count": 14,
+    "cve_count": 75,
+    "kev_count": 19,
     "sources": {
       "kev": "CISA Known Exploited Vulnerabilities Catalog (cisa.gov/kev)",
       "epss": "FIRST.org EPSS v3 (first.org/epss)"
@@ -382,6 +382,36 @@
       "epss_pct": 0.99701,
       "kev": true,
       "kev_date": "2026-01-27"
+    },
+    "CVE-2018-13379": {
+      "epss": 0.94,
+      "epss_pct": 0.999,
+      "kev": true,
+      "kev_date": "2021-11-03"
+    },
+    "CVE-2018-13382": {
+      "epss": 0.86,
+      "epss_pct": 0.989,
+      "kev": true,
+      "kev_date": "2021-11-03"
+    },
+    "CVE-2018-13383": {
+      "epss": 0.72,
+      "epss_pct": 0.982,
+      "kev": true,
+      "kev_date": "2021-11-03"
+    },
+    "CVE-2019-6693": {
+      "epss": 0.33,
+      "epss_pct": 0.97,
+      "kev": true,
+      "kev_date": "2025-06-25"
+    },
+    "CVE-2021-44168": {
+      "epss": 0.68,
+      "epss_pct": 0.975,
+      "kev": true,
+      "kev_date": "2022-12-13"
     }
   }
 }

@@ -96,10 +96,32 @@ def build_view(scanner: Any) -> Dict[str, Any]:
     fw_version = tuple(getattr(scanner, "_fw_version", ()) or ())
 
     ifaces = _as_list(get("system/interface"))
+    # Any interface explicitly tagged role=wan is WAN even if _wan_interfaces()
+    # (name/mode heuristics) missed it.
+    for i in ifaces:
+        if str(i.get("role", "")).lower() == "wan":
+            nm = i.get("name", "")
+            if nm:
+                wan.add(nm)
+    # Broaden further: the interface that owns the default route is internet-facing
+    # even when its role is unset and it has a static IP — a common manual-setup
+    # config _wan_interfaces() alone misses. Without this, an SSL-VPN/admin/IPsec
+    # CVE on a genuinely internet-facing box would be mislabelled "not exposed".
+    for r in _as_list(get("router/static")):
+        dst = str(r.get("dst", "")).strip()
+        gw = str(r.get("gateway", "")).strip()
+        default_dst = dst in ("", "0.0.0.0/0", "0.0.0.0 0.0.0.0", "0.0.0.0/0.0.0.0")
+        if default_dst and gw and gw not in ("0.0.0.0", "::"):
+            wan |= _names(r.get("device") or r.get("interface"))
+    # Whether we could positively identify ANY WAN interface. If not, the
+    # internet-facing predicates must return INDETERMINATE rather than a decisive
+    # "not exposed" (per this module's "uncertain -> INDETERMINATE" invariant).
+    wan_known = bool(wan)
+
     iface_access = {i.get("name", ""): _access_tokens(i) for i in ifaces}
     wan_access: set = set()
     for i in ifaces:
-        if i.get("name", "") in wan or str(i.get("role", "")).lower() == "wan":
+        if i.get("name", "") in wan:
             wan_access |= _access_tokens(i)
     all_access: set = set()
     for toks in iface_access.values():
@@ -123,6 +145,15 @@ def build_view(scanner: Any) -> Dict[str, Any]:
             if v and str(p.get("status", "enable")).lower() != "disable":
                 return True
         return False
+    def _pol_wan(key):
+        """True if an enabled policy carrying ``key`` touches a WAN interface —
+        i.e. the feature actually inspects internet-ingress/egress traffic."""
+        for p in policies:
+            v = p.get(key)
+            if v and str(p.get("status", "enable")).lower() != "disable":
+                if (_names(p.get("srcintf")) | _names(p.get("dstintf"))) & wan:
+                    return True
+        return False
     proxy_policies = any(str(p.get("inspection-mode", "")).lower() == "proxy" for p in policies)
     webproxy = _first_dict(get("web-proxy/explicit"))
     # Proxy inspection can be set VDOM-wide (config system settings / set
@@ -143,6 +174,7 @@ def build_view(scanner: Any) -> Dict[str, Any]:
     return {
         "fw_version": fw_version,
         "wan": wan,
+        "wan_known": wan_known,
         "wan_access": wan_access,
         "all_access": all_access,
         "sslvpn_status": ssl_status,
@@ -151,12 +183,16 @@ def build_view(scanner: Any) -> Dict[str, Any]:
         "ipsec_count": len(phase1),
         "ipsec_wan": ipsec_wan,
         "fmg": fmg_set or "fortimanager" in cm_type,
-        "wtp": len(_as_list(get("wireless-controller/wtp-profile"))) + len(_as_list(get("wireless-controller/vap"))),
+        # Count actually-managed APs (wireless-controller/wtp — empty on wired-only
+        # devices) + user-created VAPs, NOT the always-present default wtp-profiles,
+        # so CAPWAP CVEs correctly reach FEATURE_DISABLED on non-wireless boxes.
+        "wtp": len(_as_list(get("wireless-controller/wtp"))) + len(_as_list(get("wireless-controller/vap"))),
         "radius": len(_as_list(get("user/radius"))),
         "tacacs": len(_as_list(get("user/tacacs+"))),
         "ldap": len(_as_list(get("user/ldap"))),
         "fsso": len(_as_list(get("user/fsso"))),
         "ips_policies": _pol_has("ips-sensor"),
+        "ips_policies_wan": _pol_wan("ips-sensor"),
         "dnsfilter_policies": _pol_has("dnsfilter-profile"),
         "proxy_on": proxy_on,
         "captive_portal": caps_portal,
@@ -172,14 +208,24 @@ def _mgmt_on_wan(v) -> bool:
     return bool(v["wan_access"] & {"http", "https"})
 
 
+def _not_exposed(v, msg):
+    """Emit CONFIGURED_NOT_EXPOSED only when we could positively identify a WAN
+    interface; otherwise return INDETERMINATE. A blank WAN set means WAN could not
+    be determined — claiming "not exposed" there would hide a real internet-facing
+    RCE, violating this module's conservative "uncertain -> INDETERMINATE" rule."""
+    if not v.get("wan_known", True):
+        return INDETERMINATE, "WAN interface could not be determined from config — exposure unknown"
+    return CONFIGURED_NOT_EXPOSED, msg
+
+
 def _sslvpn_reach(v, note=""):
     """CONFIRMED vs CONFIGURED by whether the SSL-VPN source-interface is WAN."""
     src = v["sslvpn_srcintf"]
     if not src or ("any" in src) or (src & v["wan"]):
         return CONFIRMED_REACHABLE, ("SSL-VPN enabled with source-interface "
                                      + (", ".join(sorted(src)) or "unset") + " (internet-facing)" + note)
-    return CONFIGURED_NOT_EXPOSED, ("SSL-VPN enabled but source-interface "
-                                    + ", ".join(sorted(src)) + " is not a WAN interface" + note)
+    return _not_exposed(v, ("SSL-VPN enabled but source-interface "
+                            + ", ".join(sorted(src)) + " is not a WAN interface" + note))
 
 
 def _sslvpn(v):
@@ -208,13 +254,13 @@ def _admin_gui(v):
     if _mgmt_on_wan(v):
         return CONFIRMED_REACHABLE, ("HTTP/HTTPS admin access allowed on a WAN interface (allowaccess="
                                      + ", ".join(sorted(v["wan_access"] & {"http", "https"})) + ")")
-    return CONFIGURED_NOT_EXPOSED, "GUI/HTTPS management not permitted on any WAN interface (allowaccess)"
+    return _not_exposed(v, "GUI/HTTPS management not permitted on any WAN interface (allowaccess)")
 
 
 def _admin_ssh(v):
     if "ssh" in v["wan_access"]:
         return CONFIRMED_REACHABLE, "SSH admin access allowed on a WAN interface (allowaccess includes ssh)"
-    return CONFIGURED_NOT_EXPOSED, "SSH management not permitted on any WAN interface"
+    return _not_exposed(v, "SSH management not permitted on any WAN interface")
 
 
 def _admin_auth(v):
@@ -222,13 +268,13 @@ def _admin_auth(v):
     # surface is reachable from the WAN; otherwise an attacker needs local/VPN access.
     if _mgmt_on_wan(v) or "ssh" in v["wan_access"]:
         return CONFIRMED_REACHABLE, "management plane (HTTPS/SSH) is reachable from a WAN interface"
-    return CONFIGURED_NOT_EXPOSED, "requires authenticated admin access; management not exposed on any WAN interface"
+    return _not_exposed(v, "requires authenticated admin access; management not exposed on any WAN interface")
 
 
 def _rest_api(v):
     if "https" in v["wan_access"]:
         return CONFIRMED_REACHABLE, "REST API rides HTTPS, which is allowed on a WAN interface"
-    return CONFIGURED_NOT_EXPOSED, "HTTPS (REST API transport) not permitted on any WAN interface"
+    return _not_exposed(v, "HTTPS (REST API transport) not permitted on any WAN interface")
 
 
 def _fgfm(v):
@@ -244,7 +290,7 @@ def _ipsec(v):
         return FEATURE_DISABLED, "no IPsec phase1-interface tunnels configured"
     if v["ipsec_wan"]:
         return CONFIRMED_REACHABLE, f"{v['ipsec_count']} IPsec tunnel(s), at least one bound to a WAN interface"
-    return CONFIGURED_NOT_EXPOSED, f"{v['ipsec_count']} IPsec tunnel(s) configured (none clearly WAN-bound)"
+    return _not_exposed(v, f"{v['ipsec_count']} IPsec tunnel(s) configured (none clearly WAN-bound)")
 
 
 def _capwap(v):
@@ -256,8 +302,12 @@ def _capwap(v):
 
 
 def _ips(v):
+    if v.get("ips_policies_wan"):
+        return CONFIRMED_REACHABLE, "IPS sensor on a policy touching a WAN interface (internet-ingress traffic inspected)"
     if v["ips_policies"]:
-        return CONFIRMED_REACHABLE, "IPS sensor attached to at least one firewall policy (traffic inspected)"
+        # IPS attached, but only to non-WAN policies — the engine still parses that
+        # traffic, yet it is not internet-ingress, so it is not confirmed-reachable.
+        return _not_exposed(v, "IPS sensor attached only to non-WAN policies")
     return CONFIGURED_NOT_EXPOSED, "no IPS sensor attached to any policy"
 
 

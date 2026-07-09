@@ -4,8 +4,10 @@
 
 Fortinet FortiGate Security Scanner — a security posture assessment tool that audits FortiGate
 NGFW configuration against security best practices, 5 compliance frameworks (CIS, PCI-DSS,
-NIST 800-53, SOC 2, HIPAA), 70 known CVEs (2019–2026), and 31 MITRE ATT&CK technique
-resilience tests.
+NIST 800-53, SOC 2, HIPAA), 75 known CVEs (2018–2026), and 34 MITRE ATT&CK technique
+resilience tests. Findings export to HTML/PDF/JSON/CSV plus **SARIF 2.1.0 and OCSF** for
+CI / SIEM ingestion, and a fix-first **remediation + rollback CLI script** can be generated
+from the knowledge base.
 
 Ships in two modes that share the same 22 check methods and rule set:
 1. **Live mode** — `fortinet_scanner.py`, connects to FortiGate via the FortiOS REST API.
@@ -26,15 +28,15 @@ Ships in two modes that share the same 22 check methods and rule set:
 
 ## Architecture
 
-1. **`FORTIOS_CVES` list** — 70 known FortiOS CVEs (2019-2026) with train-based version matching, sourced from FortiGuard PSIRT + NVD. Every entry is verified to affect FortiOS specifically (a prior bogus PAN-OS entry, CVE-2024-0012, was removed).
-2. **`COMPLIANCE_MAP` dict** — 77 rule-to-framework mappings (CIS, PCI-DSS, NIST 800-53, SOC 2, HIPAA).
-3. **`REMEDIATION_COMMANDS` dict** — 43 FortiOS CLI config commands mapped to rule IDs.
+1. **`FORTIOS_CVES` list** — 75 known FortiOS CVEs (2018-2026) with train-based version matching, sourced from FortiGuard PSIRT + NVD. Cross-product advisories (FortiManager/FortiClient EMS = `product` field) are tracked for documentation but **skipped** in `_check_cves` so they never false-positive against FortiGate firmware. Every entry is verified to affect FortiOS specifically (a prior bogus PAN-OS entry, CVE-2024-0012, was removed).
+2. **`COMPLIANCE_MAP` dict** — 89 rule-to-framework mappings (CIS, PCI-DSS, NIST 800-53, SOC 2, HIPAA).
+3. **`REMEDIATION_COMMANDS` dict** — 47 FortiOS CLI config commands mapped to rule IDs.
 4. **`Finding` class** — `__slots__` with `rule_id, name, category, severity, description, recommendation, cwe, cve, compliance, remediation_cmd`. Auto-resolves compliance + remediation on init.
-5. **`_ReportMixin`** — `print_report`, `save_json`, `save_html`, `save_pdf`, `save_remediation`, `save_compliance_csv`, `summary`, `filter_severity`, `prioritize()` / `print_priorities()`, plus `_report_kb()` / `_report_meta()` helpers.
-6. **`FortinetScanner(_ReportMixin)`** — 22 `_check_*` methods producing 260+ possible findings.
+5. **`_ReportMixin`** — `print_report` / `print_summary_only`, `save_json` (schema v2: enriched with P-tier/KEV/EPSS + `compliance_scorecard` + `tier_summary`), `save_html`, `save_pdf`, `save_remediation`, `save_remediation_script` (fix + rollback CLI batch), `save_compliance_csv`, `save_findings_csv`, `save_sarif`, `save_ocsf`, `summary`, `filter_severity`, `set_color` (TTY-aware), `compliance_scorecard()` / `print_compliance_scorecard()`, `prioritize()` / `print_priorities()`, plus `_report_kb()` / `_report_meta()` helpers.
+6. **`FortinetScanner(_ReportMixin)`** — 22 `_check_*` methods producing 270+ possible findings.
 7. **`RiskPrioritizer` + `ThreatIntel`** (`risk_prioritizer.py`) — post-scan engine that ranks every finding into P1–P4 fix-first tiers by fusing severity + CISA KEV + FIRST.org EPSS + internet-reachability. See [Risk-Prioritization Engine](#risk-prioritization-engine).
 8. **`MultiDeviceScanner`** — batch scanning of multiple FortiGates with unified summary and JSON export.
-9. **CLI** — `argparse` with `host`, `--token`, `--verify-ssl`, `--timeout`, `--json`, `--html`, `--pdf`, `--remediation`, `--compliance-csv`, `--baseline`, `--inventory`, `--top [N]`, `--refresh-intel`, `--severity`, `--verbose`, `--version`.
+9. **CLI** — `argparse` with `host`, `--token`, `--verify-ssl`, `--timeout`, `--json`, `--html`, `--pdf`, `--csv`, `--compliance-csv`, `--sarif`, `--ocsf`, `--remediation`, `--fix-script` / `--rollback-script` / `--fix-tier` / `--fix-script-force`, `--baseline`, `--inventory`, `--top [N]`, `--refresh-intel`, `--severity`, `--no-color`, `--summary-only` (alias `--quiet`), `--verbose`, `--version`. (The offline scanner mirrors all of these except the live-only `--token`/`--verify-ssl`/`--timeout`/`--inventory`.)
 10. **Exit code**: `1` if CRITICAL or HIGH findings, `0` otherwise.
 
 ## API Connection
@@ -48,7 +50,7 @@ Ships in two modes that share the same 22 check methods and rule set:
 | SSL | Self-signed certs accepted by default; `--verify-ssl` to enforce |
 | Token env var | `FORTIOS_API_TOKEN` |
 
-## Check Methods (22 methods, 260+ rules)
+## Check Methods (22 methods, 270+ rules)
 
 | Category | Prefix | Check Method | Rules |
 |----------|--------|-------------|-------|
@@ -107,8 +109,23 @@ report section is never empty. It covers **every** emitted rule_id (0 gaps).
   detailed finding blocks) on the stdlib `pdf_writer.PDFWriter`.
 - `save_remediation` → a detailed text **runbook** (risk / steps / GUI / CLI / verify / rollback /
   impact / references per finding), not a bare CLI dump.
+- `save_remediation_script` → a fix-first FortiOS CLI **batch** assembled from the KB (`--fix-script`),
+  with a paired **rollback** batch (`--rollback-script`). Ordered P1→P4; disruptive fixes
+  (reboot / HA failover / VPN drop, detected negation-aware from the KB `impact` field) are emitted
+  **commented out** unless `--fix-script-force`. Generation only — it never executes anything.
+- `save_sarif` / `save_ocsf` → machine-ingestible **SARIF 2.1.0** (GitHub code-scanning / CI) and
+  **OCSF** Compliance Finding events (SIEM), built by `fortinet_export.py`. Each result/event carries
+  the P-tier / KEV / EPSS / CVE / CWE / compliance enrichment. Stdlib-only.
+- `save_findings_csv` (`--csv`) → full findings CSV (severity, tier, KEV, EPSS, CVE, CWE, compliance,
+  evidence, remediation CLI). `compliance_scorecard()` gives a per-framework pass/fail rollup that
+  the console (`print_compliance_scorecard`), enriched JSON (`schema_version: 2`) and HTML all render.
+- Console UX: `set_color()` gates ANSI on `stdout.isatty()` + `NO_COLOR` (fixes escape codes leaking
+  into piped output); `--no-color` forces off; `--summary-only` / `--quiet` prints just the scorecard
+  + fix-first queue.
 
-CLI flags: `--html`, `--pdf`, `--remediation`, `--compliance-csv`, `--baseline`, `--top`, `--refresh-intel` (both live and offline scanners).
+CLI flags: `--html`, `--pdf`, `--csv`, `--compliance-csv`, `--sarif`, `--ocsf`, `--remediation`,
+`--fix-script` / `--rollback-script` / `--fix-tier` / `--fix-script-force`, `--baseline`, `--top`,
+`--no-color`, `--summary-only`, `--refresh-intel` (both live and offline scanners).
 
 ## Risk-Prioritization Engine
 
@@ -138,7 +155,7 @@ Score is capped at 100 and mapped by `TIER_THRESHOLDS` (P1≥70, P2≥42, P3≥2
 
 ## MITRE ATT&CK Resilience Testing
 
-`_check_mitre_attack_resilience()` tests **31 MITRE ATT&CK Enterprise techniques across 11 tactics**. Each test verifies a specific FortiGate control is configured to mitigate the attack vector. Produces a resilience score (0-100%).
+`_check_mitre_attack_resilience()` tests **34 MITRE ATT&CK Enterprise techniques across 11 tactics**. Each test verifies a specific FortiGate control is configured to mitigate the attack vector. Produces a resilience score (0-100%). (2026-07 additions: **T1505.003** Web Shell — inbound WAN→internal/DMZ policy without IPS+AV; **T1602** Data from Config Repository — SNMP v1/v2c or default community; **T1552.001** Unsecured Credentials — config secrets under the shared factory key / private-data-encryption disabled.)
 
 | Tactic | Techniques |
 |--------|-----------|
@@ -154,20 +171,24 @@ Score is capped at 100 and mapped by `TIER_THRESHOLDS` (P1≥70, P2≥42, P3≥2
 | **Impact** (TA0040) | T1498 (DoS policies), T1486 (ransomware sandbox), T1499 (app-layer DoS), T1496 (cryptomining) |
 | **Reconnaissance** (TA0043) | T1595 (WAN management exposure) |
 
-Scoring: `MITRE-SUMMARY-PASS` (all 31 pass) or `MITRE-SUMMARY-SCORE` (percentage).
+Scoring: `MITRE-SUMMARY-PASS` (all 34 pass) or `MITRE-SUMMARY-SCORE` (percentage).
 
-## Known CVEs (70 entries, 2019-2026)
+## Known CVEs (75 entries, 2018-2026)
 
 | Range | Count | Severity Mix | Notes |
 |-------|-------|-------------|-------|
 | CVE-001 to 015 | 15 | 8 CRITICAL, 6 HIGH, 1 MEDIUM | KEV-listed SSL VPN / fgfmd RCEs, FortiJump, xortigate |
 | CVE-016 to 030 | 15 | 5 CRITICAL, 7 HIGH, 3 MEDIUM | 2024-2025 CVEs, CSF proxy auth bypass, TACACS+ bypass |
 | CVE-031 to 046 | 16 | 2 CRITICAL, 14 HIGH | 2023-2026 sweep: CAPWAP, IPsec IKE, FGFM, restricted CLI escape, LDAP bypass |
-| CVE-047 to 067 | 21 | 0 CRITICAL, 0 HIGH, 21 MEDIUM | SSL-VPN symlink re-persistence, RADIUS Blast-RADIUS, request smuggling, DNS-65 filter bypass, session expiration, FSSO policy source-verification bypass |
+| CVE-047 to 070 | 24 | + proxy-mode RCE | SSL-VPN symlink re-persistence, RADIUS Blast-RADIUS, request smuggling, DNS-65 filter bypass, FSSO bypass, CVE-2023-33308 |
+| CVE-071 to 075 | 5 | 1 CRITICAL, 2 HIGH, 2 MEDIUM | **Legacy CISA-KEV set (2018-2021)**: CVE-2018-13379/13382/13383 (SSL-VPN), CVE-2019-6693 (hard-coded config-backup key), CVE-2021-44168 (`execute restore` integrity) — legacy 5.x/6.0 trains |
 
-Totals: **19 CRITICAL, 27 HIGH, 24 MEDIUM** across all 6 supported version trains. CVE-068–070 are the 2021–2023 SSL-VPN/SSH/proxy criticals (CVE-2022-35843, CVE-2023-28001, CVE-2023-33308); FORTIOS-CVE-008 was re-slotted to CVE-2021-26109.
+Cross-product entries (FORTIOS-CVE-006/007/010 = FortiManager / FortiClient EMS) carry a `product`
+field and are **skipped** by `_check_cves` — kept for documentation, never matched against FortiGate
+firmware. Every new CVE that has a KEV floor is also present in `threat_intel.json`
+(19 KEV-listed CVEs). CVE-002/004 now also carry the affected **6.0** train (EOL, sentinel `6.0.999`).
 
-Train-based matching: `_parse_ver()`, `_ver_in_train()`, `_ver_lt()`. Trains: 6.2, 6.4, 7.0, 7.2, 7.4, 7.6.
+Train-based matching: `_parse_ver()`, `_ver_in_train()`, `_ver_lt()`. Trains: 5.2, 5.4, 5.6, 6.0, 6.2, 6.4, 7.0, 7.2, 7.4, 7.6.
 
 Source: FortiGuard PSIRT advisories (https://www.fortiguard.com/psirt?product=FortiOS). Fixed
 version derived as (max-affected-version + 1 patch) per Fortinet's release convention; verified

@@ -5,7 +5,7 @@
 <h1 align="center">Fortinet FortiGate Security Scanner</h1>
 
 <p align="center">
-  <strong>Agentless FortiGate NGFW posture assessment — live API or offline <code>.conf</code> — with MITRE ATT&CK resilience scoring,<br/>70 CVE checks, 5-framework compliance mapping, and a 237-entry detailed remediation runbook.</strong>
+  <strong>Agentless FortiGate NGFW posture assessment — live API or offline <code>.conf</code> — with MITRE ATT&CK resilience scoring,<br/>75 CVE checks, 5-framework compliance mapping, SARIF/OCSF export, remediation-script generation, and a 237-entry detailed remediation runbook.</strong>
 </p>
 
 <p align="center">
@@ -65,7 +65,7 @@ It runs in **two modes that share one engine, one rule set, and one report layer
 
 Offline mode exists for the places live scanning cannot reach: **OT / ICS networks, air-gapped enclaves, and locked-down operator workstations** where you cannot open a socket to the firewall or `pip install` anything.
 
-> **260+ checks · 22 domains · risk-prioritization engine (P1–P4, KEV + EPSS) · rule-base analysis + Policy Control Index · attack-surface + config-drift · 31 MITRE ATT&CK techniques · 70 FortiOS CVEs · 5 compliance frameworks · 237-entry remediation knowledge base · HTML + PDF + JSON + CSV reports**
+> **270+ checks · 22 domains · risk-prioritization engine (P1–P4, KEV + EPSS) · rule-base analysis + Policy Control Index · attack-surface + config-drift · 34 MITRE ATT&CK techniques · 75 FortiOS CVEs · 5 compliance frameworks · 237-entry remediation knowledge base · SARIF/OCSF + fix-script generation · HTML + PDF + JSON + CSV reports**
 
 ---
 
@@ -109,9 +109,11 @@ Open `report.html` in any browser, hand `report.pdf` to management, and give `ru
 | **260+ security rules** | 22 check methods covering every FortiGate security domain |
 | **Risk-prioritization engine** | **P1–P4 fix-first tiers** fusing severity × exploitability (**CISA KEV** + **FIRST.org EPSS**) × internet-reachability; bundled offline threat-intel snapshot, `--refresh-intel` to update, `--top N` fix-first queue, and a "Top Risks" section in every report |
 | **Rule-base analysis (FireMon-style)** | Shadowed & redundant rule detection, a 0–100 **Policy Control Index**, dormant-rule cleanup (live), orphaned object hygiene, **internet attack-surface** modelling, and **config-drift** diffing between scans |
-| **31 MITRE ATT&CK techniques** | Resilience testing across 11 tactics with a 0–100% score |
-| **70 known CVEs** | FortiGuard PSIRT 2019–2026, train-based firmware version matching (FortiOS 6.2 → 7.6) |
-| **5 compliance frameworks** | CIS FortiGate, PCI-DSS 4.0, NIST 800-53 Rev 5, SOC 2 Type II, HIPAA — 77 rule-to-control mappings |
+| **34 MITRE ATT&CK techniques** | Resilience testing across 11 tactics with a 0–100% score |
+| **75 known CVEs** | FortiGuard PSIRT 2018–2026 + CISA KEV, train-based firmware version matching (FortiOS 5.2 → 7.6) |
+| **5 compliance frameworks** | CIS FortiGate, PCI-DSS 4.0, NIST 800-53 Rev 5, SOC 2 Type II, HIPAA — 89 rule-to-control mappings |
+| **SARIF 2.1.0 + OCSF export** | `--sarif` for GitHub code-scanning / CI, `--ocsf` for SIEM (Splunk/Sentinel/Security Lake) — stdlib-only |
+| **Remediation + rollback scripts** | `--fix-script` assembles a fix-first FortiOS CLI batch from the KB (disruptive fixes commented out); `--rollback-script` writes the paired undo |
 | **237-entry remediation KB** | Per finding: risk · numbered steps · GUI path · verified CLI · verification command · rollback · service impact · references |
 | **HTML + PDF reports** | Rich self-contained HTML and paginated PDF — both **stdlib-only** (no reportlab / weasyprint) |
 | **Offline / OT mode** | Audit from a `.conf` backup with no network access and no `pip install` |
@@ -134,9 +136,9 @@ Open `report.html` in any browser, hand `report.pdf` to management, and give `ru
                                                        ▼
                                         ┌───────────────────────────────┐
                                         │  FortinetScanner engine        │
-                                        │  22 _check_* methods (260+)     │
-                                        │  + 70 CVE matches               │
-                                        │  + 31 MITRE ATT&CK tests        │
+                                        │  22 _check_* methods (270+)     │
+                                        │  + 75 CVE matches               │
+                                        │  + 34 MITRE ATT&CK tests        │
                                         │  + compliance auto-mapping      │
                                         └───────────────┬───────────────┘
                                                         ▼
@@ -267,7 +269,7 @@ python fortinet_offline_scanner.py fortigate.conf --top 15
 
 The HTML and PDF reports open with a **"Top Risks to Fix Now"** section (tier counts + the ranked queue), and every finding card carries its **P-badge, score, and rationale**.
 
-**Offline-first, like the rest of the tool.** A bundled `threat_intel.json` snapshot (KEV flags + ransomware flags + EPSS for all 70 tracked CVEs) keeps the engine fully functional on **air-gapped / OT** networks — no live feed required. The console and reports show the snapshot date and warn when it is **stale**. Keeping it fresh:
+**Offline-first, like the rest of the tool.** A bundled `threat_intel.json` snapshot (KEV flags + ransomware flags + EPSS for the tracked CVEs — 19 KEV-listed) keeps the engine fully functional on **air-gapped / OT** networks — no live feed required. The console and reports show the snapshot date and warn when it is **stale**. Keeping it fresh:
 
 ```bash
 # Online box — pull current CISA KEV + FIRST.org EPSS (stdlib urllib, no deps)
@@ -323,7 +325,7 @@ All reports are self-contained and dependency-free — the exact same output is 
 | 15 | Authentication | `FORTIOS-AUTH` | 6 | LDAP/RADIUS/SAML security, MFA, server-identity verification |
 | 16 | Advanced Hardening | mixed | ~15 | FIPS 140-2, TCP timers, SSH grace, SCP, MFA %, default admin, policy-profile analysis, log transport |
 
-Plus dynamic categories: **Rule-Base Analysis**, **Rule Usage**, **Object Hygiene**, **MITRE ATT&CK Resilience** (31 techniques) and **Known CVEs** (70).
+Plus dynamic categories: **Rule-Base Analysis**, **Rule Usage**, **Object Hygiene**, **MITRE ATT&CK Resilience** (34 techniques) and **Known CVEs** (75).
 
 ### Rule-Base Analysis & Policy Control Index
 
@@ -352,7 +354,7 @@ python fortinet_offline_scanner.py fw.conf --baseline baseline.json --json today
 
 ### MITRE ATT&CK Resilience Testing
 
-The scanner tests **31 MITRE ATT&CK Enterprise techniques across 11 tactics**, verifying that FortiGate controls can detect and block real-world attack scenarios. Each test checks a specific feature against the technique it should mitigate, and the run produces a **0–100% resilience score** (`MITRE-SUMMARY-SCORE`, or `MITRE-SUMMARY-PASS` at 100%).
+The scanner tests **34 MITRE ATT&CK Enterprise techniques across 11 tactics**, verifying that FortiGate controls can detect and block real-world attack scenarios. Each test checks a specific feature against the technique it should mitigate, and the run produces a **0–100% resilience score** (`MITRE-SUMMARY-SCORE`, or `MITRE-SUMMARY-PASS` at 100%).
 
 | Tactic | Techniques | FortiGate Controls Verified |
 |--------|:-:|-----------------------------|
@@ -370,7 +372,7 @@ The scanner tests **31 MITRE ATT&CK Enterprise techniques across 11 tactics**, v
 
 ### Known CVEs
 
-**70 CVEs (2019–2026)**, sourced from [FortiGuard PSIRT advisories](https://www.fortiguard.com/psirt?product=FortiOS) and NVD, and matched against the parsed FortiOS version via train-based logic (trains 6.2, 6.4, 7.0, 7.2, 7.4, 7.6). Every entry is verified to affect **FortiOS specifically** (not a sibling Fortinet product).
+**75 CVEs (2018–2026)**, sourced from [FortiGuard PSIRT advisories](https://www.fortiguard.com/psirt?product=FortiOS), NVD and the CISA KEV catalog, and matched against the parsed FortiOS version via train-based logic (trains 5.2, 5.4, 5.6, 6.0, 6.2, 6.4, 7.0, 7.2, 7.4, 7.6). Every entry is verified to affect **FortiOS specifically** — cross-product advisories (FortiManager/FortiClient EMS) carry a `product` field and are skipped in matching so they never false-positive against FortiGate firmware.
 
 | Severity | Count | Highlights |
 |----------|:-----:|------------|
@@ -382,7 +384,7 @@ The scanner tests **31 MITRE ATT&CK Enterprise techniques across 11 tactics**, v
 
 ### Compliance Mapping
 
-Every finding auto-resolves to controls across **5 frameworks** (77 rule-to-control mappings):
+Every finding auto-resolves to controls across **5 frameworks** (89 rule-to-control mappings):
 
 | Framework | Scope |
 |-----------|-------|
@@ -497,7 +499,7 @@ python fortinet_offline_scanner.py fw1.conf \
 python fortinet_offline_scanner.py fw1.conf --severity HIGH -v
 ```
 
-**Works offline (from the `.conf` alone):** all config-audit + rule-base/object-hygiene categories, all 70 CVEs, all 31 MITRE ATT&CK tests, all 77 compliance mappings, and the full 237-entry remediation runbook. Multi-VDOM configs collapse to the last-seen VDOM as an audit baseline.
+**Works offline (from the `.conf` alone):** all config-audit + rule-base/object-hygiene categories, all 75 CVEs, all 34 MITRE ATT&CK tests, all 89 compliance mappings, SARIF/OCSF export, remediation-script generation, and the full 237-entry remediation runbook. Multi-VDOM configs collapse to the last-seen VDOM as an audit baseline.
 
 **Skipped offline** (no runtime data in a static `.conf`): live FortiGuard license/subscription state, HA peer sync status, and current signature-database age. These fire normally in live mode.
 
