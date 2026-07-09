@@ -82,6 +82,9 @@ FORTIOS_CVES: list[dict] = [
             {"train": "7.0", "fixed": "7.0.14"},
             {"train": "6.4", "fixed": "6.4.15"},
             {"train": "6.2", "fixed": "6.2.16"},
+            # 6.0 is affected per FG-IR-24-015 but EOL with no fixed build —
+            # sentinel flags every 6.0.x ("migrate to a fixed release").
+            {"train": "6.0", "fixed": "6.0.999"},
         ],
         "description": "An out-of-bounds write vulnerability in FortiOS SSL VPN (sslvpnd) allows a remote unauthenticated attacker to execute arbitrary code or commands via specially crafted HTTP requests. Added to CISA Known Exploited Vulnerabilities (KEV) catalogue.",
         "recommendation": "Upgrade to the fixed version for your branch. If immediate patching is not possible, disable SSL VPN as a workaround.",
@@ -107,6 +110,8 @@ FORTIOS_CVES: list[dict] = [
             {"train": "7.0", "fixed": "7.0.12"},
             {"train": "6.4", "fixed": "6.4.13"},
             {"train": "6.2", "fixed": "6.2.15"},
+            # 6.0 is affected per FG-IR-23-097 but EOL with no fixed build.
+            {"train": "6.0", "fixed": "6.0.999"},
         ],
         "description": "A heap-based buffer overflow vulnerability in FortiOS SSL VPN allows a remote attacker to execute arbitrary code via specially crafted requests. Publicly known as 'xortigate'.",
         "recommendation": "Upgrade to the fixed version for your branch. Disable SSL VPN if not required.",
@@ -128,6 +133,7 @@ FORTIOS_CVES: list[dict] = [
     {
         "id": "FORTIOS-CVE-006", "cve": "CVE-2024-47575", "severity": "CRITICAL",
         "name": "FortiManager missing authentication (FortiJump)",
+        "product": "FortiManager",  # NOT FortiOS — skipped for FortiGate firmware matching
         "affected": [
             {"train": "7.4", "fixed": "7.4.5"},
             {"train": "7.2", "fixed": "7.2.8"},
@@ -140,6 +146,7 @@ FORTIOS_CVES: list[dict] = [
     {
         "id": "FORTIOS-CVE-007", "cve": "CVE-2023-48788", "severity": "CRITICAL",
         "name": "FortiClient EMS SQL injection",
+        "product": "FortiClient EMS",  # NOT FortiOS — skipped for FortiGate firmware matching
         "affected": [
             {"train": "7.2", "fixed": "7.2.3"},
             {"train": "7.0", "fixed": "7.0.11"},
@@ -176,6 +183,7 @@ FORTIOS_CVES: list[dict] = [
     {
         "id": "FORTIOS-CVE-010", "cve": "CVE-2023-36554", "severity": "HIGH",
         "name": "FortiManager API remote code execution",
+        "product": "FortiManager",  # NOT FortiOS — skipped for FortiGate firmware matching
         "affected": [
             {"train": "7.4", "fixed": "7.4.1"},
             {"train": "7.2", "fixed": "7.2.5"},
@@ -864,6 +872,72 @@ FORTIOS_CVES: list[dict] = [
         "recommendation": "Upgrade to FortiOS 7.2.4 / 7.0.11 or later. As an interim workaround, disable deep/full inspection on proxy-mode policies or switch the affected policies to flow mode.",
         "cwe": "CWE-787",
     },
+    # ---- Legacy CISA-KEV SSL-VPN / integrity CVEs (2018-2021) --------------- #
+    # These predate the list's original 2019 start but are all CISA-KEV-listed and
+    # still found on unpatched/EOL FortiGates. Legacy trains (5.x/6.0) — the train
+    # matcher evaluates each {train,fixed} independently, so no engine change needed.
+    {
+        "id": "FORTIOS-CVE-071", "cve": "CVE-2018-13379", "severity": "CRITICAL",
+        "name": "SSL VPN pre-auth path traversal (system-file / credential disclosure)",
+        "affected": [
+            {"train": "6.0", "fixed": "6.0.5"},
+            {"train": "5.6", "fixed": "5.6.8"},
+            {"train": "5.4", "fixed": "5.4.13"},
+        ],
+        "description": "A path traversal (CWE-22) in the FortiOS SSL VPN web portal lets an unauthenticated attacker download system files, including the sslvpn_websession file containing plaintext usernames and passwords, via crafted HTTP requests. One of the most widely exploited FortiGate CVEs; CISA-KEV listed and repeatedly used to seed ransomware intrusions.",
+        "recommendation": "Upgrade to FortiOS 6.0.5 / 5.6.8 / 5.4.13 or later (these trains are EOL — migrate to a supported release). Assume credential compromise: reset ALL local and VPN account passwords and rotate secrets, since leaked credentials remain valid after patching.",
+        "cwe": "CWE-22",
+    },
+    {
+        "id": "FORTIOS-CVE-072", "cve": "CVE-2018-13382", "severity": "HIGH",
+        "name": "SSL VPN improper authorization — portal password reset ('magic backdoor')",
+        "affected": [
+            {"train": "6.0", "fixed": "6.0.5"},
+            {"train": "5.6", "fixed": "5.6.9"},
+            {"train": "5.4", "fixed": "5.4.11"},
+        ],
+        "description": "An improper authorization vulnerability (CWE-285) in the FortiOS SSL VPN web portal lets an unauthenticated attacker change the password of an SSL-VPN web portal user via specially crafted requests. CISA-KEV listed.",
+        "recommendation": "Upgrade to FortiOS 6.0.5 / 5.6.9 / 5.4.11 or later. Reset SSL-VPN portal user passwords and enable MFA for all VPN users.",
+        "cwe": "CWE-285",
+    },
+    {
+        "id": "FORTIOS-CVE-073", "cve": "CVE-2018-13383", "severity": "MEDIUM",
+        "name": "SSL VPN web portal heap overflow (href proxying)",
+        "affected": [
+            {"train": "6.0", "fixed": "6.0.5"},
+            {"train": "5.6", "fixed": "5.6.11"},
+            {"train": "5.4", "fixed": "5.4.13"},
+            {"train": "5.2", "fixed": "5.2.15"},
+        ],
+        "description": "A heap buffer overflow (CWE-122) in the FortiOS SSL VPN web portal, triggered when proxying a crafted web page's href, can terminate the SSL-VPN service and potentially execute code on the client-processing path. CISA-KEV listed.",
+        "recommendation": "Upgrade to FortiOS 6.0.5 / 5.6.11 / 5.4.13 / 5.2.15 or later (EOL trains — migrate to a supported release).",
+        "cwe": "CWE-122",
+    },
+    {
+        "id": "FORTIOS-CVE-074", "cve": "CVE-2019-6693", "severity": "MEDIUM",
+        "name": "Hard-coded cryptographic key encrypts sensitive config-backup data",
+        "affected": [
+            {"train": "6.2", "fixed": "6.2.1"},
+            {"train": "6.0", "fixed": "6.0.7"},
+            {"train": "5.6", "fixed": "5.6.11"},
+        ],
+        "description": "FortiOS uses a hard-coded cryptographic key (CWE-321) to cipher sensitive data (private keys, LDAP/RADIUS binds, VPN PSKs) in the configuration backup. Anyone who obtains a backup file can decrypt those secrets offline with the shared key. CISA-KEV listed. Reachability is not determinable from the config (data-at-rest), so this is treated as INDETERMINATE by the risk engine.",
+        "recommendation": "Upgrade to FortiOS 6.2.1 / 6.0.7 / 5.6.11 or later and enable per-device private-data-encryption (config system global / set private-data-encryption enable) so backups are keyed to a device-specific passphrase.",
+        "cwe": "CWE-321",
+    },
+    {
+        "id": "FORTIOS-CVE-075", "cve": "CVE-2021-44168", "severity": "HIGH",
+        "name": "Download of code without integrity check via 'execute restore src-vis'",
+        "affected": [
+            {"train": "7.0", "fixed": "7.0.3"},
+            {"train": "6.4", "fixed": "6.4.8"},
+            {"train": "6.2", "fixed": "6.2.10"},
+            {"train": "6.0", "fixed": "6.0.14"},
+        ],
+        "description": "A download-of-code-without-integrity-check (CWE-494) in the FortiOS 'execute restore src-vis' command lets an authenticated attacker execute arbitrary code by supplying a crafted file from a remote server. CISA-KEV listed.",
+        "recommendation": "Upgrade to FortiOS 7.0.3 / 6.4.8 / 6.2.10 / 6.0.14 or later. Restrict administrative CLI access to trusted management hosts.",
+        "cwe": "CWE-494",
+    },
 ]
 
 # ========================================================================== #
@@ -950,6 +1024,12 @@ CVE_COMPONENTS: dict[str, str] = {
     "FORTIOS-CVE-068": "admin-ssh",       # SSH login bypass via RADIUS
     "FORTIOS-CVE-069": "rest-api",
     "FORTIOS-CVE-070": "proxy",           # proxy-mode policies
+    "FORTIOS-CVE-071": "sslvpn",          # CVE-2018-13379 pre-auth path traversal
+    "FORTIOS-CVE-072": "sslvpn",          # CVE-2018-13382 portal password reset
+    "FORTIOS-CVE-073": "sslvpn",          # CVE-2018-13383 web-portal heap overflow
+    # CVE-074 (CVE-2019-6693, hard-coded backup key) is data-at-rest, not network-
+    # reachable -> intentionally untagged so it stays INDETERMINATE.
+    "FORTIOS-CVE-075": "admin-auth",      # CVE-2021-44168 execute restore (authenticated CLI)
 }
 
 # ========================================================================== #
@@ -977,6 +1057,11 @@ COMPLIANCE_MAP: dict[str, dict[str, list[str]]] = {
     "FORTIOS-ADMIN-006": {"CIS": ["2.1.6"], "PCI-DSS": ["7.1.1"], "NIST": ["AC-6"], "SOC2": ["CC6.3"]},
     "FORTIOS-ADMIN-007": {"CIS": ["2.1.7"], "PCI-DSS": ["2.2.2"], "NIST": ["AC-3"], "SOC2": ["CC6.1"]},
     "FORTIOS-ADMIN-008": {"CIS": ["2.1.8"], "PCI-DSS": ["7.1.2"], "NIST": ["AC-6(1)"], "SOC2": ["CC6.3"]},
+    # New hardening checks (2026-07)
+    "FORTIOS-ADMIN-025": {"CIS": ["2.1.9"], "NIST": ["AC-6", "PE-3"], "SOC2": ["CC6.1"]},
+    "FORTIOS-CERT-012":  {"CIS": ["8.1.3"], "PCI-DSS": ["4.2.1"], "NIST": ["SC-17", "SC-23"], "SOC2": ["CC6.7"]},
+    "FORTIOS-SSLVPN-015": {"CIS": ["5.1.4"], "PCI-DSS": ["1.3"], "NIST": ["AC-3", "SC-7"], "SOC2": ["CC6.6"]},
+    "FORTIOS-SSLVPN-017": {"CIS": ["5.1.5"], "PCI-DSS": ["4.2.1"], "NIST": ["SC-8", "SC-13"], "SOC2": ["CC6.7"]},
     "FORTIOS-SYS-001":   {"CIS": ["3.1.1"], "PCI-DSS": ["2.2.4"], "NIST": ["SC-13"], "SOC2": ["CC6.1"]},
     "FORTIOS-SYS-002":   {"CIS": ["3.1.2"], "PCI-DSS": ["2.2.4"], "NIST": ["SC-13"]},
     "FORTIOS-SYS-003":   {"CIS": ["3.1.3"], "PCI-DSS": ["2.2.2"], "NIST": ["AC-8"], "SOC2": ["CC6.1"]},
@@ -1054,6 +1139,9 @@ COMPLIANCE_MAP: dict[str, dict[str, list[str]]] = {
     "MITRE-T1567":  {"CIS": ["4.2.7"], "PCI-DSS": ["1.3.4"], "NIST": ["SC-7", "AC-4"]},
     "MITRE-T1499":  {"CIS": ["9.1.1"], "PCI-DSS": ["11.4"], "NIST": ["SC-5", "SI-4"]},
     "MITRE-T1496":  {"CIS": ["4.2.4"], "PCI-DSS": ["1.2.1"], "NIST": ["CM-7"]},
+    "MITRE-T1505":  {"CIS": ["4.2.2"], "PCI-DSS": ["6.5", "11.4"], "NIST": ["SI-3", "SI-4"]},
+    "MITRE-T1602":  {"CIS": ["9.1.3"], "PCI-DSS": ["2.2.2"], "NIST": ["SC-8", "AC-3"]},
+    "MITRE-T1552":  {"CIS": ["3.1.6"], "PCI-DSS": ["3.5.1", "8.3.2"], "NIST": ["SC-28", "IA-5"]},
 }
 
 # ── Remediation CLI commands (FortiOS config) per rule ──────────────────
@@ -1066,6 +1154,10 @@ REMEDIATION_COMMANDS: dict[str, str] = {
     "FORTIOS-ADMIN-006": "config system admin\n  edit <admin-name>\n    set trusthost1 <trusted-network/mask>\n  next\nend",
     "FORTIOS-ADMIN-007": "config system interface\n  edit <wan-interface>\n    set allowaccess ping https ssh\n    unset allowaccess http\n  next\nend",
     "FORTIOS-ADMIN-008": "config system admin\n  edit <admin-name>\n    set accprofile <least-privilege-profile>\n  next\nend",
+    "FORTIOS-ADMIN-025": "config system global\n  set admin-maintainer disable\nend",
+    "FORTIOS-CERT-012":  "config system global\n  set admin-server-cert \"<your-ca-issued-cert>\"\nend",
+    "FORTIOS-SSLVPN-015": "config vpn ssl settings\n  set source-address \"<trusted-address-group>\"\nend",
+    "FORTIOS-SSLVPN-017": "config vpn ssl settings\n  set algorithm high\nend",
     "FORTIOS-ADMIN-013": "config system password-policy\n  set min-upper-case-letter 1\nend",
     "FORTIOS-ADMIN-014": "config system password-policy\n  set min-lower-case-letter 1\nend",
     "FORTIOS-ADMIN-015": "config system password-policy\n  set min-number 1\nend",
@@ -1201,6 +1293,104 @@ class _ReportMixin:
         if getattr(self, "verbose", False):
             print(f"  [!] {msg}", file=sys.stderr)
 
+    # ---- terminal colour gating --------------------------------------------
+    _NOCOLOR = {"CRITICAL": "", "HIGH": "", "MEDIUM": "", "LOW": "", "INFO": ""}
+
+    def set_color(self, enabled: "bool | None" = None) -> None:
+        """Enable/disable ANSI colour. ``None`` = auto-detect: colour only when
+        stdout is a TTY, NO_COLOR is unset and TERM != dumb. This stops raw escape
+        codes leaking into piped/redirected output and files."""
+        if enabled is None:
+            enabled = (sys.stdout.isatty() and "NO_COLOR" not in os.environ
+                       and os.environ.get("TERM") != "dumb")
+        if enabled:
+            for attr in ("SEVERITY_COLOR", "RESET", "BOLD"):
+                self.__dict__.pop(attr, None)  # fall back to coloured class defaults
+        else:
+            self.SEVERITY_COLOR = dict(self._NOCOLOR)
+            self.RESET = ""
+            self.BOLD = ""
+
+    # ---- per-framework compliance scorecard --------------------------------
+    _FRAMEWORKS = ("CIS", "PCI-DSS", "NIST", "SOC2", "HIPAA")
+
+    def compliance_scorecard(self) -> dict:
+        """Per-framework rollup: distinct failing controls, finding count and worst
+        severity. An auditor's pass/fail-per-framework view (vs a raw finding list)."""
+        acc = {fw: {"controls": set(), "findings": 0, "worst": None} for fw in self._FRAMEWORKS}
+        for f in self.findings:
+            comp = getattr(f, "compliance", {}) or {}
+            for fw in self._FRAMEWORKS:
+                controls = comp.get(fw) or []
+                if not controls:
+                    continue
+                d = acc[fw]
+                d["findings"] += 1
+                d["controls"].update(controls)
+                rank = self.SEVERITY_ORDER.get(f.severity, 4)
+                if d["worst"] is None or rank < self.SEVERITY_ORDER.get(d["worst"], 4):
+                    d["worst"] = f.severity
+        return {fw: {"failing_controls": len(d["controls"]),
+                     "failing_control_ids": sorted(d["controls"]),
+                     "findings": d["findings"],
+                     "worst_severity": d["worst"]}
+                for fw, d in acc.items()}
+
+    def print_compliance_scorecard(self) -> None:
+        sc = self.compliance_scorecard()
+        if not any(v["findings"] for v in sc.values()):
+            return
+        sep = "=" * 72
+        print(f"\n{self.BOLD}{sep}")
+        print("  Compliance Scorecard  (distinct failing controls per framework)")
+        print(f"{sep}{self.RESET}")
+        for fw in self._FRAMEWORKS:
+            d = sc[fw]
+            worst = d["worst_severity"] or "-"
+            col = self.SEVERITY_COLOR.get(worst, "")
+            print(f"    {fw:<9} {col}{d['failing_controls']:>3} failing control(s){self.RESET}"
+                  f"   across {d['findings']} finding(s)   worst: {col}{worst}{self.RESET}")
+        print()
+
+    def print_summary_only(self) -> None:
+        """Compact console output: severity table + compliance scorecard + the
+        risk-prioritized fix-first queue, skipping the full per-finding dump."""
+        counts = self.summary()
+        risk = self._risk_score(counts)
+        sep = "=" * 72
+        print(f"\n{self.BOLD}{sep}")
+        print(f"  Scan Summary — aggregate risk score {risk}/100")
+        print(f"{sep}{self.RESET}")
+        for sev in self.SEVERITY_ORDER:
+            c = counts.get(sev, 0)
+            if c:
+                col = self.SEVERITY_COLOR.get(sev, "")
+                print(f"    {col}{sev:<10}{self.RESET} {c}")
+        self.print_compliance_scorecard()
+        self.print_priorities()
+
+    def save_findings_csv(self, output_path: str) -> None:
+        """Full findings CSV enriched with tier / KEV / EPSS / CVE / CWE / evidence
+        — a complete, spreadsheet-friendly export (vs the compliance-only CSV)."""
+        import csv
+        prio = self._prio_by_id()
+        with open(output_path, "w", newline="", encoding="utf-8") as fh:
+            w = csv.writer(fh)
+            w.writerow(["Rule ID", "Severity", "Tier", "Priority Score", "KEV", "EPSS",
+                        "Category", "Name", "CVE", "CWE", "Compliance", "Evidence",
+                        "Recommendation", "Remediation CLI"])
+            order = self.SEVERITY_ORDER
+            for f in sorted(self.findings, key=lambda x: (order.get(x.severity, 5), x.rule_id)):
+                pr = prio.get(id(f), {})
+                w.writerow([
+                    f.rule_id, f.severity, pr.get("tier", ""), pr.get("priority_score", ""),
+                    "yes" if pr.get("kev") else "", pr.get("epss", ""),
+                    f.category, f.name, f.cve or "", f.cwe or "",
+                    f.compliance_str, f.line_content or "",
+                    f.recommendation, (f.remediation_cmd or "").replace("\n", " / "),
+                ])
+        print(f"[+] Findings CSV saved to: {output_path}")
+
     def summary(self) -> dict[str, int]:
         counts: dict[str, int] = {s: 0 for s in self.SEVERITY_ORDER}
         for f in self.findings:
@@ -1247,16 +1437,29 @@ class _ReportMixin:
         def sig_d(d):
             return (d.get("rule_id", ""), d.get("file_path", ""), d.get("line_content", ""))
 
+        # Diff against the finding set as it would appear in a normal report, NOT the
+        # --severity-filtered display set: a high --severity threshold must not make
+        # below-threshold findings look "resolved" and collapse the score. Use the
+        # full pre-filter set (_all_findings, captured by filter_severity) but exclude
+        # INFO — it is never written to a --json baseline (default min severity is
+        # LOW), so counting it would fabricate phantom "new" findings on every diff.
+        full = getattr(self, "_all_findings", None) or self.findings
+        _low = self.SEVERITY_ORDER.get("LOW", 3)
+        current = [f for f in full
+                   if f.rule_id != "FORTIOS-DRIFT-SUMMARY"
+                   and self.SEVERITY_ORDER.get(f.severity, 4) <= _low]
         base_sigs = {sig_d(d): d for d in base_findings}
-        cur_sigs = {(f.rule_id, f.file_path, f.line_content): f
-                    for f in self.findings if f.rule_id != "FORTIOS-DRIFT-SUMMARY"}
+        cur_sigs = {(f.rule_id, f.file_path, f.line_content): f for f in current}
         new = [f for s, f in cur_sigs.items() if s not in base_sigs]
         resolved = [d for s, d in base_sigs.items() if s not in cur_sigs]
         new.sort(key=lambda f: self.SEVERITY_ORDER.get(f.severity, 4))
         new_crit = sum(1 for f in new if f.severity == "CRITICAL")
         new_high = sum(1 for f in new if f.severity == "HIGH")
 
-        cur_score = self._risk_score(self.summary())
+        cur_counts: dict = {}
+        for f in cur_sigs.values():
+            cur_counts[f.severity] = cur_counts.get(f.severity, 0) + 1
+        cur_score = self._risk_score(cur_counts)
         # Recompute the baseline score from its (drift-free) findings rather than trusting
         # base['summary'], which may be null or may have counted a prior drift finding.
         base_counts: dict = {}
@@ -1358,18 +1561,186 @@ class _ReportMixin:
 
     def save_json(self, output_path: str) -> None:
         sys_info = getattr(self, "_sys_info", {})
+        finding_dicts = [f.to_dict() for f in self.findings]
         report = {
             "scanner": f"Fortinet FortiOS Security Scanner v{VERSION}",
+            "schema_version": 2,
             "generated": datetime.now().isoformat(),
             "target": getattr(self, "host", ""),
             "system_info": sys_info,
             "total_findings": len(self.findings),
+            "risk_score": self._risk_score(self.summary()),
             "summary": self.summary(),
-            "findings": [f.to_dict() for f in self.findings],
+            "compliance_scorecard": self.compliance_scorecard(),
+            "findings": finding_dicts,
         }
+        # Enrich with the risk-prioritization the HTML/PDF already show, so the
+        # machine-readable format is not strictly poorer than the human reports.
+        try:
+            results = self.prioritize()
+        except Exception:  # pragma: no cover - defensive
+            results = []
+        if results:
+            by_id = {id(r.finding): r for r in results}
+            for fd, f in zip(finding_dicts, self.findings):
+                r = by_id.get(id(f))
+                if r is not None:
+                    fd["priority"] = {"tier": r.tier, "score": r.score,
+                                      "kev": r.kev, "epss": r.epss,
+                                      "internet_reachable": r.reachable}
+            tier_summary: dict = {}
+            for r in results:
+                tier_summary[r.tier] = tier_summary.get(r.tier, 0) + 1
+            report["tier_summary"] = tier_summary
+            report["prioritization"] = [r.to_dict() for r in results]
         with open(output_path, "w", encoding="utf-8") as fh:
             json.dump(report, fh, indent=2, ensure_ascii=False)
         print(f"[+] JSON report saved to: {output_path}")
+
+    # ---- Machine-ingestible exports (SARIF / OCSF) --------------------------
+
+    def _prio_by_id(self) -> dict:
+        """Map id(finding) -> PriorityResult.to_dict() for KEV/EPSS/tier
+        enrichment of the export formats. Empty dict if the engine is unavailable."""
+        try:
+            return {id(r.finding): r.to_dict() for r in self.prioritize()}
+        except Exception:  # pragma: no cover - defensive
+            return {}
+
+    def save_sarif(self, output_path: str) -> None:
+        """Write a SARIF 2.1.0 log (GitHub code-scanning / CI ingestion)."""
+        from fortinet_export import build_sarif
+        doc = build_sarif(
+            self.findings, tool_version=VERSION,
+            artifact_uri=str(getattr(self, "host", "") or "fortigate-config"),
+            prio_by_id=self._prio_by_id())
+        with open(output_path, "w", encoding="utf-8") as fh:
+            json.dump(doc, fh, indent=2, ensure_ascii=False)
+        print(f"[+] SARIF report saved to: {output_path}")
+
+    def save_ocsf(self, output_path: str) -> None:
+        """Write OCSF Compliance Finding events (SIEM ingestion)."""
+        from fortinet_export import build_ocsf
+        si = getattr(self, "_sys_info", {}) or {}
+        meta = {
+            "hostname": si.get("hostname", getattr(self, "host", "")),
+            "version": si.get("version", ""),
+            "epoch": int(datetime.now().timestamp() * 1000),
+        }
+        events = build_ocsf(self.findings, meta=meta, prio_by_id=self._prio_by_id())
+        with open(output_path, "w", encoding="utf-8") as fh:
+            json.dump(events, fh, indent=2, ensure_ascii=False)
+        print(f"[+] OCSF events saved to: {output_path} ({len(events)} event(s))")
+
+    # ---- Remediation / rollback CLI script generation -----------------------
+
+    # Only STRONG, data-plane-impacting signals mark a fix disruptive (so it is
+    # commented out by default). Minor effects an impact note may mention — an admin
+    # re-authenticating, a single GUI session dropping — must NOT gate the fix.
+    _DISRUPTIVE_TOKENS = ("reboot", "failover", "outage", "power cycle", "downtime",
+                          "interrupts all traffic", "interrupt all traffic",
+                          "restart the device", "reboots the device", "drops all vpn",
+                          "all tunnels", "service restart", "device restart")
+    # Phrases that explicitly PROMISE the fix is safe — override the token match.
+    _NONDISRUPTIVE_MARKERS = ("non-disruptive", "not disruptive", "no reboot",
+                              "without reboot", "does not reboot", "no downtime",
+                              "no outage", "no service interruption")
+
+    @classmethod
+    def _is_disruptive(cls, impact: str) -> bool:
+        il = (impact or "").lower()
+        if any(s in il for s in cls._NONDISRUPTIVE_MARKERS):
+            return False
+        return any(t in il for t in cls._DISRUPTIVE_TOKENS)
+
+    def save_remediation_script(self, fix_path: str, rollback_path: "str | None" = None,
+                                tier_max: str = "P4", force: bool = False) -> None:
+        """Assemble a fix-first FortiOS CLI batch (and optional paired rollback
+        batch) from the remediation KB. Fixes flagged disruptive (reboot / HA
+        failover / VPN drop) are emitted COMMENTED OUT unless ``force=True``,
+        mirroring the SAFE_MODE philosophy. Generation only — never executes."""
+        from risk_prioritizer import TIER_RANK
+        results = self.prioritize()
+        kb = self._report_kb()
+        if results:
+            items = [(r.finding, r.tier, getattr(r, "score", ""), r.tier_rank) for r in results]
+            max_rank = TIER_RANK.get(str(tier_max).upper(), 3)
+            selected = [it for it in items if it[3] <= max_rank]
+        else:
+            order = {"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3, "INFO": 4}
+            selected = [(f, "-", "", order.get(f.severity, 5))
+                        for f in sorted(self.findings, key=lambda x: order.get(x.severity, 5))]
+
+        si = getattr(self, "_sys_info", {}) or {}
+        host = si.get("hostname", getattr(self, "host", ""))
+        stamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        def _hdr(kind: str) -> list:
+            lines = [
+                "# " + "=" * 72,
+                f"# FortiGate {kind} script — generated {stamp}",
+                f"# Host: {host}   Tiers: P1..{str(tier_max).upper()}   Findings: {len(selected)}",
+                "# Fix-first order (P1 = most urgent). REVIEW before pasting into the CLI.",
+                "# Lines beginning with '#' are comments / manual steps (not executed).",
+            ]
+            if kind == "remediation" and not force:
+                lines.append("# Disruptive fixes are commented out; re-run with force to include them.")
+            lines += ["# " + "=" * 72, ""]
+            return lines
+
+        fix_lines = _hdr("remediation")
+        roll_lines = _hdr("rollback")
+        n_manual = n_disruptive = n_auto = 0
+
+        for f, tier, score, _rank in selected:
+            rid = getattr(f, "rule_id", "")
+            sev = getattr(f, "severity", "")
+            detail = kb.detail_for(f) if kb else {}
+            cli = (detail.get("cli") or "").strip()
+            rollback = (detail.get("rollback") or "").strip()
+            verify = (detail.get("verify") or "").strip()
+            impact = (detail.get("impact") or "").strip()
+            disruptive = self._is_disruptive(impact)
+            has_cli = bool(cli) and ("config" in cli or "set " in cli)
+
+            fix_lines.append(f"# ---- [{tier}] {rid}  {sev}  score {score} ----")
+            fix_lines.append(f"#   {getattr(f, 'name', '')}")
+            if verify:
+                fix_lines.append(f"#   verify: {verify.splitlines()[0][:160]}")
+            if impact:
+                fix_lines.append(f"#   impact: {impact.splitlines()[0][:160]}")
+
+            if not has_cli:
+                n_manual += 1
+                rec = (getattr(f, "recommendation", "") or "").strip()
+                fix_lines.append(f"#   MANUAL: {rec[:220]}")
+            elif disruptive and not force:
+                n_disruptive += 1
+                fix_lines.append("#   !! DISRUPTIVE — commented out (re-run with force to include):")
+                fix_lines.extend("#   " + ln for ln in cli.splitlines())
+            else:
+                n_auto += 1
+                fix_lines.extend(cli.splitlines())
+            fix_lines.append("")
+
+            roll_lines.append(f"# ---- [{tier}] {rid}  {sev} ----")
+            roll_lines.append(f"#   {getattr(f, 'name', '')}")
+            if rollback and any(tok in rollback for tok in ("config ", "set ", "unset ", "\nend")):
+                roll_lines.extend(rollback.splitlines())
+            elif rollback:
+                roll_lines.append(f"#   {rollback[:300]}")
+            else:
+                roll_lines.append("#   (no rollback recorded — reverse the change manually)")
+            roll_lines.append("")
+
+        with open(fix_path, "w", encoding="utf-8") as fh:
+            fh.write("\n".join(fix_lines).rstrip() + "\n")
+        print(f"[+] Remediation script saved to: {fix_path}  "
+              f"({n_auto} runnable, {n_disruptive} disruptive-commented, {n_manual} manual)")
+        if rollback_path:
+            with open(rollback_path, "w", encoding="utf-8") as fh:
+                fh.write("\n".join(roll_lines).rstrip() + "\n")
+            print(f"[+] Rollback script saved to: {rollback_path}")
 
     def _report_kb(self):
         kb = getattr(self, "_kb_cache", None)
@@ -1662,11 +2033,20 @@ class FortinetScanner(_ReportMixin):
     #  CHECK: Known CVEs                                                   #
     # ================================================================== #
 
+    # Firmware this scanner actually audits. Ecosystem advisories (FortiManager,
+    # FortiClient EMS, …) are tracked in FORTIOS_CVES for documentation but must NOT
+    # be version-matched against FortiGate firmware — their train numbers overlap
+    # FortiOS's, which would otherwise produce guaranteed false-positive CRITICALs.
+    _FORTIOS_PRODUCTS = {"fortios", "fortigate"}
+
     def _check_cves(self) -> None:
         if not self._fw_version:
             return
         matched: list[dict] = []
         for cve_entry in FORTIOS_CVES:
+            product = str(cve_entry.get("product", "FortiOS")).lower()
+            if product not in self._FORTIOS_PRODUCTS:
+                continue  # cross-product advisory — not this device's firmware
             for branch in cve_entry.get("affected", []):
                 train = branch["train"]
                 fixed = branch["fixed"]
@@ -1744,6 +2124,38 @@ class FortinetScanner(_ReportMixin):
                 description=f"Admin idle timeout is set to {admintimeout} minutes. CIS recommends 5 minutes or less.",
                 recommendation="Set admintimeout to 5 minutes: config system global / set admintimeout 5.",
                 cwe="CWE-613",
+            ))
+
+        # Admin GUI HTTPS server certificate — default/self-signed = MITM + fingerprinting.
+        # Only flag when admin-server-cert is explicitly present in config (absent means
+        # the key wasn't in the .conf/API response, not necessarily the factory default).
+        if "admin-server-cert" in glb:
+            admin_cert = str(glb.get("admin-server-cert", "")).strip()
+            if admin_cert.lower() in ("", "fortinet_factory", "self-sign"):
+                self._add(Finding(
+                    rule_id="FORTIOS-CERT-012", name="Admin GUI uses the default/self-signed server certificate",
+                    category="Certificates", severity="HIGH",
+                    file_path=_host, line_num=None,
+                    line_content=f"admin-server-cert={admin_cert or 'unset'}",
+                    description="The admin GUI serves HTTPS with the shared Fortinet_Factory (or a self-signed) certificate. "
+                                "Every FortiGate ships the same factory certificate, so admin HTTPS is trivially fingerprinted, "
+                                "cannot be validated by a browser, and is susceptible to man-in-the-middle interception.",
+                    recommendation="Install a CA-issued certificate and bind it to the admin GUI: config system global / set admin-server-cert <cert-name>.",
+                    cwe="CWE-295",
+                ))
+
+        # Maintainer console password-recovery account (physical/console recovery vector).
+        if str(glb.get("admin-maintainer", "enable")).lower() == "enable":
+            self._add(Finding(
+                rule_id="FORTIOS-ADMIN-025", name="Maintainer console password-recovery account enabled",
+                category="Admin Access", severity="MEDIUM",
+                file_path=_host, line_num=None,
+                line_content="admin-maintainer=enable",
+                description="The 'maintainer' account permits console-port password reset (user 'maintainer' + device serial number) — "
+                            "a physical/console recovery and persistence vector. CIS recommends disabling it where physical access is "
+                            "controlled, so a console-port attacker cannot reset the admin password.",
+                recommendation="Ensure an alternate break-glass access method exists, then disable: config system global / set admin-maintainer disable.",
+                cwe="CWE-1188",
             ))
 
         # ---- Password policy checks ----------------------------------------
@@ -2784,13 +3196,53 @@ class FortinetScanner(_ReportMixin):
         svcgrps = self._api_get("firewall.service/group")
         if isinstance(svcgrps, list):
             _expand(svc_refs, svcgrps)
+
+        # Objects are also referenced OUTSIDE the firewall/policy table — most
+        # commonly by local-in-policies (management/VPN source whitelists), DoS
+        # policies and proxy policies. Fold those references in so an address used
+        # only by, say, a local-in management whitelist is not falsely reported as
+        # an unused cleanup candidate (which an admin could then delete in error).
+        for endpoint in ("firewall/local-in-policy", "firewall/DoS-policy", "firewall/proxy-policy"):
+            extra = self._api_get(endpoint)
+            if not isinstance(extra, list):
+                continue
+            for p in extra:
+                if not isinstance(p, dict):
+                    continue
+                for fld in ("srcaddr", "dstaddr"):
+                    for o in (p.get(fld) or []):
+                        if isinstance(o, dict) and o.get("name"):
+                            addr_refs.add(o["name"])
+                for o in (p.get("service") or []):
+                    if isinstance(o, dict) and o.get("name"):
+                        svc_refs.add(o["name"])
+
         # VIPs referenced as a destination are "used"; VIPs never referenced are orphaned.
         vips = self._api_get("firewall/vip")
-        vip_names = {v.get("name") for v in vips if isinstance(v, dict)} if isinstance(vips, list) else set()
+        vip_objs = [v for v in vips if isinstance(v, dict)] if isinstance(vips, list) else []
+        vip_names = {v.get("name") for v in vip_objs if v.get("name")}
 
         def _sample(names, k=8):
-            names = sorted(names)
+            names = sorted(n for n in names if n)
             return ", ".join(names[:k]) + (f", +{len(names) - k} more" if len(names) > k else "")
+
+        # Orphaned VIPs: defined but never referenced as a policy destination (a used
+        # VIP lands in addr_refs above). Exclude factory/default VIPs.
+        orphan_vips = {v.get("name") for v in vip_objs
+                       if v.get("name") and v["name"] not in addr_refs
+                       and str(v.get("is-factory-setting", "")).lower() not in ("enable", "true")}
+        if len(orphan_vips) >= 3:
+            self._add(Finding(
+                rule_id="FORTIOS-OBJECT-004", name=f"{len(orphan_vips)} unused VIP objects",
+                category="Object Hygiene", severity="LOW",
+                file_path=_host, line_num=None,
+                line_content=f"unused VIPs ({len(orphan_vips)}): {_sample(orphan_vips)}",
+                description=(f"{len(orphan_vips)} virtual IP (VIP) object(s) are defined but not referenced as a "
+                             "destination by any firewall policy. Orphaned VIPs still carry a NAT/port-forward "
+                             "definition, clutter the configuration, and can be accidentally reused in a new over-broad rule."),
+                recommendation="Review and delete unused VIPs (config firewall vip / delete <name>). Confirm each is not referenced by a load-balance or DNAT policy first.",
+                cwe="CWE-1164",
+            ))
 
         # Unused address objects (excluding built-in system defaults used implicitly
         # by features rather than by firewall policies).
@@ -3069,6 +3521,49 @@ class FortinetScanner(_ReportMixin):
                 recommendation="Set login-attempt-limit to 3 or fewer.",
                 cwe="CWE-307",
             ))
+
+        # SSL-VPN is only actually in service once it is bound to an interface; gate
+        # the two exposure/hardening checks below on that so they don't fire on a box
+        # that merely has a leftover vpn.ssl/settings block but no live SSL-VPN.
+        sslvpn_bound = bool(settings.get("source-interface"))
+        if sslvpn_bound:
+            # No source-address restriction -> portal reachable from the whole internet.
+            src_addr = settings.get("source-address")
+            src_names: set = set()
+            for o in (src_addr if isinstance(src_addr, list) else [src_addr]):
+                if isinstance(o, dict) and o.get("name"):
+                    src_names.add(str(o["name"]).lower())
+                elif isinstance(o, str) and o:
+                    src_names.update(t.lower() for t in o.split())
+            if not src_names or "all" in src_names:
+                self._add(Finding(
+                    rule_id="FORTIOS-SSLVPN-015",
+                    name="SSL VPN reachable from any source (no source-address restriction)",
+                    category="SSL VPN", severity="HIGH",
+                    file_path=_host, line_num=None,
+                    line_content=f"source-address={sorted(src_names) or 'unset (all)'}",
+                    description="SSL VPN does not restrict which source addresses may reach the portal (source-address is unset or "
+                                "'all'), so the portal is exposed to the entire internet. SSL-VPN is the #1 FortiGate compromise "
+                                "vector (CVE-2024-21762, CVE-2018-13379, CVE-2022-42475); restricting the source is the single "
+                                "biggest exposure-reduction lever and cuts CVE-scan / brute-force noise dramatically.",
+                    recommendation="Restrict SSL-VPN to known source networks: config vpn ssl settings / set source-address <trusted-group>. "
+                                   "Add a GeoIP address object or a local-in-policy for defence in depth.",
+                    cwe="CWE-284",
+                ))
+
+            # Cipher algorithm strength — 'high' enforces strong AES-GCM suites.
+            algo = str(settings.get("algorithm", "default")).lower()
+            if algo != "high":
+                self._add(Finding(
+                    rule_id="FORTIOS-SSLVPN-017", name="SSL VPN cipher algorithm not set to 'high'",
+                    category="SSL VPN", severity="MEDIUM",
+                    file_path=_host, line_num=None,
+                    line_content=f"algorithm={algo}",
+                    description="The SSL-VPN 'algorithm' setting governs which cipher suites the portal negotiates. Any value other "
+                                "than 'high' permits weaker suites; 'high' restricts negotiation to strong (AES-GCM) ciphers.",
+                    recommendation="config vpn ssl settings / set algorithm high.",
+                    cwe="CWE-326",
+                ))
 
         # Tunnel split routing (split tunnelling)
         tunnel_mode = settings.get("tunnel-connect-without-reauth", "")
@@ -6042,10 +6537,98 @@ class FortinetScanner(_ReportMixin):
             ))
 
         # ================================================================
+        # TA0003 PERSISTENCE / TA0009 COLLECTION / TA0006 CREDENTIAL ACCESS
+        # ================================================================
+
+        def _pnames(v):
+            out = set()
+            for x in (v if isinstance(v, list) else [v]):
+                if isinstance(x, dict) and x.get("name"):
+                    out.add(x["name"])
+                elif isinstance(x, str) and x:
+                    out.update(x.split())
+            return out
+
+        # T1505.003 — Server Software Component: Web Shell.
+        # Inbound (WAN -> internal/DMZ) policies must carry BOTH IPS and AV: web
+        # shells are uploaded through a public app, then served back to the attacker.
+        wan_ifaces = {i.get("name") for i in interfaces
+                      if isinstance(i, dict) and str(i.get("role", "")).lower() == "wan" and i.get("name")}
+        prot_ifaces = {i.get("name") for i in interfaces
+                       if isinstance(i, dict) and str(i.get("role", "")).lower() in ("lan", "dmz") and i.get("name")}
+        if wan_ifaces and prot_ifaces:
+            inbound = [p for p in policies
+                       if isinstance(p, dict) and str(p.get("status", "enable")).lower() != "disable"
+                       and (_pnames(p.get("srcintf")) & wan_ifaces)
+                       and (_pnames(p.get("dstintf")) & prot_ifaces)]
+            unprotected = [p for p in inbound
+                           if not (str(p.get("ips-sensor", "")).strip() and str(p.get("av-profile", "")).strip())]
+            if inbound and unprotected:
+                self._add(Finding(
+                    rule_id="MITRE-T1505-001",
+                    name="T1505.003 Web Shell — inbound policy without IPS+AV",
+                    category="MITRE ATT&CK Resilience", severity="HIGH",
+                    file_path=_host, line_num=None,
+                    line_content=f"{len(unprotected)}/{len(inbound)} WAN->internal/DMZ policy(ies) lack IPS+AV",
+                    description="MITRE T1505.003: Inbound policies from a WAN interface to an internal/DMZ zone that do not carry BOTH "
+                                "an IPS sensor and an antivirus profile cannot detect a web-shell upload or the malicious payload served "
+                                "back. Web shells are a primary persistence mechanism after exploiting a public-facing application.",
+                    recommendation="Attach both an IPS sensor and an AV profile (with web-shell signatures) to every inbound WAN->server policy.",
+                    cwe="CWE-693",
+                ))
+
+        # T1602 — Data from Configuration Repository (SNMP config/state theft).
+        snmp_comms = self._api_get("system.snmp/community") or []
+        if not isinstance(snmp_comms, list):
+            snmp_comms = []
+        weak_snmp = []
+        for c in snmp_comms:
+            if not isinstance(c, dict):
+                continue
+            nm = str(c.get("name", ""))
+            v1 = str(c.get("query-v1-status", "")).lower()
+            v2 = str(c.get("query-v2c-status", "")).lower()
+            if nm.lower() in ("public", "private"):
+                weak_snmp.append(f"default community '{nm}'")
+            elif "enable" in (v1, v2):
+                weak_snmp.append(f"v1/v2c community '{nm}'")
+        if weak_snmp:
+            sev = "HIGH" if any("default" in w for w in weak_snmp) else "MEDIUM"
+            self._add(Finding(
+                rule_id="MITRE-T1602-001",
+                name="T1602 Data from Config Repository — SNMP v1/v2c or default community",
+                category="MITRE ATT&CK Resilience", severity=sev,
+                file_path=_host, line_num=None,
+                line_content="; ".join(weak_snmp[:5]),
+                description="MITRE T1602: SNMP v1/v2c uses cleartext, guessable community strings, and the default 'public'/'private' "
+                            "communities let a remote attacker pull device configuration and state to map the network. Prefer "
+                            "authenticated, encrypted SNMPv3.",
+                recommendation="Remove default communities, disable SNMP v1/v2c, and use SNMPv3 with authPriv (SHA + AES).",
+                cwe="CWE-319",
+            ))
+
+        # T1552.001 — Unsecured Credentials in Files (config-backup secrets).
+        pde = str(glb.get("private-data-encryption", "")).lower()
+        if pde and pde != "enable":
+            self._add(Finding(
+                rule_id="MITRE-T1552-001",
+                name="T1552.001 Unsecured Credentials — config secrets use the shared factory key",
+                category="MITRE ATT&CK Resilience", severity="MEDIUM",
+                file_path=_host, line_num=None,
+                line_content=f"private-data-encryption={pde}",
+                description="MITRE T1552.001: With private-data-encryption disabled, secrets in the configuration backup (LDAP/RADIUS "
+                            "binds, VPN pre-shared keys, private keys) are ciphered with a hard-coded factory key (CVE-2019-6693) and can "
+                            "be decrypted offline by anyone who obtains a backup file.",
+                recommendation="config system global / set private-data-encryption enable, then set a device-specific passphrase so "
+                               "backups are keyed per device.",
+                cwe="CWE-312", cve="CVE-2019-6693",
+            ))
+
+        # ================================================================
         # RESILIENCE SUMMARY
         # ================================================================
         mitre_findings = [f for f in self.findings if f.rule_id.startswith("MITRE-")]
-        total_techniques = 31  # Total distinct techniques we test for (across 11 tactics)
+        total_techniques = 34  # distinct techniques tested (across 11 tactics)
         gaps = len(mitre_findings)
         if not mitre_findings:
             self._add(Finding(
@@ -6344,6 +6927,14 @@ Examples:
     parser.add_argument("--pdf", metavar="FILE", help="Save detailed PDF report to FILE (stdlib only, no extra deps)")
     parser.add_argument("--remediation", metavar="FILE", help="Export a detailed remediation runbook to FILE")
     parser.add_argument("--compliance-csv", metavar="FILE", help="Export compliance mapping CSV (CIS, PCI-DSS, NIST, SOC2, HIPAA)")
+    parser.add_argument("--sarif", metavar="FILE", help="Export findings as SARIF 2.1.0 (GitHub code-scanning / CI ingestion)")
+    parser.add_argument("--ocsf", metavar="FILE", help="Export findings as OCSF Compliance Finding events (SIEM ingestion)")
+    parser.add_argument("--fix-script", metavar="FILE", help="Generate a fix-first FortiOS CLI remediation script from the knowledge base")
+    parser.add_argument("--rollback-script", metavar="FILE", help="Also write the paired rollback script (use with --fix-script)")
+    parser.add_argument("--fix-tier", choices=["P1", "P2", "P3", "P4"], default="P4",
+                        help="Highest priority tier to include in the fix script (default: P4 = all)")
+    parser.add_argument("--fix-script-force", action="store_true",
+                        help="Include disruptive fixes (reboot/HA/VPN-drop) uncommented in the fix script")
     parser.add_argument("--baseline", metavar="FILE", help="Prior --json report to diff against (config drift: new vs resolved findings + posture delta)")
     parser.add_argument("--inventory", metavar="FILE", help="Multi-device inventory JSON file for batch scanning")
     parser.add_argument("--top", type=int, nargs="?", const=10, default=None, metavar="N",
@@ -6361,6 +6952,10 @@ Examples:
         default="LOW",
         help="Minimum severity to report (default: LOW)",
     )
+    parser.add_argument("--csv", metavar="FILE", help="Export a full findings CSV (severity, tier, KEV, EPSS, CVE, compliance, evidence)")
+    parser.add_argument("--no-color", action="store_true", help="Disable ANSI colour in console output (also honours the NO_COLOR env var)")
+    parser.add_argument("--summary-only", "--quiet", dest="summary_only", action="store_true",
+                        help="Print only the scorecard + fix-first queue (skip the full per-finding dump)")
     parser.add_argument("--verbose", "-v", action="store_true", help="Verbose output")
     parser.add_argument("--version", action="version", version=f"%(prog)s {VERSION}")
 
@@ -6422,6 +7017,7 @@ Examples:
         verbose=args.verbose,
     )
     scanner.scan()
+    scanner.set_color(False if args.no_color else None)
 
     if args.severity:
         scanner.filter_severity(args.severity)
@@ -6430,11 +7026,17 @@ Examples:
     if args.baseline:
         scanner.apply_drift(args.baseline)
 
-    scanner.print_report()
-    scanner.print_priorities(args.top if args.top is not None else 10)
+    if args.summary_only:
+        scanner.print_summary_only()
+    else:
+        scanner.print_report()
+        scanner.print_compliance_scorecard()
+        scanner.print_priorities(args.top if args.top is not None else 10)
 
     if args.json:
         scanner.save_json(args.json)
+    if args.csv:
+        scanner.save_findings_csv(args.csv)
     if args.html:
         scanner.save_html(args.html)
     if args.pdf:
@@ -6443,6 +7045,13 @@ Examples:
         scanner.save_remediation(args.remediation)
     if args.compliance_csv:
         scanner.save_compliance_csv(args.compliance_csv)
+    if args.sarif:
+        scanner.save_sarif(args.sarif)
+    if args.ocsf:
+        scanner.save_ocsf(args.ocsf)
+    if args.fix_script:
+        scanner.save_remediation_script(args.fix_script, args.rollback_script,
+                                        tier_max=args.fix_tier, force=args.fix_script_force)
 
     counts = scanner.summary()
     sys.exit(1 if (counts.get("CRITICAL", 0) or counts.get("HIGH", 0)) else 0)
