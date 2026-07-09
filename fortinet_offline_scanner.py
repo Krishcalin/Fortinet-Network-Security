@@ -479,6 +479,10 @@ Examples:
     parser.add_argument("--refresh-intel", action="store_true",
                         help="Refresh the bundled threat-intel snapshot (CISA KEV + FIRST.org EPSS), then exit. "
                              "Requires internet access (not available on air-gapped hosts).")
+    parser.add_argument("--export-intel", metavar="FILE",
+                        help="Copy the current threat-intel snapshot to FILE (to sneakernet to an air-gapped host), then exit.")
+    parser.add_argument("--import-intel", metavar="FILE",
+                        help="Install a hand-carried threat-intel snapshot from FILE as the active snapshot, then exit.")
     parser.add_argument(
         "--severity",
         choices=["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"],
@@ -492,6 +496,11 @@ Examples:
 
     if args.refresh_intel:
         return _refresh_intel_offline()
+    if args.export_intel or args.import_intel:
+        from fortinet_scanner import _transfer_intel
+        if args.export_intel:
+            return _transfer_intel("export", args.export_intel)
+        return _transfer_intel("import", args.import_intel)
 
     if not args.conf:
         parser.error("conf is required (path to a FortiGate .conf backup), "

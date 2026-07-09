@@ -227,17 +227,32 @@ The **Risk-Prioritization Engine** answers it by fusing three independent signal
 | Signal | Source | What it captures |
 |--------|--------|------------------|
 | **Base severity** | The finding itself | Intrinsic weakness rating (CRITICAL → INFO) |
-| **Real-world exploitability** | **CISA KEV** + **FIRST.org EPSS** | Is the CVE *proven exploited in the wild* (KEV), and its *probability of exploitation in the next 30 days* (EPSS)? |
-| **Reachability** | The scanner's own attack-surface analysis | Is the affected surface actually reachable from the internet **on this device** — modelled separately for the **data plane** (exposed services) and the **management plane** (admin on WAN)? |
+| **Real-world exploitability** | **CISA KEV** + **FIRST.org EPSS** | Is the CVE *proven exploited in the wild* (KEV, plus the **ransomware-campaign** flag), and its *probability of exploitation in the next 30 days* (EPSS)? |
+| **Reachability** | The scanner's own attack-surface analysis **+ per-CVE config gating** | Is the affected surface actually reachable from the internet **on this device** — modelled separately for the **data plane** (exposed services) and the **management plane** (admin on WAN) — and, for each CVE, *is the vulnerable feature even enabled*? (see below) |
 
 Each finding is scored 0–100 and placed in a tier — and the ranking is **fully transparent**: every finding shows the exact factors and points that produced it.
 
 | Tier | Meaning | Window |
 |:----:|---------|--------|
-| **P1** | Fix Now — actively exploited, or critical & internet-reachable | 24–72 hours |
-| **P2** | Fix This Week — critical weakness or a high-risk internet exposure | 7 days |
+| **P1** | Fix Now — critical & actively exploited, or critical on the internet edge | 24–72 hours |
+| **P2** | Fix This Week — critical weakness, a known-exploited (KEV) bug, or a high-risk internet exposure | 7 days |
 | **P3** | Planned Remediation — meaningful hardening gap | 30 days |
 | **P4** | Backlog / Accept — low residual risk | next review cycle |
+
+### CVE reachability gating — stop the P1 queue from crying wolf
+
+Version-matched CVE findings fire on firmware math alone: run an affected FortiOS train and *every* CVE for it is reported — even the five SSL-VPN RCEs on a box where **SSL-VPN is turned off**. Left unchecked, those all land at P1 and drown the findings that actually matter.
+
+So for every matched CVE the engine asks a second question, answered **from the parsed config only** (stdlib, offline-safe): *is the vulnerable component actually enabled, and is it internet-reachable here?* Each CVE is tagged with its component (SSL-VPN, admin GUI/SSH, FGFM, IPsec, CAPWAP, proxy, RADIUS/LDAP/FSSO, …) and gets a verdict with cited config evidence:
+
+| Verdict | Effect on priority |
+|---------|--------------------|
+| **Confirmed reachable** — feature enabled & internet-facing | full reachability weight (can reach **P1**) |
+| **Configured, not internet-facing** — feature on but internal | no internet-exposure bonus |
+| **Feature disabled** — vulnerable feature is off on this device | **downranked** and capped out of P1 (→ P3, or **P2 if KEV**) |
+| **Indeterminate** — can't tell from config (e.g. FortiManager/FortiClient ecosystem CVEs) | no change — falls back to severity + attack-surface |
+
+The design is deliberately **safe**: it only ever **downranks, never suppresses**, the **CISA-KEV floor keeps a known-exploited bug at P2** even if it looks disabled, and every verdict shows the config line behind it (`vpn.ssl settings status=disable`) so an operator can override. A `CRITICAL` KEV SSL-VPN RCE drops from P1 to **P2** on a box with SSL-VPN disabled — visible, but no longer competing with the genuinely-reachable P1s.
 
 ```bash
 # Print the fix-first queue (top 15) to the console
@@ -252,13 +267,18 @@ python fortinet_offline_scanner.py fortigate.conf --top 15
 
 The HTML and PDF reports open with a **"Top Risks to Fix Now"** section (tier counts + the ranked queue), and every finding card carries its **P-badge, score, and rationale**.
 
-**Offline-first, like the rest of the tool.** A bundled `threat_intel.json` snapshot (KEV flags + EPSS for all 70 tracked CVEs) keeps the engine fully functional on **air-gapped / OT** networks — no live feed required. When you *are* online, refresh it from the authoritative sources:
+**Offline-first, like the rest of the tool.** A bundled `threat_intel.json` snapshot (KEV flags + ransomware flags + EPSS for all 70 tracked CVEs) keeps the engine fully functional on **air-gapped / OT** networks — no live feed required. The console and reports show the snapshot date and warn when it is **stale**. Keeping it fresh:
 
 ```bash
-python fortinet_scanner.py --refresh-intel      # pulls current CISA KEV + FIRST.org EPSS, stdlib-only
+# Online box — pull current CISA KEV + FIRST.org EPSS (stdlib urllib, no deps)
+python fortinet_scanner.py --refresh-intel
+
+# Air-gapped workflow (sneakernet): export on an online box, carry the file, import on the isolated host
+python fortinet_scanner.py --export-intel intel-2026.json     # online
+python fortinet_offline_scanner.py --import-intel intel-2026.json   # air-gapped (validated before install)
 ```
 
-If the snapshot is ever missing, the engine degrades gracefully and ranks by severity + reachability alone.
+If the snapshot is ever missing or corrupt, the engine degrades gracefully and ranks by severity + reachability alone.
 
 ---
 
@@ -267,7 +287,7 @@ If the snapshot is ever missing, the engine degrades gracefully and ranks by sev
 | Format | Flag | Description |
 |--------|------|-------------|
 | **Console** | *(default)* | Colour-coded findings with compliance refs and a CLI-fix preview |
-| **HTML** | `--html` | Rich **self-contained** report: risk-score gauge, a **Risk-Prioritized "Top Risks to Fix Now"** section (P1–P4 tiers + KEV/EPSS/exposure tags), severity / compliance / ATT&CK visuals, collapsible per-finding cards (each with its **P-badge + rationale** and the full detailed remediation), live filtering/search, and a print stylesheet. No external assets — opens anywhere, even offline. |
+| **HTML** | `--html` | Rich **self-contained** report: risk-score gauge, a **Risk-Prioritized "Top Risks to Fix Now"** section (P1–P4 tiers + KEV/ransomware/EPSS/exposure tags, stale-snapshot warning), severity / compliance / ATT&CK visuals, collapsible per-finding cards (each with its **P-badge + rationale** and the full detailed remediation), live filtering/search, and a print stylesheet. No external assets — opens anywhere, even offline. |
 | **PDF** | `--pdf` | Paginated, **board-ready** PDF: cover page + device panel, executive summary, a **Risk-Prioritized Remediation Queue** page (tier cards + fix-first table), and detailed findings — each tagged with its **priority tier** and step-by-step remediation. Built on a hand-rolled PDF engine — **stdlib only**, no reportlab/weasyprint/headless-browser. |
 | **Remediation runbook** | `--remediation` | The per-finding runbook shown above — risk, steps, GUI, CLI, verify, rollback, impact, references. |
 | **JSON** | `--json` | Full machine-readable report: findings, compliance map, and remediation commands. |
@@ -509,20 +529,23 @@ usage: fortinet_scanner.py [-h] [--token TOKEN] [--verify-ssl] [--timeout SEC]
   --inventory FILE        Multi-device JSON inventory for batch scanning
   --top [N]               Print the risk-prioritized fix-first queue (top N, default 10)
   --refresh-intel         Refresh the bundled KEV+EPSS threat-intel snapshot, then exit (needs internet)
+  --export-intel FILE     Copy the current threat-intel snapshot to FILE (sneakernet), then exit
+  --import-intel FILE     Install a hand-carried threat-intel snapshot from FILE, then exit
   --severity LEVEL        Minimum severity to report (default: LOW)
   --verbose, -v           Verbose output
   --version               Show version
 ```
 
-**Offline scanner** — same reporting flags (including `--top` and `--refresh-intel`), minus the API/inventory options:
+**Offline scanner** — same reporting flags (including `--top`, `--refresh-intel`, `--export-intel`, `--import-intel`), minus the API/inventory options:
 
 ```
 usage: fortinet_offline_scanner.py [-h] [--json FILE] [--html FILE] [--pdf FILE]
                                    [--remediation FILE] [--compliance-csv FILE]
                                    [--baseline FILE] [--top [N]] [--refresh-intel]
+                                   [--export-intel FILE] [--import-intel FILE]
                                    [--severity {CRITICAL,HIGH,MEDIUM,LOW,INFO}]
                                    [--verbose] [--version]
-                                   conf
+                                   [conf]
 ```
 
 **Exit codes:** `0` = no CRITICAL/HIGH findings · `1` = one or more CRITICAL/HIGH findings (for CI/CD gating).
@@ -566,7 +589,8 @@ Fortinet-Network-Security/
 ├── remediation_kb.json           # 237-entry detailed remediation knowledge base
 ├── remediation_kb.py             # RemediationKB loader (exact + family-prefix resolution)
 ├── risk_prioritizer.py           # Risk-Prioritization Engine (P1–P4: severity × KEV/EPSS × reachability)
-├── threat_intel.json             # Bundled offline KEV+EPSS snapshot for the 70 tracked CVEs
+├── cve_reachability.py           # Per-CVE config-reachability gating (feature enabled/internet-facing?)
+├── threat_intel.json             # Bundled offline KEV+ransomware+EPSS snapshot for the 70 tracked CVEs
 ├── fortinet_html.py              # Rich self-contained HTML report generator
 ├── fortinet_pdf.py               # Paginated PDF report layout
 ├── pdf_writer.py                 # Minimal, dependency-free PDF 1.4 writer (stdlib only)
@@ -574,6 +598,7 @@ Fortinet-Network-Security/
 │   ├── test_offline_parser.py    # pytest cases for the .conf parser + end-to-end smoke
 │   ├── test_rulebase.py          # rule-base / exposure / drift / object-hygiene tests
 │   ├── test_risk_prioritizer.py  # risk-prioritization engine + threat-intel + report tests
+│   ├── test_cve_reachability.py  # CVE reachability predicates + gating scoring tests
 │   └── sample_insecure.conf      # Intentionally insecure config for demos/tests
 ├── README.md
 ├── CLAUDE.md                     # Architecture & contributor notes

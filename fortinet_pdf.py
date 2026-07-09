@@ -393,6 +393,8 @@ class FortinetPDFReport:
                 tags = []
                 if r.kev:
                     tags.append("KEV")
+                if getattr(r, "ransomware", False):
+                    tags.append("ransomware")
                 if r.epss is not None and r.epss >= 0.10:
                     tags.append(f"EPSS {r.epss*100:.0f}%")
                 if r.reachable:

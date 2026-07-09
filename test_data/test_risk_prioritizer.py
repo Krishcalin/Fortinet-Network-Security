@@ -361,6 +361,130 @@ def tmp_path_factory_file():
     return path
 
 
+# ------------------------------------------------ intel freshness / sneakernet ---
+
+def test_snapshot_staleness():
+    from datetime import date
+    import risk_prioritizer as rpmod
+    intel = ThreatIntel()
+    # bundled snapshot: age relative to a fixed future date
+    snap = intel.snapshot_date
+    assert snap and snap != "unknown"
+    y, m, d = (int(x) for x in snap.split("-"))
+    fresh_ref = date(y, m, d)
+    assert intel.age_days(fresh_ref) == 0
+    assert intel.is_stale(45, fresh_ref) is False
+    late = date(y + 1, m, d)
+    assert intel.age_days(late) >= 365
+    assert intel.is_stale(45, late) is True
+
+
+def test_staleness_handles_bad_date(tmp_path):
+    import json
+    p = tmp_path / "ti.json"
+    p.write_text(json.dumps({"meta": {"snapshot_date": "not-a-date"},
+                             "cves": {"CVE-1": {"epss": 0.1, "kev": False}}}), encoding="utf-8")
+    intel = ThreatIntel(path=str(p))
+    assert intel.age_days() is None
+    assert intel.is_stale() is False
+
+
+def test_export_import_roundtrip(tmp_path):
+    import json
+    import risk_prioritizer as rpmod
+    dest = tmp_path / "bundle.json"
+    meta = rpmod.export_intel(str(dest))
+    assert meta.get("cve_count", 0) >= 1
+    # import it into a fresh location and confirm it loads
+    installed = tmp_path / "installed.json"
+    rpmod.import_intel(str(dest), dest=str(installed))
+    ti = ThreatIntel(path=str(installed))
+    assert ti.available and len(ti.cves) == len(ThreatIntel().cves)
+
+
+def test_import_refuses_garbage(tmp_path):
+    import json
+    import risk_prioritizer as rpmod
+    bad = tmp_path / "bad.json"
+    bad.write_text('{"not":"intel"}', encoding="utf-8")
+    dest = tmp_path / "dest.json"
+    with pytest.raises(ValueError):
+        rpmod.import_intel(str(bad), dest=str(dest))
+    assert not dest.exists()  # nothing written on refusal
+
+
+def test_ransomware_flag_surfaced():
+    intel = ThreatIntel()
+    # CVE-2022-40684 is KEV + ransomware-linked in the bundled snapshot
+    entry = intel.get("CVE-2022-40684")
+    if entry and entry.get("ransomware"):
+        rp = _rp()
+
+        class _F:
+            rule_id = "FORTIOS-CVE-011"; severity = "CRITICAL"; category = "Known CVEs"
+            cve = "CVE-2022-40684"; name = "x"; file_path = "fw"
+        r = rp.assess(_F(), {"data": "NONE", "mgmt": False})
+        assert r.ransomware is True
+        assert "ransomware" in r.rationale.lower()
+        assert r.to_dict()["ransomware"] is True
+
+
+def test_import_refuses_nondict_meta_and_preserves_good_snapshot(tmp_path):
+    """Regression: a present-but-non-dict meta must be refused BEFORE writing, so a
+    good snapshot is never clobbered by an invalid file."""
+    import json
+    import risk_prioritizer as rpmod
+    good = tmp_path / "active.json"
+    rpmod.export_intel(str(good))  # a valid snapshot at dest
+    before = good.read_text(encoding="utf-8")
+    bad = tmp_path / "bad.json"
+    bad.write_text(json.dumps({"meta": [1, 2, 3],
+                               "cves": {"CVE-1": {"epss": 0.1, "kev": True}}}), encoding="utf-8")
+    with pytest.raises(ValueError):
+        rpmod.import_intel(str(bad), dest=str(good))
+    assert good.read_text(encoding="utf-8") == before  # good snapshot untouched
+
+
+def test_import_refuses_partly_malformed_cves(tmp_path):
+    """Regression: validation must inspect ALL entries, not just the first."""
+    import json
+    import risk_prioritizer as rpmod
+    bad = tmp_path / "partial.json"
+    bad.write_text(json.dumps({"meta": {"snapshot_date": "2026-01-01"},
+                               "cves": {"CVE-A": {"epss": 0.1, "kev": True},
+                                        "CVE-B": "garbage",
+                                        "CVE-C": {"kev": True}}}), encoding="utf-8")
+    dest = tmp_path / "dest.json"
+    with pytest.raises(ValueError):
+        rpmod.import_intel(str(bad), dest=str(dest))
+    assert not dest.exists()
+
+
+def test_import_recomputes_counts(tmp_path):
+    """Regression: reported cve_count/kev_count come from the actual entries, not a
+    (possibly stale/tampered) meta value."""
+    import json
+    import risk_prioritizer as rpmod
+    src = tmp_path / "src.json"
+    src.write_text(json.dumps({"meta": {"snapshot_date": "2026-01-01", "cve_count": 500, "kev_count": 99},
+                               "cves": {"CVE-A": {"epss": 0.1, "kev": True},
+                                        "CVE-B": {"epss": 0.2, "kev": False}}}), encoding="utf-8")
+    dest = tmp_path / "dest.json"
+    meta = rpmod.import_intel(str(src), dest=str(dest))
+    assert meta["cve_count"] == 2 and meta["kev_count"] == 1
+
+
+def test_load_coerces_nondict_meta(tmp_path):
+    """Regression: ThreatIntel._load must not keep a non-dict meta (would crash
+    snapshot_date/age_days)."""
+    import json
+    p = tmp_path / "ti.json"
+    p.write_text(json.dumps({"meta": [1, 2], "cves": {"CVE-1": {"epss": 0.1, "kev": True}}}), encoding="utf-8")
+    ti = ThreatIntel(path=str(p))
+    assert ti.meta == {} and ti.available
+    assert ti.snapshot_date == "unknown" and ti.age_days() is None  # no crash
+
+
 def test_tier_meta_covers_all_tiers():
     assert set(TIER_META) == {"P1", "P2", "P3", "P4"}
     for t, m in TIER_META.items():

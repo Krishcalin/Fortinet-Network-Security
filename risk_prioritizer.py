@@ -55,9 +55,21 @@ KEV_POINTS = 35            # proven exploited in the wild — decisive
 EPSS_MAX_POINTS = 20       # EPSS 0.0..1.0 scaled to 0..20
 EXPOSURE_POINTS = {"WIDE_OPEN": 20, "EXPOSED": 14, "NONE": 0}
 
+# CVE reachability gating (from cve_reachability.py verdicts). A CVE whose
+# vulnerable feature is proven disabled/unreachable on this device is DOWNRANKED
+# — never suppressed, and the CISA-KEV floor (>= P2) still holds. These strings
+# mirror cve_reachability's verdict constants (kept local to avoid a hard import).
+REACH_CONFIRMED = "CONFIRMED_REACHABLE"
+REACH_NOT_EXPOSED = "CONFIGURED_NOT_EXPOSED"
+REACH_DISABLED = "FEATURE_DISABLED"
+REACH_INDETERMINATE = "INDETERMINATE"
+REACH_CONFIRMED_POINTS = 20    # feature enabled AND internet/mgmt reachable
+REACH_DISABLED_PENALTY = 25    # feature not enabled -> strong downrank
+
 # Tier thresholds on the fused 0..100 score.
 TIER_THRESHOLDS = [(70, "P1"), (42, "P2"), (20, "P3"), (0, "P4")]
 TIER_RANK = {"P1": 0, "P2": 1, "P3": 2, "P4": 3}
+_RANK_TIER = {v: k for k, v in TIER_RANK.items()}
 
 TIER_META: Dict[str, Dict[str, str]] = {
     "P1": {"label": "Fix Now",           "window": "24–72 hours",
@@ -117,7 +129,8 @@ class ThreatIntel:
             with open(self.path, encoding="utf-8") as fh:
                 doc = json.load(fh)
             if isinstance(doc, dict):
-                self.meta = doc.get("meta", {}) or {}
+                m = doc.get("meta")
+                self.meta = m if isinstance(m, dict) else {}
                 raw = doc.get("cves", {}) or {}
                 if isinstance(raw, dict):
                     self.cves = {str(k).upper(): v for k, v in raw.items()
@@ -142,6 +155,24 @@ class ThreatIntel:
     def kev_count(self) -> int:
         return sum(1 for v in self.cves.values() if v.get("kev"))
 
+    def age_days(self, today: Optional[Any] = None) -> Optional[int]:
+        """Days since the snapshot was taken, or None if the date can't be read.
+        Pass ``today`` (a datetime.date) for determinism; defaults to date.today()."""
+        from datetime import date, datetime as _dt
+        raw = self.meta.get("snapshot_date")
+        if not raw:
+            return None
+        try:
+            snap = _dt.strptime(str(raw), "%Y-%m-%d").date()
+        except (TypeError, ValueError):
+            return None
+        ref = today or date.today()
+        return max(0, (ref - snap).days)
+
+    def is_stale(self, threshold_days: int = 45, today: Optional[Any] = None) -> bool:
+        age = self.age_days(today)
+        return age is not None and age > threshold_days
+
 
 # --------------------------------------------------------------------------- #
 #  per-finding priority result                                                 #
@@ -152,12 +183,13 @@ class PriorityResult:
     object; ``finding`` is the original object/dict, untouched."""
 
     __slots__ = ("finding", "tier", "score", "factors", "rationale",
-                 "kev", "kev_date", "epss", "epss_pct", "reachable")
+                 "kev", "kev_date", "epss", "epss_pct", "reachable", "ransomware")
 
     def __init__(self, finding: Any, tier: str, score: int,
                  factors: List[Dict[str, Any]], rationale: str,
                  kev: bool, kev_date: str, epss: Optional[float],
-                 epss_pct: Optional[float], reachable: bool):
+                 epss_pct: Optional[float], reachable: bool,
+                 ransomware: bool = False):
         self.finding = finding
         self.tier = tier
         self.score = score
@@ -168,6 +200,7 @@ class PriorityResult:
         self.epss = epss
         self.epss_pct = epss_pct
         self.reachable = reachable
+        self.ransomware = ransomware
 
     @property
     def tier_rank(self) -> int:
@@ -185,6 +218,7 @@ class PriorityResult:
             "epss": self.epss,
             "epss_pct": self.epss_pct,
             "internet_reachable": self.reachable,
+            "ransomware": self.ransomware,
             "rationale": self.rationale,
             "factors": self.factors,
         }
@@ -250,7 +284,8 @@ class RiskPrioritizer:
 
     # ---- scoring ----
 
-    def assess(self, f: Any, ctx: Optional[Dict[str, Any]] = None) -> PriorityResult:
+    def assess(self, f: Any, ctx: Optional[Dict[str, Any]] = None,
+               cve_reachability: Optional[Dict[str, Any]] = None) -> PriorityResult:
         ctx = ctx or {"data": "NONE", "mgmt": False}
         sev = str(_g(f, "severity", "INFO")).upper()
         base = BASE_POINTS.get(sev, 0)
@@ -276,12 +311,14 @@ class RiskPrioritizer:
             except (TypeError, ValueError):
                 epss_pct = None
 
+        ransomware = bool(entry and entry.get("ransomware"))
         if kev:
             score += KEV_POINTS
             when = f" (catalogued {kev_date})" if kev_date else ""
+            rw = " — linked to known ransomware campaigns" if ransomware else ""
             factors.append({
                 "label": "CISA KEV",
-                "detail": f"listed as actively exploited in the wild{when}",
+                "detail": f"listed as actively exploited in the wild{when}{rw}",
                 "points": KEV_POINTS,
             })
         if epss is not None:
@@ -297,22 +334,51 @@ class RiskPrioritizer:
                 })
 
         # --- reachability / exposure ---
-        exp_pts, source = self._reachability(f, ctx)
-        if exp_pts and source:
-            if source == "mgmt":
-                desc = "the appliance management plane is reachable from the internet"
-            elif ctx.get("data") == "WIDE_OPEN":
-                desc = "reachable through an any-source / all-service inbound path"
-            else:
-                desc = "on the internet-facing attack surface"
-            score += exp_pts
-            factors.append({
-                "label": "Internet-exposed",
-                "detail": desc,
-                "points": exp_pts,
-            })
+        # For a CVE with a config-reachability verdict, that per-CVE verdict is
+        # more precise than the category/plane heuristic, so it REPLACES it and
+        # can DOWNRANK (never suppress). Non-CVE findings use the plane heuristic.
+        verdict = None
+        evidence = ""
+        if cve and cve_reachability:
+            rec = cve_reachability.get(cve)
+            if isinstance(rec, dict):
+                verdict = rec.get("verdict")
+                evidence = rec.get("evidence", "") or ""
 
-        score = min(100, score)
+        exp_pts, source = 0, None
+        reach_note = ""
+        # Only the three decisive verdicts take over from the plane heuristic;
+        # INDETERMINATE *and any unrecognized value* fall through to _reachability,
+        # so an unknown verdict can never silently swallow the exposure signal.
+        if verdict in (REACH_CONFIRMED, REACH_NOT_EXPOSED, REACH_DISABLED):
+            if verdict == REACH_CONFIRMED:
+                exp_pts, source = REACH_CONFIRMED_POINTS, "reachable"
+                reach_note = "vulnerable feature is enabled and internet-reachable"
+                score += exp_pts
+                factors.append({"label": "Feature reachable",
+                                "detail": evidence or reach_note, "points": exp_pts})
+            elif verdict == REACH_NOT_EXPOSED:
+                reach_note = "vulnerable feature is enabled but not internet-facing"
+                factors.append({"label": "Not internet-facing",
+                                "detail": evidence or reach_note, "points": 0})
+            elif verdict == REACH_DISABLED:
+                reach_note = "vulnerable feature is DISABLED on this device"
+                score -= REACH_DISABLED_PENALTY
+                factors.append({"label": "Feature disabled",
+                                "detail": evidence or reach_note, "points": -REACH_DISABLED_PENALTY})
+        else:
+            exp_pts, source = self._reachability(f, ctx)
+            if exp_pts and source:
+                if source == "mgmt":
+                    desc = "the appliance management plane is reachable from the internet"
+                elif ctx.get("data") == "WIDE_OPEN":
+                    desc = "reachable through an any-source / all-service inbound path"
+                else:
+                    desc = "on the internet-facing attack surface"
+                score += exp_pts
+                factors.append({"label": "Internet-exposed", "detail": desc, "points": exp_pts})
+
+        score = max(0, min(100, score))
 
         # --- tier ---
         tier = "P4"
@@ -320,25 +386,41 @@ class RiskPrioritizer:
             if score >= thr:
                 tier = name
                 break
-        # Floor: a known-exploited vulnerability is never below "fix this week".
+        # Floor: a known-exploited vulnerability is never below "fix this week",
+        # even when its feature looks disabled — verify before deprioritizing.
         if kev and TIER_RANK[tier] > TIER_RANK["P2"]:
             tier = "P2"
+        # Cap: a proven-DISABLED feature is not an active incident, so it cannot be
+        # P1 no matter how high its severity/EPSS — capped at P2 for KEV (stays
+        # visible; the feature could be re-enabled) else P3. The rationale carries
+        # the config evidence so an operator can override a wrong verdict.
+        if verdict == REACH_DISABLED:
+            cap_rank = TIER_RANK["P2"] if kev else TIER_RANK["P3"]
+            if TIER_RANK[tier] < cap_rank:
+                tier = _RANK_TIER[cap_rank]
 
         exposed = bool(exp_pts and source)
         rationale = self._rationale(tier, sev, kev, kev_date, epss, epss_pct,
-                                    exposed, source, ctx.get("data", "NONE"))
+                                    exposed, source, ctx.get("data", "NONE"),
+                                    verdict, reach_note, ransomware)
         return PriorityResult(f, tier, score, factors, rationale,
-                              kev, kev_date, epss, epss_pct, exposed)
+                              kev, kev_date, epss, epss_pct, exposed, ransomware)
 
     @staticmethod
-    def _rationale(tier, sev, kev, kev_date, epss, epss_pct, exposed, source, degree) -> str:
+    def _rationale(tier, sev, kev, kev_date, epss, epss_pct, exposed, source, degree,
+                   verdict=None, reach_note="", ransomware=False) -> str:
         bits: List[str] = []
         if kev:
             bits.append("actively exploited (CISA KEV"
-                        + (f", {kev_date}" if kev_date else "") + ")")
+                        + (f", {kev_date}" if kev_date else "")
+                        + (", ransomware-linked" if ransomware else "") + ")")
         if epss is not None and epss >= 0.10:
             bits.append(f"{epss * 100:.0f}% EPSS exploit probability")
-        if exposed:
+        # Config-reachability verdict (CVE findings). DISABLED/NOT-EXPOSED are the
+        # reason a CVE is downranked, so surface them explicitly.
+        if reach_note:
+            bits.append(reach_note)
+        elif exposed:
             if source == "mgmt":
                 bits.append("management plane is internet-exposed on this device")
             else:
@@ -352,7 +434,8 @@ class RiskPrioritizer:
     # ---- collection API ----
 
     def prioritize(self, findings: List[Any],
-                   context_findings: Optional[List[Any]] = None) -> List[PriorityResult]:
+                   context_findings: Optional[List[Any]] = None,
+                   cve_reachability: Optional[Dict[str, Any]] = None) -> List[PriorityResult]:
         """Return every finding as a PriorityResult, ordered fix-first
         (tier, then score desc, then severity, then rule id).
 
@@ -360,9 +443,13 @@ class RiskPrioritizer:
         internet-reachability. Pass the FULL, unfiltered finding set here when
         ``findings`` has been severity-filtered — reachability is an objective
         property of the device and must not be weakened by a display filter that
-        happens to drop the attack-surface findings that signal it."""
+        happens to drop the attack-surface findings that signal it.
+
+        ``cve_reachability`` maps CVE-id -> {verdict, evidence, component} from the
+        config-reachability assessment; CVE findings whose vulnerable feature is
+        disabled / not internet-facing are downranked (never suppressed)."""
         ctx = self.exposure_context(context_findings if context_findings is not None else findings)
-        results = [self.assess(f, ctx) for f in findings]
+        results = [self.assess(f, ctx, cve_reachability) for f in findings]
         results.sort(key=lambda r: (
             r.tier_rank, -r.score,
             {"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3, "INFO": 4}.get(
@@ -429,11 +516,19 @@ def refresh_threat_intel(cve_ids: List[str], path: Optional[str] = None,
             except (TypeError, ValueError):
                 continue
 
-    # --- KEV ---
+    # --- KEV (capture dateAdded + the ransomware-campaign flag) ---
     kev_doc = json.loads(_fetch(KEV_FEED).decode("utf-8"))
     kev_vulns = kev_doc.get("vulnerabilities") if isinstance(kev_doc, dict) else None
-    kevmap = {str(v.get("cveID", "")).upper(): str(v.get("dateAdded", ""))
-              for v in (kev_vulns if isinstance(kev_vulns, list) else []) if isinstance(v, dict)}
+    kevmap: Dict[str, Dict[str, Any]] = {}
+    for v in (kev_vulns if isinstance(kev_vulns, list) else []):
+        if not isinstance(v, dict):
+            continue
+        cid = str(v.get("cveID", "")).upper()
+        if cid:
+            kevmap[cid] = {
+                "date": str(v.get("dateAdded", "")),
+                "ransomware": str(v.get("knownRansomwareCampaignUse", "")).lower() == "known",
+            }
 
     cves: Dict[str, Dict[str, Any]] = {}
     for cve in cve_ids:
@@ -444,7 +539,9 @@ def refresh_threat_intel(cve_ids: List[str], path: Optional[str] = None,
             "kev": cve in kevmap,
         }
         if cve in kevmap:
-            entry["kev_date"] = kevmap[cve]
+            entry["kev_date"] = kevmap[cve]["date"]
+            if kevmap[cve]["ransomware"]:
+                entry["ransomware"] = True
         cves[cve] = entry
 
     from datetime import datetime
@@ -465,6 +562,75 @@ def refresh_threat_intel(cve_ids: List[str], path: Optional[str] = None,
     }
     out = path or DEFAULT_INTEL_PATH
     with open(out, "w", encoding="utf-8") as fh:
+        json.dump(doc, fh, indent=2, ensure_ascii=False)
+        fh.write("\n")
+    return doc["meta"]
+
+
+# --------------------------------------------------------------------------- #
+#  sneakernet (air-gapped) — export / import a snapshot by hand                 #
+# --------------------------------------------------------------------------- #
+
+def _validate_intel_doc(doc: Any) -> Tuple[bool, str]:
+    """Return (ok, reason). A valid snapshot has (optionally) a meta *object* and a
+    non-empty cves map where EVERY entry is a dict carrying 'epss' and 'kev'.
+    Validates all entries — not just the first — so a mostly-malformed file can't
+    slip through and silently replace a good snapshot."""
+    if not isinstance(doc, dict):
+        return False, "top level is not a JSON object"
+    if "meta" in doc and not isinstance(doc.get("meta"), dict):
+        return False, "'meta' is present but is not a JSON object"
+    cves = doc.get("cves")
+    if not isinstance(cves, dict) or not cves:
+        return False, "missing or empty 'cves' map"
+    bad = [k for k, v in cves.items()
+           if not (isinstance(v, dict) and "epss" in v and "kev" in v)]
+    if bad:
+        return False, (f"{len(bad)} of {len(cves)} cve entries are malformed "
+                       f"(missing 'epss'/'kev'), e.g. {bad[0]}")
+    return True, "ok"
+
+
+def _safe_meta(doc: Dict[str, Any]) -> Dict[str, Any]:
+    """Return the doc's meta as a dict with accurate counts recomputed from the
+    actual cves map (never trust an incoming/hand-edited count)."""
+    m = doc.get("meta")
+    meta = dict(m) if isinstance(m, dict) else {}
+    cves = doc.get("cves", {}) if isinstance(doc.get("cves"), dict) else {}
+    meta["cve_count"] = len(cves)
+    meta["kev_count"] = sum(1 for v in cves.values() if isinstance(v, dict) and v.get("kev"))
+    return meta
+
+
+def export_intel(dest: str, src: Optional[str] = None) -> Dict[str, Any]:
+    """Copy the current threat-intel snapshot to ``dest`` for sneakernet transfer
+    to an air-gapped host. Validates before writing. Returns the snapshot meta."""
+    src = src or DEFAULT_INTEL_PATH
+    with open(src, encoding="utf-8") as fh:
+        doc = json.load(fh)
+    ok, reason = _validate_intel_doc(doc)
+    if not ok:
+        raise ValueError(f"current snapshot at {src} is invalid ({reason})")
+    meta = _safe_meta(doc)  # compute before any write
+    with open(dest, "w", encoding="utf-8") as fh:
+        json.dump(doc, fh, indent=2, ensure_ascii=False)
+        fh.write("\n")
+    return meta
+
+
+def import_intel(src: str, dest: Optional[str] = None) -> Dict[str, Any]:
+    """Install a hand-carried snapshot (``src``) as the active threat_intel.json
+    (``dest``). Fully validates and normalizes the incoming file BEFORE writing,
+    so a corrupt/wrong file can never replace a good snapshot. Returns the
+    imported snapshot meta (with counts recomputed from the actual entries)."""
+    dest = dest or DEFAULT_INTEL_PATH
+    with open(src, encoding="utf-8") as fh:
+        doc = json.load(fh)
+    ok, reason = _validate_intel_doc(doc)
+    if not ok:
+        raise ValueError(f"refusing to import {src}: {reason}")
+    doc["meta"] = _safe_meta(doc)   # normalize meta + accurate counts (all before write)
+    with open(dest, "w", encoding="utf-8") as fh:
         json.dump(doc, fh, indent=2, ensure_ascii=False)
         fh.write("\n")
     return doc["meta"]

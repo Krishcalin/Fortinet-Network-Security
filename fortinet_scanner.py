@@ -290,13 +290,15 @@ FORTIOS_CVES: list[dict] = [
     },
     {
         "id": "FORTIOS-CVE-020", "cve": "CVE-2024-26010", "severity": "HIGH",
-        "name": "Stack-based buffer overflow in FortiOS IPS",
+        "name": "Stack-based buffer overflow via crafted packets",
         "affected": [
-            {"train": "7.4", "fixed": "7.4.3"},
-            {"train": "7.2", "fixed": "7.2.7"},
-            {"train": "7.0", "fixed": "7.0.14"},
+            {"train": "7.4", "fixed": "7.4.4"},
+            {"train": "7.2", "fixed": "7.2.8"},
+            {"train": "7.0", "fixed": "7.0.15"},
+            {"train": "6.4", "fixed": "6.4.16"},
+            {"train": "6.2", "fixed": "6.2.17"},
         ],
-        "description": "A stack-based buffer overflow in FortiOS IPS engine allows a remote unauthenticated attacker to achieve denial of service via crafted packets.",
+        "description": "A stack-based buffer overflow in FortiOS (and FortiProxy/FortiPAM/FortiWeb/FortiSwitchManager) allows an attacker to execute unauthorized code or commands via specially crafted packets (FG-IR-24-015).",
         "recommendation": "Upgrade to the fixed version.",
         "cwe": "CWE-121",
     },
@@ -371,13 +373,13 @@ FORTIOS_CVES: list[dict] = [
     },
     {
         "id": "FORTIOS-CVE-027", "cve": "CVE-2024-35279", "severity": "CRITICAL",
-        "name": "Stack-based buffer overflow in fgfmd — RCE",
+        "name": "Stack-based buffer overflow via CAPWAP control — RCE",
         "affected": [
             {"train": "7.4", "fixed": "7.4.5"},
-            {"train": "7.2", "fixed": "7.2.10"},
+            {"train": "7.2", "fixed": "7.2.9"},
         ],
-        "description": "A stack-based buffer overflow in the FortiOS fgfmd daemon allows a remote unauthenticated attacker to execute arbitrary code via specially crafted FGFM requests.",
-        "recommendation": "Upgrade to FortiOS 7.4.5 or 7.2.10. Restrict FGFM port (541) to trusted FortiManager IPs only.",
+        "description": "A stack-based buffer overflow in FortiOS allows a remote unauthenticated attacker to execute arbitrary code or commands via crafted UDP packets through the CAPWAP control, when the fabric service is running on the exposed interface (FG-IR-24-160).",
+        "recommendation": "Upgrade to FortiOS 7.4.5 or 7.2.9. Restrict CAPWAP (UDP 5246) and disable the fabric/CAPWAP service on internet-facing interfaces.",
         "cwe": "CWE-121",
     },
     {
@@ -394,14 +396,14 @@ FORTIOS_CVES: list[dict] = [
     },
     {
         "id": "FORTIOS-CVE-029", "cve": "CVE-2025-22252", "severity": "CRITICAL",
-        "name": "RADIUS auth bypass with empty shared secret",
+        "name": "TACACS+ authentication bypass (missing authentication)",
         "affected": [
             {"train": "7.6", "fixed": "7.6.1"},
             {"train": "7.4", "fixed": "7.4.7"},
         ],
-        "description": "Authentication bypass in FortiOS when using RADIUS with an empty shared secret allows a MitM attacker to authenticate as any user by intercepting and modifying RADIUS responses.",
-        "recommendation": "Upgrade to FortiOS 7.6.1 or 7.4.7. Ensure all RADIUS servers have a strong shared secret.",
-        "cwe": "CWE-305",
+        "description": "Missing authentication for a critical function in FortiOS (and FortiProxy/FortiSwitchManager) devices configured to use TACACS+ with ASCII authentication allows an attacker who knows an existing admin account to bypass authentication and access the device as a valid admin (FG-IR-24-472).",
+        "recommendation": "Upgrade to FortiOS 7.4.7 or 7.6.1. If using TACACS+ for administrator authentication, avoid ASCII authentication and prefer PAP/CHAP/MSCHAP where supported.",
+        "cwe": "CWE-306",
     },
     {
         "id": "FORTIOS-CVE-030", "cve": "CVE-2024-40591", "severity": "HIGH",
@@ -865,6 +867,92 @@ FORTIOS_CVES: list[dict] = [
 ]
 
 # ========================================================================== #
+#  CVE -> vulnerable-component map (for reachability-aware prioritization)     #
+# ========================================================================== #
+# Maps each tracked CVE to the FortiOS subsystem whose feature must be enabled/
+# reachable for the bug to matter. cve_reachability.py turns this + the parsed
+# config into a per-CVE verdict that DOWNRANKS (never suppresses) findings whose
+# feature is disabled or not internet-facing. Assignments are deliberately
+# CONSERVATIVE: a CVE is only tagged when the component is clear from the
+# advisory; ambiguous CVEs (e.g. 038/045/057/061) are intentionally omitted and
+# therefore treated as INDETERMINATE (no priority change). Ecosystem CVEs
+# (FortiManager/FortiClient EMS) are tagged 'ecosystem' -> always INDETERMINATE,
+# since a FortiGate .conf cannot prove another product's reachability.
+CVE_COMPONENTS: dict[str, str] = {
+    "FORTIOS-CVE-001": "admin-gui",       # jsconsole websocket auth bypass (admin iface)
+    "FORTIOS-CVE-002": "sslvpn",
+    "FORTIOS-CVE-003": "fgfm",            # fgfmd
+    "FORTIOS-CVE-004": "sslvpn",
+    "FORTIOS-CVE-005": "sslvpn",
+    "FORTIOS-CVE-006": "ecosystem",       # FortiManager (FortiJump)
+    "FORTIOS-CVE-007": "ecosystem",       # FortiClient EMS
+    "FORTIOS-CVE-008": "sslvpn",
+    "FORTIOS-CVE-009": "sslvpn",
+    "FORTIOS-CVE-010": "ecosystem",       # FortiManager API
+    "FORTIOS-CVE-011": "admin-gui",       # auth bypass via crafted HTTP (admin iface)
+    "FORTIOS-CVE-012": "admin-auth",      # path traversal, admin-side
+    "FORTIOS-CVE-013": "admin-gui",       # administrative interface
+    "FORTIOS-CVE-014": "sslvpn",
+    "FORTIOS-CVE-015": "ldap",            # LDAP server identity not verified
+    "FORTIOS-CVE-016": "admin-gui",       # GUI websocket module
+    "FORTIOS-CVE-017": "sslvpn",
+    "FORTIOS-CVE-018": "rest-api",
+    "FORTIOS-CVE-019": "captive-portal",
+    # CVE-020 (CVE-2024-26010): NVD describes only "specially crafted packets"
+    # with no named component -> left untagged (INDETERMINATE), not guessed.
+    "FORTIOS-CVE-021": "admin-gui",       # httpd path traversal
+    "FORTIOS-CVE-022": "sslvpn",
+    "FORTIOS-CVE-023": "admin-gui",       # CSF proxy auth bypass (over admin iface)
+    "FORTIOS-CVE-024": "admin-gui",       # crafted HTTP/S DoS
+    "FORTIOS-CVE-025": "admin-gui",       # httpd memory exhaustion
+    "FORTIOS-CVE-026": "fgfm",
+    "FORTIOS-CVE-027": "capwap",          # CVE-2024-35279: crafted UDP via CAPWAP control (NVD)
+    "FORTIOS-CVE-028": "sslvpn",
+    "FORTIOS-CVE-029": "tacacs",          # CVE-2025-22252: TACACS+ auth bypass (NVD)
+    "FORTIOS-CVE-030": "admin-auth",      # authenticated admin privesc
+    "FORTIOS-CVE-031": "forticloud-sso",
+    "FORTIOS-CVE-032": "forticloud-sso",
+    "FORTIOS-CVE-033": "ldap",            # LDAP bypass (agentless VPN + FSSO)
+    "FORTIOS-CVE-034": "admin-auth",      # restricted CLI bypass
+    "FORTIOS-CVE-035": "capwap",
+    "FORTIOS-CVE-036": "capwap",          # cw_acd
+    "FORTIOS-CVE-037": "ipsec",           # IKE handler
+    # 038 (multiple format strings) — ambiguous surface -> INDETERMINATE
+    "FORTIOS-CVE-039": "fgfm",
+    "FORTIOS-CVE-040": "fgfm",
+    "FORTIOS-CVE-041": "admin-auth",      # diag npu CLI
+    "FORTIOS-CVE-042": "sslvpn",          # SSL VPN bookmarks
+    "FORTIOS-CVE-043": "ha",
+    "FORTIOS-CVE-044": "admin-gui",       # admin cookie leakage
+    # 045 (double-free in cache mgmt) — unclear surface -> INDETERMINATE
+    "FORTIOS-CVE-046": "admin-gui",       # HTTPSd format string
+    "FORTIOS-CVE-047": "sslvpn",          # SSL-VPN symlink persistence
+    "FORTIOS-CVE-048": "admin-auth",      # restricted CLI Lua escape
+    "FORTIOS-CVE-049": "sslvpn",          # SSL-VPN bookmarks (authenticated)
+    "FORTIOS-CVE-050": "admin-gui",       # HTTP request smuggling (admin iface)
+    "FORTIOS-CVE-051": "capwap",
+    "FORTIOS-CVE-052": "capwap",
+    "FORTIOS-CVE-053": "capwap",
+    "FORTIOS-CVE-054": "admin-ssh",       # trusted hosts bypass via SSH
+    "FORTIOS-CVE-055": "admin-auth",      # path traversal in CLI
+    "FORTIOS-CVE-056": "ipsec",           # eap-cert-auth
+    # 057 (websocket handler heap overflow) — ambiguous (GUI vs SSL-VPN) -> INDETERMINATE
+    "FORTIOS-CVE-058": "dnsfilter",
+    "FORTIOS-CVE-059": "fgfm",            # fgfmsd
+    "FORTIOS-CVE-060": "sslvpn",          # SSL-VPN cookie
+    # 061 (filesystem integrity write-protection) — local -> INDETERMINATE
+    "FORTIOS-CVE-062": "fgfm",
+    "FORTIOS-CVE-063": "fgfm",
+    "FORTIOS-CVE-064": "radius",          # Blast-RADIUS
+    "FORTIOS-CVE-065": "bluetooth",
+    "FORTIOS-CVE-066": "admin-gui",       # administrative interface
+    "FORTIOS-CVE-067": "fsso",
+    "FORTIOS-CVE-068": "admin-ssh",       # SSH login bypass via RADIUS
+    "FORTIOS-CVE-069": "rest-api",
+    "FORTIOS-CVE-070": "proxy",           # proxy-mode policies
+}
+
+# ========================================================================== #
 #  WEAK CRYPTO CONSTANTS                                                      #
 # ========================================================================== #
 
@@ -1312,6 +1400,10 @@ class _ReportMixin:
             if intel.available:
                 meta["intel_snapshot"] = intel.snapshot_date
                 meta["intel_kev_count"] = intel.kev_count
+                age = intel.age_days()
+                if age is not None:
+                    meta["intel_age_days"] = age
+                    meta["intel_stale"] = intel.is_stale()
         except Exception:
             pass
         return meta
@@ -1347,7 +1439,9 @@ class _ReportMixin:
             # captured one, so a high --severity threshold can't strip the
             # attack-surface findings that signal internet exposure.
             context = getattr(self, "_all_findings", None) or self.findings
-            return RiskPrioritizer(intel).prioritize(self.findings, context_findings=context)
+            return RiskPrioritizer(intel).prioritize(
+                self.findings, context_findings=context,
+                cve_reachability=getattr(self, "_cve_reachability", None))
         except Exception as exc:  # pragma: no cover - defensive
             self._warn(f"risk prioritization unavailable: {exc}")
             return []
@@ -1373,8 +1467,13 @@ class _ReportMixin:
             print(f"    {self.BOLD}{t}{self.RESET} {m['label']:<20} {counts[t]:>3}   ({m['window']})")
         intel = getattr(self, "_intel_cache", None)
         if intel is not None and getattr(intel, "available", False):
-            print(f"    {self.SEVERITY_COLOR['INFO']}threat-intel snapshot {intel.snapshot_date} · "
+            age = intel.age_days()
+            age_str = f", {age}d old" if age is not None else ""
+            print(f"    {self.SEVERITY_COLOR['INFO']}threat-intel snapshot {intel.snapshot_date}{age_str} · "
                   f"{intel.kev_count} KEV-listed CVE(s){self.RESET}")
+            if intel.is_stale():
+                print(f"    {self.SEVERITY_COLOR['HIGH']}{self.BOLD}[!] threat-intel snapshot is stale "
+                      f"({age}d) — refresh with --refresh-intel (or --import-intel on air-gapped hosts){self.RESET}")
         n = top if top and top > 0 else 10
         shown = [r for r in results if r.tier in ("P1", "P2")][:n]
         if not shown:
@@ -1386,6 +1485,8 @@ class _ReportMixin:
             tags = []
             if r.kev:
                 tags.append("KEV")
+            if getattr(r, "ransomware", False):
+                tags.append("ransomware")
             if r.epss is not None and r.epss >= 0.10:
                 tags.append(f"EPSS {r.epss*100:.0f}%")
             if r.reachable:
@@ -1564,6 +1665,7 @@ class FortinetScanner(_ReportMixin):
     def _check_cves(self) -> None:
         if not self._fw_version:
             return
+        matched: list[dict] = []
         for cve_entry in FORTIOS_CVES:
             for branch in cve_entry.get("affected", []):
                 train = branch["train"]
@@ -1583,7 +1685,26 @@ class FortinetScanner(_ReportMixin):
                         cwe=cve_entry.get("cwe"),
                         cve=cve_entry["cve"],
                     ))
+                    matched.append(cve_entry)
                     break  # One match per CVE is enough
+        # Reachability gating: assess, from the config, whether each matched CVE's
+        # vulnerable feature is actually enabled/internet-facing on this device.
+        # The verdict feeds the Risk-Prioritization Engine (downrank, never suppress).
+        if matched:
+            self._assess_cve_reachability(matched)
+
+    def _assess_cve_reachability(self, matched: list[dict]) -> None:
+        """Populate ``self._cve_reachability`` = {cve: {verdict, evidence, component}}
+        for the CVEs that version-matched. Best-effort and fully guarded — any
+        failure just leaves the map empty (prioritizer falls back to severity)."""
+        try:
+            import cve_reachability
+            comp = {e["id"]: CVE_COMPONENTS[e["id"]] for e in matched if e["id"] in CVE_COMPONENTS}
+            id_to_cve = {e["id"]: e["cve"] for e in matched}
+            self._cve_reachability = cve_reachability.assess_cves(self, comp, id_to_cve)
+        except Exception as exc:  # pragma: no cover - defensive
+            self._warn(f"CVE reachability assessment unavailable: {exc}")
+            self._cve_reachability = {}
 
     # ================================================================== #
     #  CHECK: Admin Access                                                 #
@@ -6230,6 +6351,10 @@ Examples:
     parser.add_argument("--refresh-intel", action="store_true",
                         help="Refresh the bundled threat-intel snapshot (CISA KEV + FIRST.org EPSS) "
                              "for all tracked CVEs, then exit. Requires internet access.")
+    parser.add_argument("--export-intel", metavar="FILE",
+                        help="Copy the current threat-intel snapshot to FILE (to sneakernet to an air-gapped host), then exit.")
+    parser.add_argument("--import-intel", metavar="FILE",
+                        help="Install a hand-carried threat-intel snapshot from FILE as the active snapshot, then exit.")
     parser.add_argument(
         "--severity",
         choices=["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"],
@@ -6241,9 +6366,13 @@ Examples:
 
     args = parser.parse_args()
 
-    # ── Threat-intel refresh (standalone maintenance action) ───────
+    # ── Threat-intel maintenance actions (standalone) ──────────────
     if args.refresh_intel:
         sys.exit(_refresh_intel())
+    if args.export_intel:
+        sys.exit(_transfer_intel("export", args.export_intel))
+    if args.import_intel:
+        sys.exit(_transfer_intel("import", args.import_intel))
 
     # ── Multi-device mode ──────────────────────────────────────────
     if args.inventory:
@@ -6337,6 +6466,30 @@ def _refresh_intel() -> int:
         return 1
     print(f"[+] Snapshot updated: {meta['cve_count']} CVE(s), {meta['kev_count']} KEV-listed "
           f"(snapshot {meta['snapshot_date']}).")
+    return 0
+
+
+def _transfer_intel(action: str, path: str) -> int:
+    """Export the current threat-intel snapshot to a file, or import one from a
+    file (validated), for sneakernet transfer to/from air-gapped hosts."""
+    try:
+        from risk_prioritizer import export_intel, import_intel
+    except Exception as exc:  # pragma: no cover
+        print(f"[!] Risk-prioritization module unavailable: {exc}", file=sys.stderr)
+        return 1
+    try:
+        if action == "export":
+            meta = export_intel(path)
+            print(f"[+] Threat-intel snapshot exported to: {path} "
+                  f"(snapshot {meta.get('snapshot_date', '?')}, {meta.get('cve_count', '?')} CVEs). "
+                  f"Copy it to the air-gapped host and run --import-intel.")
+        else:
+            meta = import_intel(path)
+            print(f"[+] Threat-intel snapshot imported from: {path} "
+                  f"(snapshot {meta.get('snapshot_date', '?')}, {meta.get('cve_count', '?')} CVEs).")
+    except Exception as exc:
+        print(f"[!] Threat-intel {action} failed: {exc}", file=sys.stderr)
+        return 1
     return 0
 
 

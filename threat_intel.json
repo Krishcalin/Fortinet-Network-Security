@@ -1,7 +1,7 @@
 {
   "meta": {
     "schema": "fortinet-threat-intel/1",
-    "snapshot_date": "2026-07-08",
+    "snapshot_date": "2026-07-09",
     "cve_count": 70,
     "kev_count": 14,
     "sources": {
@@ -21,7 +21,8 @@
       "epss": 0.49344,
       "epss_pct": 0.9875,
       "kev": true,
-      "kev_date": "2021-11-03"
+      "kev_date": "2021-11-03",
+      "ransomware": true
     },
     "CVE-2021-26109": {
       "epss": 0.01823,
@@ -37,7 +38,8 @@
       "epss": 0.99984,
       "epss_pct": 0.99983,
       "kev": true,
-      "kev_date": "2022-10-11"
+      "kev_date": "2022-10-11",
+      "ransomware": true
     },
     "CVE-2022-41328": {
       "epss": 0.12316,
@@ -49,7 +51,8 @@
       "epss": 0.99474,
       "epss_pct": 0.99939,
       "kev": true,
-      "kev_date": "2022-12-13"
+      "kev_date": "2022-12-13",
+      "ransomware": true
     },
     "CVE-2023-25610": {
       "epss": 0.17797,
@@ -60,7 +63,8 @@
       "epss": 0.85689,
       "epss_pct": 0.99697,
       "kev": true,
-      "kev_date": "2023-06-13"
+      "kev_date": "2023-06-13",
+      "ransomware": true
     },
     "CVE-2023-28001": {
       "epss": 0.0043,
@@ -121,7 +125,8 @@
       "epss": 0.97591,
       "epss_pct": 0.99893,
       "kev": true,
-      "kev_date": "2024-03-25"
+      "kev_date": "2024-03-25",
+      "ransomware": true
     },
     "CVE-2023-50176": {
       "epss": 0.00551,
@@ -132,7 +137,8 @@
       "epss": 0.83428,
       "epss_pct": 0.99647,
       "kev": true,
-      "kev_date": "2024-02-09"
+      "kev_date": "2024-02-09",
+      "ransomware": true
     },
     "CVE-2024-23110": {
       "epss": 0.00281,
@@ -255,7 +261,8 @@
       "epss": 0.98259,
       "epss_pct": 0.99909,
       "kev": true,
-      "kev_date": "2025-01-14"
+      "kev_date": "2025-01-14",
+      "ransomware": true
     },
     "CVE-2024-55599": {
       "epss": 0.00342,
@@ -286,7 +293,8 @@
       "epss": 0.02988,
       "epss_pct": 0.85687,
       "kev": true,
-      "kev_date": "2025-03-18"
+      "kev_date": "2025-03-18",
+      "ransomware": true
     },
     "CVE-2025-25249": {
       "epss": 0.00746,

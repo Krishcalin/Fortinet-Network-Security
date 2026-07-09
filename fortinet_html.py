@@ -108,6 +108,7 @@ code,pre{font-family:'Cascadia Code','Consolas','JetBrains Mono',monospace}
 .tr-tags{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;max-width:230px}
 .tag{font-size:.64rem;font-weight:800;text-transform:uppercase;letter-spacing:.03em;padding:3px 8px;border-radius:100px;white-space:nowrap}
 .tag.kev{background:rgba(243,139,168,.2);color:var(--crit)}
+.tag.rw{background:rgba(243,139,168,.28);color:var(--crit)}
 .tag.epss{background:rgba(250,179,135,.18);color:var(--high)}
 .tag.exp{background:rgba(203,166,247,.18);color:var(--mauve)}
 .pbadge{display:inline-block;padding:3px 9px;border-radius:7px;font-size:.68rem;font-weight:800;letter-spacing:.02em;flex-shrink:0}
@@ -368,6 +369,12 @@ class FortinetHTMLReport:
                     + (f", {esc(kevn)} KEV-listed CVE(s) applicable" if kevn else ""))
         h.append("<div class=\"panel\" style=\"margin-bottom:16px\"><h2>Risk-Prioritized Remediation Queue</h2>")
         h.append("<div style=\"font-size:.8rem;color:var(--sub);margin:-6px 0 14px\">" + sub + "</div>")
+        if self.meta.get("intel_stale"):
+            age = self.meta.get("intel_age_days")
+            h.append("<div style=\"font-size:.78rem;color:var(--high);font-weight:700;margin:-8px 0 14px\">"
+                     "&#9888; Threat-intel snapshot is stale"
+                     + (f" ({esc(age)} days old)" if age is not None else "")
+                     + " — refresh with <code>--refresh-intel</code> (or <code>--import-intel</code> on air-gapped hosts).</div>")
         h.append("<div class=\"prio-tiers\">")
         for t in ("P1", "P2", "P3", "P4"):
             m = TIER_META[t]
@@ -392,6 +399,8 @@ class FortinetHTMLReport:
                 tags = []
                 if r.kev:
                     tags.append("<span class=\"tag kev\">KEV" + (" " + esc(r.kev_date) if r.kev_date else "") + "</span>")
+                if getattr(r, "ransomware", False):
+                    tags.append("<span class=\"tag rw\">Ransomware</span>")
                 if r.epss is not None and r.epss >= 0.10:
                     tags.append("<span class=\"tag epss\">EPSS " + f"{r.epss*100:.0f}%" + "</span>")
                 if r.reachable:
