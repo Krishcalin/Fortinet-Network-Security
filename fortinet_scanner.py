@@ -7500,7 +7500,7 @@ Examples:
     )
     parser.add_argument("--csv", metavar="FILE", help="Export a full findings CSV (severity, tier, KEV, EPSS, CVE, compliance, evidence)")
     parser.add_argument("--framework", choices=["cis", "pci", "nist", "soc2", "hipaa"],
-                        help="Print a scored benchmark (pass/fail per mapped control, per-section %) for the framework")
+                        help="Print a scored benchmark (pass/fail per mapped control, per-section %%) for the framework")
     parser.add_argument("--benchmark", metavar="FILE",
                         help="Save the per-control benchmark to FILE (.json or .csv); framework from --framework (default cis)")
     parser.add_argument("--no-color", action="store_true", help="Disable ANSI colour in console output (also honours the NO_COLOR env var)")
