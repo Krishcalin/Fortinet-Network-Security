@@ -32,11 +32,11 @@ Ships in two modes that share the same 22 check methods and rule set:
 2. **`COMPLIANCE_MAP` dict** — 89 rule-to-framework mappings (CIS, PCI-DSS, NIST 800-53, SOC 2, HIPAA).
 3. **`REMEDIATION_COMMANDS` dict** — 47 FortiOS CLI config commands mapped to rule IDs.
 4. **`Finding` class** — `__slots__` with `rule_id, name, category, severity, description, recommendation, cwe, cve, compliance, remediation_cmd`. Auto-resolves compliance + remediation on init.
-5. **`_ReportMixin`** — `print_report` / `print_summary_only`, `save_json` (schema v2: enriched with P-tier/KEV/EPSS + `compliance_scorecard` + `tier_summary`), `save_html`, `save_pdf`, `save_remediation`, `save_remediation_script` (fix + rollback CLI batch), `save_compliance_csv`, `save_findings_csv`, `save_sarif`, `save_ocsf`, `summary`, `filter_severity`, `set_color` (TTY-aware), `compliance_scorecard()` / `print_compliance_scorecard()`, `prioritize()` / `print_priorities()`, plus `_report_kb()` / `_report_meta()` helpers.
+5. **`_ReportMixin`** — `print_report` / `print_summary_only`, `save_json` (schema v2: enriched with P-tier/KEV/EPSS + `compliance_scorecard` + `tier_summary`), `save_html`, `save_pdf`, `save_remediation`, `save_remediation_script` (fix + rollback CLI batch), `save_compliance_csv`, `save_findings_csv`, `save_sarif`, `save_ocsf`, `summary`, `filter_severity`, `set_color` (TTY-aware), `compliance_scorecard()` / `print_compliance_scorecard()`, `benchmark_score(framework)` / `print_benchmark()` / `save_benchmark()` (scored CIS/PCI/NIST/SOC2/HIPAA pass-fail-per-control profile), `prioritize()` / `print_priorities()`, plus `_report_kb()` / `_report_meta()` helpers.
 6. **`FortinetScanner(_ReportMixin)`** — 22 `_check_*` methods producing 270+ possible findings.
 7. **`RiskPrioritizer` + `ThreatIntel`** (`risk_prioritizer.py`) — post-scan engine that ranks every finding into P1–P4 fix-first tiers by fusing severity + CISA KEV + FIRST.org EPSS + internet-reachability. See [Risk-Prioritization Engine](#risk-prioritization-engine).
 8. **`MultiDeviceScanner`** — batch scanning of multiple FortiGates with unified summary and JSON export.
-9. **CLI** — `argparse` with `host`, `--token`, `--verify-ssl`, `--timeout`, `--json`, `--html`, `--pdf`, `--csv`, `--compliance-csv`, `--sarif`, `--ocsf`, `--remediation`, `--fix-script` / `--rollback-script` / `--fix-tier` / `--fix-script-force`, `--baseline`, `--inventory`, `--top [N]`, `--refresh-intel`, `--severity`, `--no-color`, `--summary-only` (alias `--quiet`), `--verbose`, `--version`. (The offline scanner mirrors all of these except the live-only `--token`/`--verify-ssl`/`--timeout`/`--inventory`.)
+9. **CLI** — `argparse` with `host`, `--token`, `--verify-ssl`, `--timeout`, `--json`, `--html`, `--pdf`, `--csv`, `--compliance-csv`, `--sarif`, `--ocsf`, `--remediation`, `--fix-script` / `--rollback-script` / `--fix-tier` / `--fix-script-force`, `--framework {cis,pci,nist,soc2,hipaa}` / `--benchmark FILE`, `--baseline`, `--inventory`, `--top [N]`, `--refresh-intel`, `--severity`, `--no-color`, `--summary-only` (alias `--quiet`), `--verbose`, `--version`. (The offline scanner mirrors all of these except the live-only `--token`/`--verify-ssl`/`--timeout`/`--inventory`.)
 10. **Exit code**: `1` if CRITICAL or HIGH findings, `0` otherwise.
 
 ## API Connection
@@ -90,6 +90,8 @@ Ships in two modes that share the same 22 check methods and rule set:
 | **HIPAA** | HIPAA Security Rule | 164.308, 164.312 sections |
 
 Output: console (inline), JSON (`compliance` dict), compliance CSV (`--compliance-csv`).
+
+**Scored benchmark profile** — `benchmark_score(framework)` turns those mappings into a pass/fail-per-control **scored** artifact (`--framework {cis,pci,nist,soc2,hipaa}` prints it; `--benchmark FILE` saves per-control CSV/JSON). Denominator = the distinct controls that framework maps in `COMPLIANCE_MAP` (the controls the tool evaluates); a control is PASS unless a reportable finding references it. Produces an overall % + per-section % (CIS 2-14, NIST AC/AU/…, etc.). Evaluated against the full pre-filter set minus INFO, so a `--severity` display filter can't inflate the score. The output states the denominator is the tool's mapped controls, not the full external benchmark (no overclaiming).
 
 ## Remediation & Reporting
 
@@ -145,7 +147,7 @@ Score is capped at 100 and mapped by `TIER_THRESHOLDS` (P1≥70, P2≥42, P3≥2
 - **GOTCHA**: prioritization runs *after* `filter_severity` in `main()`; `filter_severity` snapshots `self._all_findings` (pre-filter) and `prioritize()` derives reachability from that, so a high `--severity` cannot strip the exposure signal.
 
 **CVE reachability gating** (`cve_reachability.py` — stdlib, offline-safe): version-matched CVEs fire on firmware math alone, so `_check_cves` also assesses, from the parsed config, whether each CVE's vulnerable feature is enabled/internet-facing. Each CVE is tagged in `CVE_COMPONENTS` (fortinet_scanner.py, next to FORTIOS_CVES) with a component (sslvpn / admin-gui / admin-ssh / admin-auth / rest-api / fgfm / ipsec / capwap / proxy / ips / radius / tacacs / ldap / fsso / ha / dnsfilter / captive-portal / bluetooth / forticloud-sso / ecosystem); `build_view(scanner)` reads the needed endpoints once (via `_api_get`, same in live/offline) and per-component predicates return a verdict (`CONFIRMED_REACHABLE` / `CONFIGURED_NOT_EXPOSED` / `FEATURE_DISABLED` / `INDETERMINATE`) + cited evidence. `_check_cves` stashes `self._cve_reachability = {cve: {verdict, evidence, component}}`; `prioritize()` passes it to `RiskPrioritizer.prioritize(..., cve_reachability=)`. In `assess()`, a CVE with a decisive verdict uses it INSTEAD of the plane heuristic: CONFIRMED -> +20; DISABLED -> −25 **and tier capped at P3 (P2 if KEV)**; NOT_EXPOSED -> no bonus; INDETERMINATE -> plane fallback. **Safe by design: only downranks, never suppresses; KEV floor (>=P2) holds; evidence shown so an operator can override.** Component tags are **conservative** — ambiguous CVEs (038/045/057/061) and FortiManager/FortiClient ecosystem CVEs (006/007/010 = `ecosystem`) are INDETERMINATE. GOTCHA: `build_view` must read the same keys/shapes the offline parser and live API produce (e.g. `system/interface` list `allowaccess` string, phase1 `interface` str-or-list, `system/settings` VDOM `inspection-mode` for proxy) — verified against the parser. **SSL-VPN `set status` toggle only exists from FortiOS 7.4.1**: `_sslvpn` is version-aware (uses `view["fw_version"]`) — on <7.4.1 a configured block = in-use (absent status is NOT read as disabled); on >=7.4.1 absent status = disabled-by-default. `_names` splits space-joined multi-value strings (offline parser joins `source-interface` tokens). **Adversarial review round 2 (2026-07-09) fixed 7 confirmed bugs + 3 NVD-verified CVE mis-tags**: CVE-2024-35279 fgfm→**capwap** (crafted UDP via CAPWAP control), CVE-2025-22252 radius→**tacacs** (TACACS+ auth bypass, not RADIUS empty-secret — description/CWE corrected), CVE-2024-26010 ips→**untagged** (NVD names no component); import_intel now validates meta+every entry & writes only after normalizing (can't clobber a good snapshot); unknown verdict falls back to plane heuristic.
-- **Tests**: `test_data/test_risk_prioritizer.py` (snapshot/KEV/EPSS/ransomware, plane reachability, scoring/tiers/floor, staleness, import/export hardening, dict-vs-object, graceful degradation, HTML) + `test_data/test_cve_reachability.py` (predicates per component incl. version-aware SSL-VPN / multi-WAN / proxy-vdom / tacacs, CVE_COMPONENTS+NVD-tag sanity, gating/cap/floor, unknown-verdict fallback, offline integration) + `test_bugfixes.py` / `test_new_checks.py` / `test_exports.py` / `test_reporting.py` (2026-07 regressions, new checks, SARIF/OCSF/fix-script, reporting/UX). **166 tests total green.**
+- **Tests**: `test_data/test_risk_prioritizer.py` (snapshot/KEV/EPSS/ransomware, plane reachability, scoring/tiers/floor, staleness, import/export hardening, dict-vs-object, graceful degradation, HTML) + `test_data/test_cve_reachability.py` (predicates per component incl. version-aware SSL-VPN / multi-WAN / proxy-vdom / tacacs, CVE_COMPONENTS+NVD-tag sanity, gating/cap/floor, unknown-verdict fallback, offline integration) + `test_bugfixes.py` / `test_new_checks.py` / `test_exports.py` / `test_reporting.py` / `test_benchmark.py` (2026-07 regressions, new checks, SARIF/OCSF/fix-script, reporting/UX, scored benchmark). **173 tests total green.**
 
 **Config drift** (`_ReportMixin.apply_drift`, `--baseline prior.json`): diffs current findings vs a prior `--json` report by signature `(rule_id, file_path, line_content)`, prints new/resolved + posture-score delta, and adds a `FORTIOS-DRIFT-SUMMARY` finding. **Line_content must be deterministic** for signatures to match — sort any set before joining it into `line_content` (fixed `wan_bad`/`versions`).
 
@@ -232,8 +234,8 @@ delegates to `FortinetScanner` so every existing check runs unchanged.
 3. **CLI** — same flags as live scanner minus `--token`/`--verify-ssl`/`--timeout`/`--inventory`:
    `python fortinet_offline_scanner.py <conf> [--json …] [--html …] [--pdf …] [--csv …]
    [--compliance-csv …] [--sarif …] [--ocsf …] [--remediation …] [--fix-script …]
-   [--rollback-script …] [--fix-tier P2] [--fix-script-force] [--baseline …] [--severity …]
-   [--no-color] [--summary-only] [--top N] [-v]`.
+   [--rollback-script …] [--fix-tier P2] [--fix-script-force] [--framework cis]
+   [--benchmark FILE] [--baseline …] [--severity …] [--no-color] [--summary-only] [--top N] [-v]`.
    At startup reconfigures stdout/stderr to UTF-8 with `errors='replace'` so finding text with
    non-ASCII characters doesn't crash on Windows cp1252 consoles.
 
@@ -301,14 +303,17 @@ python fortinet_offline_scanner.py fw1.conf --fix-script fix.conf --rollback-scr
 # Compact console output (scorecard + fix-first queue only); disable colour for pipes
 python fortinet_offline_scanner.py fw1.conf --summary-only --no-color
 
+# Scored CIS benchmark to console + per-control CSV (or .json)
+python fortinet_offline_scanner.py fw1.conf --framework cis --benchmark cis_benchmark.csv
+
 # Threat-intel refresh (KEV + EPSS), then exit
 python fortinet_scanner.py --refresh-intel
 
 # Fix-first queue to the console
 python fortinet_offline_scanner.py fw1.conf --top 15
 
-# Tests (166 cases: parser + rulebase + risk-prioritizer + cve-reachability +
-#   bug-fix regressions + new checks + exports + reporting)
+# Tests (173 cases: parser + rulebase + risk-prioritizer + cve-reachability +
+#   bug-fix regressions + new checks + exports + reporting + benchmark)
 python -m pytest test_data/ -v
 ```
 

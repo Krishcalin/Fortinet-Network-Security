@@ -505,6 +505,10 @@ Examples:
     )
     parser.add_argument("--csv", metavar="FILE",
                         help="Export a full findings CSV (severity, tier, KEV, EPSS, CVE, compliance, evidence)")
+    parser.add_argument("--framework", choices=["cis", "pci", "nist", "soc2", "hipaa"],
+                        help="Print a scored benchmark (pass/fail per mapped control, per-section %) for the framework")
+    parser.add_argument("--benchmark", metavar="FILE",
+                        help="Save the per-control benchmark to FILE (.json or .csv); framework from --framework (default cis)")
     parser.add_argument("--no-color", action="store_true",
                         help="Disable ANSI colour in console output (also honours the NO_COLOR env var)")
     parser.add_argument("--summary-only", "--quiet", dest="summary_only", action="store_true",
@@ -548,10 +552,16 @@ Examples:
         scanner.print_compliance_scorecard()
         scanner.print_priorities(args.top if args.top is not None else 10)
 
+    benchmark_fw = args.framework or ("cis" if args.benchmark else None)
+    if benchmark_fw:
+        scanner.print_benchmark(benchmark_fw)
+
     if args.json:
         scanner.save_json(args.json)
     if args.csv:
         scanner.save_findings_csv(args.csv)
+    if args.benchmark:
+        scanner.save_benchmark(args.benchmark, benchmark_fw)
     if args.html:
         scanner.save_html(args.html)
     if args.pdf:

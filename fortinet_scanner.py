@@ -1352,6 +1352,125 @@ class _ReportMixin:
                   f"   across {d['findings']} finding(s)   worst: {col}{worst}{self.RESET}")
         print()
 
+    # ---- scored benchmark profile (pass/fail per mapped control) ------------
+    # arg value -> COMPLIANCE_MAP framework key
+    FRAMEWORK_KEYS = {"cis": "CIS", "pci": "PCI-DSS", "nist": "NIST",
+                      "soc2": "SOC2", "hipaa": "HIPAA"}
+
+    @staticmethod
+    def _control_section(fw_key: str, control: str) -> str:
+        """Group a control ID into its benchmark section (for per-section rollups)."""
+        if fw_key == "NIST":
+            return control.split("-")[0]        # AC-3 -> AC
+        if fw_key == "HIPAA":
+            return control.split("(")[0]         # 164.312(a)(2)(i) -> 164.312
+        return control.split(".")[0]             # CIS 2.1.3 -> 2 ; PCI 8.3.1 -> 8 ; CC6.1 -> CC6
+
+    def benchmark_score(self, framework: str) -> dict:
+        """Score the device against a compliance framework: every control the tool
+        maps (COMPLIANCE_MAP) is the denominator; a control FAILS if any reportable
+        finding references it, else PASSES. Returns overall + per-section scores and
+        a per-control breakdown. Denominator is the controls THIS TOOL evaluates —
+        not the full external benchmark (stated in the output so it's not overclaimed)."""
+        fw_key = self.FRAMEWORK_KEYS.get(str(framework).lower())
+        if not fw_key:
+            raise ValueError(f"unknown framework {framework!r}; choose from {sorted(self.FRAMEWORK_KEYS)}")
+
+        universe: set = set()
+        for mapping in COMPLIANCE_MAP.values():
+            for c in (mapping.get(fw_key) or []):
+                universe.add(c)
+
+        # Evaluate against the full pre-filter set minus INFO, so a --severity display
+        # filter cannot inflate the score (same rationale as the drift fix).
+        full = getattr(self, "_all_findings", None) or self.findings
+        info_rank = self.SEVERITY_ORDER.get("INFO", 4)
+        reportable = [f for f in full if self.SEVERITY_ORDER.get(f.severity, 4) < info_rank]
+
+        control_findings: dict = {}
+        control_worst: dict = {}
+        for f in reportable:
+            for c in ((getattr(f, "compliance", {}) or {}).get(fw_key) or []):
+                if c not in universe:
+                    continue
+                control_findings.setdefault(c, set()).add(f.rule_id)
+                rank = self.SEVERITY_ORDER.get(f.severity, 4)
+                if c not in control_worst or rank < self.SEVERITY_ORDER.get(control_worst[c], 4):
+                    control_worst[c] = f.severity
+
+        failed = set(control_findings)
+        sections: dict = {}
+        controls_out: list = []
+        for c in sorted(universe):
+            sec = self._control_section(fw_key, c)
+            s = sections.setdefault(sec, {"total": 0, "failed": 0})
+            s["total"] += 1
+            is_fail = c in failed
+            if is_fail:
+                s["failed"] += 1
+            controls_out.append({
+                "control": c, "section": sec,
+                "status": "FAIL" if is_fail else "PASS",
+                "findings": sorted(control_findings.get(c, [])),
+                "worst_severity": control_worst.get(c),
+            })
+        for s in sections.values():
+            s["passed"] = s["total"] - s["failed"]
+            s["score_pct"] = round(s["passed"] / s["total"] * 100) if s["total"] else 100
+
+        total = len(universe)
+        n_pass = total - len(failed)
+        # natural section order: numeric sections (CIS/PCI) sort numerically, then
+        # alpha sections (NIST/SOC2) lexically — so "10" doesn't sort before "2".
+        def _sec_key(s: str):
+            return (0, int(s)) if s.isdigit() else (1, s)
+        return {
+            "framework": fw_key,
+            "total_controls": total,
+            "passed": n_pass,
+            "failed": len(failed),
+            "score_pct": round(n_pass / total * 100) if total else 100,
+            "sections": {k: sections[k] for k in sorted(sections, key=_sec_key)},
+            "controls": controls_out,
+        }
+
+    def print_benchmark(self, framework: str) -> None:
+        try:
+            bm = self.benchmark_score(framework)
+        except ValueError as exc:
+            print(f"[!] {exc}", file=sys.stderr)
+            return
+        sep = "=" * 72
+        print(f"\n{self.BOLD}{sep}")
+        print(f"  {bm['framework']} Benchmark Score — {bm['score_pct']}%  "
+              f"({bm['passed']}/{bm['total_controls']} evaluated controls pass)")
+        print(f"{sep}{self.RESET}")
+        for sec, s in bm["sections"].items():
+            band = "HIGH" if s["score_pct"] < 60 else ("MEDIUM" if s["score_pct"] < 85 else "LOW")
+            col = self.SEVERITY_COLOR.get(band, "")
+            bar = "#" * round(s["score_pct"] / 10) + "-" * (10 - round(s["score_pct"] / 10))
+            print(f"    {sec:<10} {col}{s['score_pct']:>3}%{self.RESET} [{bar}]  {s['passed']}/{s['total']} pass")
+        print(f"\n    Score = mapped controls that pass. Denominator is the {bm['total_controls']} "
+              f"{bm['framework']} controls this tool evaluates, not the full benchmark.")
+        print()
+
+    def save_benchmark(self, output_path: str, framework: str) -> None:
+        """Save the per-control benchmark. JSON by extension, else per-control CSV."""
+        bm = self.benchmark_score(framework)
+        if output_path.lower().endswith(".json"):
+            with open(output_path, "w", encoding="utf-8") as fh:
+                json.dump(bm, fh, indent=2, ensure_ascii=False)
+        else:
+            import csv
+            with open(output_path, "w", newline="", encoding="utf-8") as fh:
+                w = csv.writer(fh)
+                w.writerow(["Framework", "Section", "Control", "Status", "Worst Severity", "Findings"])
+                for c in bm["controls"]:
+                    w.writerow([bm["framework"], c["section"], c["control"], c["status"],
+                                c["worst_severity"] or "", "; ".join(c["findings"])])
+        print(f"[+] {bm['framework']} benchmark ({bm['score_pct']}% · "
+              f"{bm['passed']}/{bm['total_controls']} pass) saved to: {output_path}")
+
     def print_summary_only(self) -> None:
         """Compact console output: severity table + compliance scorecard + the
         risk-prioritized fix-first queue, skipping the full per-finding dump."""
@@ -6953,6 +7072,10 @@ Examples:
         help="Minimum severity to report (default: LOW)",
     )
     parser.add_argument("--csv", metavar="FILE", help="Export a full findings CSV (severity, tier, KEV, EPSS, CVE, compliance, evidence)")
+    parser.add_argument("--framework", choices=["cis", "pci", "nist", "soc2", "hipaa"],
+                        help="Print a scored benchmark (pass/fail per mapped control, per-section %) for the framework")
+    parser.add_argument("--benchmark", metavar="FILE",
+                        help="Save the per-control benchmark to FILE (.json or .csv); framework from --framework (default cis)")
     parser.add_argument("--no-color", action="store_true", help="Disable ANSI colour in console output (also honours the NO_COLOR env var)")
     parser.add_argument("--summary-only", "--quiet", dest="summary_only", action="store_true",
                         help="Print only the scorecard + fix-first queue (skip the full per-finding dump)")
@@ -7033,10 +7156,16 @@ Examples:
         scanner.print_compliance_scorecard()
         scanner.print_priorities(args.top if args.top is not None else 10)
 
+    benchmark_fw = args.framework or ("cis" if args.benchmark else None)
+    if benchmark_fw:
+        scanner.print_benchmark(benchmark_fw)
+
     if args.json:
         scanner.save_json(args.json)
     if args.csv:
         scanner.save_findings_csv(args.csv)
+    if args.benchmark:
+        scanner.save_benchmark(args.benchmark, benchmark_fw)
     if args.html:
         scanner.save_html(args.html)
     if args.pdf:

@@ -301,6 +301,7 @@ If the snapshot is ever missing or corrupt, the engine degrades gracefully and r
 | **JSON** (schema v2) | `--json` | Full machine-readable report: findings, per-finding **priority** (P-tier/KEV/EPSS/reachability), `tier_summary`, `risk_score`, and a per-framework `compliance_scorecard`. |
 | **Findings CSV** | `--csv` | Full findings spreadsheet: severity, tier, KEV, EPSS, CVE, CWE, compliance, evidence, remediation CLI. |
 | **Compliance CSV** | `--compliance-csv` | Audit-evidence spreadsheet with per-framework control columns (CIS, PCI-DSS, NIST, SOC2, HIPAA). |
+| **Scored benchmark** | `--framework {cis,pci,nist,soc2,hipaa}` / `--benchmark FILE` | Pass/fail **per control** with an overall + per-section **score** (the deliverable auditors ask for). Console table + per-control CSV/JSON. Denominator is the controls the tool evaluates (stated in the output). |
 | **SARIF 2.1.0** | `--sarif` | Static-analysis format for **GitHub code-scanning** / any SARIF viewer — per-rule, dedup, PR annotations, with P-tier/KEV/EPSS in each result's properties. |
 | **OCSF** | `--ocsf` | Open Cybersecurity Schema Framework Compliance Finding events for **SIEM** ingestion (Splunk, Sentinel, Security Lake, Elastic). |
 | **Unified JSON** | `--inventory + --json` | Aggregated multi-device fleet report. |
@@ -471,6 +472,9 @@ python fortinet_scanner.py 10.1.1.1 --token <TOKEN> \
 # Compact console (scorecard + fix-first queue only); no colour for pipes/CI logs
 python fortinet_scanner.py 10.1.1.1 --token <TOKEN> --summary-only --no-color
 
+# Scored CIS benchmark (per-control pass/fail + per-section %) to console + CSV
+python fortinet_scanner.py 10.1.1.1 --token <TOKEN> --framework cis --benchmark cis.csv
+
 # Token via environment variable
 export FORTIOS_API_TOKEN="your-api-token-here"
 python fortinet_scanner.py 10.1.1.1
@@ -627,6 +631,7 @@ Fortinet-Network-Security/
 │   ├── test_new_checks.py        # new config checks + MITRE techniques + legacy KEV CVEs
 │   ├── test_exports.py           # SARIF / OCSF / remediation-script generation
 │   ├── test_reporting.py         # colour gating, compliance scorecard, enriched JSON, findings CSV
+│   ├── test_benchmark.py         # scored CIS/PCI/NIST/SOC2/HIPAA benchmark profile
 │   └── sample_insecure.conf      # Intentionally insecure config for demos/tests
 ├── README.md
 ├── CLAUDE.md                     # Architecture & contributor notes
