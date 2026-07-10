@@ -6,7 +6,8 @@ Fortinet FortiGate Security Scanner — a security posture assessment tool that 
 NGFW configuration against security best practices, 5 compliance frameworks (CIS, PCI-DSS,
 NIST 800-53, SOC 2, HIPAA), 75 known CVEs (2018–2026), and 34 MITRE ATT&CK technique
 resilience tests. Findings export to HTML/PDF/JSON/CSV plus **SARIF 2.1.0 and OCSF** for
-CI / SIEM ingestion, and a fix-first **remediation + rollback CLI script** can be generated
+CI / SIEM ingestion, **SOAR/ticketing payloads** (Jira / ServiceNow / Splunk SOAR / webhook)
+for work-management systems, and a fix-first **remediation + rollback CLI script** can be generated
 from the knowledge base.
 
 Ships in two modes that share the same 22 check methods and rule set:
@@ -121,6 +122,10 @@ report section is never empty. It covers **every** emitted rule_id (0 gaps).
 - `save_sarif` / `save_ocsf` → machine-ingestible **SARIF 2.1.0** (GitHub code-scanning / CI) and
   **OCSF** Compliance Finding events (SIEM), built by `fortinet_export.py`. Each result/event carries
   the P-tier / KEV / EPSS / CVE / CWE / compliance enrichment. Stdlib-only.
+- `save_jira` / `save_servicenow` / `save_splunk_soar` / `save_webhook` → **SOAR/ticketing** payloads
+  (`build_jira`/`build_servicenow`/`build_splunk_soar`/`build_webhook` in `fortinet_export.py`), all
+  routed through `_save_soar(path, builder, label, **cfg)` which passes `prio_by_id`, the KB, and
+  `self._posture_delta`. See the **SOAR & Ticketing Export** section below.
 - `save_findings_csv` (`--csv`) → full findings CSV (severity, tier, KEV, EPSS, CVE, CWE, compliance,
   evidence, remediation CLI). `compliance_scorecard()` gives a per-framework pass/fail rollup that
   the console (`print_compliance_scorecard`), enriched JSON (`schema_version: 2`) and HTML all render.
@@ -130,7 +135,8 @@ report section is never empty. It covers **every** emitted rule_id (0 gaps).
 
 CLI flags: `--html`, `--pdf`, `--csv`, `--compliance-csv`, `--sarif`, `--ocsf`, `--remediation`,
 `--fix-script` / `--rollback-script` / `--fix-tier` / `--fix-script-force`, `--baseline`, `--top`,
-`--no-color`, `--summary-only`, `--refresh-intel` (both live and offline scanners).
+`--jira` / `--servicenow` / `--splunk-soar` / `--webhook` / `--jira-project` / `--jira-api-version` /
+`--soar-min-tier`, `--no-color`, `--summary-only`, `--refresh-intel` (both live and offline scanners).
 
 ## Risk-Prioritization Engine
 
@@ -182,6 +188,15 @@ Score is capped at 100 and mapped by `TIER_THRESHOLDS` (P1≥70, P2≥42, P3≥2
 - **Tests**: `test_data/test_posture.py` (identity stability + entity extraction against REAL scanner formats, lifecycle, exceptions incl. wildcard/entity-scope/expired-fail-open/malformed-fail-open, SLA per-tier + boundary + accepted-excluded, newly-weaponized transition-only + sticky-KEV, priority-overlay-unwrap, trend/risk-delta, corrupt-store fail-open, drift-refactor regression). **159 tests total green.** Adversarial review (13 agents) found 10 confirmed issues, all fixed — notably (HIGH): the entity regexes didn't match the scanner's actual `policy=Name (ID n)` / single-quote / `key=name` formats so per-instance findings collapsed (hid live findings); and `finding_fingerprint(PriorityResult)` returned "" (tier/kev live on `.finding`) so the SLA/weaponization overlay was DEAD in production — unit tests missed it by passing dicts. Also: malformed `expires` now fails open (was permanent suppression), accepted excluded from new/carried, SLA uses `>=` full-timedelta, KEV sticky, host key adds a real serial, resolved records pruned at 180d.
 
 **Config drift** (`_ReportMixin.apply_drift`, `--baseline prior.json`): diffs current findings vs a prior `--json` report by signature `(rule_id, file_path, line_content)`, prints new/resolved + posture-score delta, and adds a `FORTIOS-DRIFT-SUMMARY` finding. **Line_content must be deterministic** for signatures to match — sort any set before joining it into `line_content` (fixed `wan_bad`/`versions`).
+
+## SOAR & Ticketing Export
+
+`fortinet_export.py` — turns the posture record into ACTION: `build_jira` / `build_servicenow` / `build_splunk_soar` / `build_webhook` emit ready-to-POST payloads. All stdlib / JSON-serializable (preserves the offline guarantee); the scanner emits the JSON, a small online poster does the HTTP. CLI on BOTH scanners: `--jira`/`--servicenow`/`--splunk-soar`/`--webhook FILE` + `--jira-project`/`--jira-api-version {2,3}`/`--soar-min-tier {P1..P4}`; dispatched in `main()` **after** `--history` (so `self._posture_delta` exists) via `_ReportMixin.save_jira/…` → `_save_soar(path, builder, label, **cfg)` (passes `prio_by_id=self._prio_by_id()`, `kb=self._report_kb()`, `delta=self._posture_delta`, `scan_epoch`).
+- **Uniform envelope** `{target, meta, items:[{op, dedup_key, body}]}` — `body` is the pristine native payload, `op` ∈ create/update/reopen/resolve/upsert tells the poster the HTTP verb.
+- **The one dedup key** `_dedup_key(host, f)` = `sha1(f"{host}|{finding_fingerprint(f)}")[:16]`. Composes host + the posture fingerprint and hashes — do **NOT** reuse `finding_fingerprint` verbatim: it omits host (two devices' identical findings would collapse to one ticket) and returns a raw string with spaces/quotes (Jira label 400). Excludes `line_content` (cosmetic change = same ticket). `_dedup_key_from_rec(host, rec)` reconstructs `rule_id|entity` **identically** for resolved closures — must match or a ticket leaks. `_posture_host()` is shared with `update_posture` so live-finding keys and delta-rec keys agree (`hostname|serial`, or hostname when serial is absent/`OFFLINE-CONFIG`).
+- **Lifecycle** (`_lifecycle(delta, host)` + `_plan`): new→create, carried→update, reopened→reopen, and **resolved→resolve closures** built from `delta.resolved` recs (they are ABSENT from `self.findings`, so iterating findings alone leaks stale tickets). `min_tier` filtering is symmetric across live and resolved via `_tier_of` / **`_tier_of_rec`** (both fall back to severity→tier when the prioritizer produced no tier — an earlier asymmetry here leaked closures for empty-tier recs under a stricter `--soar-min-tier`, caught by adversarial review).
+- **Per-target fidelity** (researched against vendor docs): Jira v3 **ADF** description (every inline leaf `type:text`; no empty list nodes) or v2 plain string; space-free `fw-fp-<key>` label + `fwFinding` entity property; priority by tier. ServiceNow sets `urgency`+`impact` (**never** `priority` — OOB data lookup overwrites), `correlation_id=fwscan:<key>` (≤100 chars), short_desc≤160/desc≤4000. Splunk SOAR container+embedded artifact, `source_data_identifier` on **both** (`container_id` omitted on embedded artifact), lowercase `high/medium/low`. Webhook = **CloudEvents 1.0** + OCSF/ECS-lite `data` (identity is `data.dedup_key`/`subject`, NOT the per-emission `id`; `epss` is a probability, distinct from `epss_percentile`). KB remediation via `_kb_detail` (falls back to finding attrs when no KB).
+- **Tests**: `test_data/test_soar_export.py` (dedup stability/host-scope/evidence-independence, live↔rec key equality, min-tier + severity fallback, Jira ADF/v2/labels/priority, ServiceNow no-priority + limits, Splunk SDI/severity/no-container_id, webhook CloudEvents identity + epss, full lifecycle incl. resolved closures across all 4 targets, save_* end-to-end). Built research(5-agent web workflow)→build→adversarial-review(6-lens+refute-verify) → 1 confirmed MEDIUM fixed (closure-leak asymmetry).
 
 ## Multi-Device Scanning
 

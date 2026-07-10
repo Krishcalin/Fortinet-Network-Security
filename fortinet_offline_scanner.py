@@ -490,6 +490,20 @@ Examples:
                         help="Export findings as SARIF 2.1.0 (GitHub code-scanning / CI ingestion)")
     parser.add_argument("--ocsf", metavar="FILE",
                         help="Export findings as OCSF Compliance Finding events (SIEM ingestion)")
+    parser.add_argument("--jira", metavar="FILE",
+                        help="Export ready-to-POST Jira create/update issue payloads (idempotent via a stable fingerprint label)")
+    parser.add_argument("--servicenow", metavar="FILE",
+                        help="Export ready-to-POST ServiceNow Incident records (dedup via correlation_id)")
+    parser.add_argument("--splunk-soar", metavar="FILE",
+                        help="Export Splunk SOAR container+artifact payloads (dedup via source_data_identifier)")
+    parser.add_argument("--webhook", metavar="FILE",
+                        help="Export vendor-neutral CloudEvents 1.0 finding events (dedup via data.dedup_key)")
+    parser.add_argument("--jira-project", default="SEC", metavar="KEY",
+                        help="Jira project key for --jira (default: SEC)")
+    parser.add_argument("--jira-api-version", type=int, choices=[2, 3], default=3,
+                        help="Jira API version for --jira: 3=ADF description (default), 2=plain string")
+    parser.add_argument("--soar-min-tier", choices=["P1", "P2", "P3", "P4"], default="P4",
+                        help="Only export findings at/above this priority tier to SOAR/ticketing (default: P4 = all)")
     parser.add_argument("--fix-script", metavar="FILE",
                         help="Generate a fix-first FortiOS CLI remediation script from the knowledge base")
     parser.add_argument("--rollback-script", metavar="FILE",
@@ -616,6 +630,15 @@ Examples:
         scanner.save_sarif(args.sarif)
     if args.ocsf:
         scanner.save_ocsf(args.ocsf)
+    if args.jira:
+        scanner.save_jira(args.jira, project_key=args.jira_project,
+                          min_tier=args.soar_min_tier, api_version=args.jira_api_version)
+    if args.servicenow:
+        scanner.save_servicenow(args.servicenow, min_tier=args.soar_min_tier)
+    if args.splunk_soar:
+        scanner.save_splunk_soar(args.splunk_soar, min_tier=args.soar_min_tier)
+    if args.webhook:
+        scanner.save_webhook(args.webhook, min_tier=args.soar_min_tier)
     if args.fix_script:
         scanner.save_remediation_script(args.fix_script, args.rollback_script,
                                         tier_max=args.fix_tier, force=args.fix_script_force)

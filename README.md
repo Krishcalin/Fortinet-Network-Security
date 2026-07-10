@@ -5,7 +5,7 @@
 <h1 align="center">Fortinet FortiGate Security Scanner</h1>
 
 <p align="center">
-  <strong>Agentless FortiGate NGFW posture assessment — live API or offline <code>.conf</code> — with MITRE ATT&CK resilience scoring,<br/>75 CVE checks, 5-framework compliance mapping, SARIF/OCSF export, remediation-script generation, and a 237-entry detailed remediation runbook.</strong>
+  <strong>Agentless FortiGate NGFW posture assessment — live API or offline <code>.conf</code> — with MITRE ATT&CK resilience scoring,<br/>75 CVE checks, 5-framework compliance mapping, SARIF/OCSF + SOAR/ticketing export, remediation-script generation, and a 237-entry detailed remediation runbook.</strong>
 </p>
 
 <p align="center">
@@ -65,7 +65,7 @@ It runs in **two modes that share one engine, one rule set, and one report layer
 
 Offline mode exists for the places live scanning cannot reach: **OT / ICS networks, air-gapped enclaves, and locked-down operator workstations** where you cannot open a socket to the firewall or `pip install` anything.
 
-> **280+ checks · risk-prioritization engine (P1–P4, KEV + EPSS + reachability gating) · fleet analysis console · continuous posture state (exceptions + SLA + trend) · traffic-aware policy engine (reachability query + IP-overlap shadow + simulate) · scored compliance benchmark · rule-base analysis + Policy Control Index · attack-surface + config-drift · 34 MITRE ATT&CK techniques · 75 FortiOS CVEs · 5 compliance frameworks · 237-entry remediation knowledge base · SARIF/OCSF + fix-script generation · HTML + PDF + JSON + CSV reports**
+> **280+ checks · risk-prioritization engine (P1–P4, KEV + EPSS + reachability gating) · fleet analysis console · continuous posture state (exceptions + SLA + trend) · traffic-aware policy engine (reachability query + IP-overlap shadow + simulate) · scored compliance benchmark · rule-base analysis + Policy Control Index · attack-surface + config-drift · 34 MITRE ATT&CK techniques · 75 FortiOS CVEs · 5 compliance frameworks · 237-entry remediation knowledge base · SARIF/OCSF + fix-script generation · SOAR/ticketing export (Jira · ServiceNow · Splunk SOAR · webhook) · HTML + PDF + JSON + CSV reports**
 
 ---
 
@@ -120,6 +120,7 @@ Open `report.html` in any browser, hand `report.pdf` to management, give `runboo
 | **75 known CVEs** | FortiGuard PSIRT 2018–2026 + CISA KEV, train-based firmware version matching (FortiOS 5.2 → 7.6) |
 | **5 compliance frameworks** | CIS FortiGate, PCI-DSS 4.0, NIST 800-53 Rev 5, SOC 2 Type II, HIPAA — 89 rule-to-control mappings |
 | **SARIF 2.1.0 + OCSF export** | `--sarif` for GitHub code-scanning / CI, `--ocsf` for SIEM (Splunk/Sentinel/Security Lake) — stdlib-only |
+| **SOAR / ticketing export** | `--jira` / `--servicenow` / `--splunk-soar` / `--webhook` emit ready-to-POST payloads with a stable dedup key (re-scan *updates*, never duplicates) and posture-driven **close** events for resolved findings; `--soar-min-tier` gates by P1–P4 |
 | **Remediation + rollback scripts** | `--fix-script` assembles a fix-first FortiOS CLI batch from the KB (disruptive fixes commented out); `--rollback-script` writes the paired undo |
 | **237-entry remediation KB** | Per finding: risk · numbered steps · GUI path · verified CLI · verification command · rollback · service impact · references |
 | **HTML + PDF reports** | Rich self-contained HTML and paginated PDF — both **stdlib-only** (no reportlab / weasyprint) |
@@ -386,9 +387,38 @@ Interface scope is only asserted when you supply `--via`; otherwise the verdict 
 | **Scored benchmark** | `--framework {cis,pci,nist,soc2,hipaa}` / `--benchmark FILE` | Pass/fail **per control** with an overall + per-section **score** (the deliverable auditors ask for). Console table + per-control CSV/JSON. Denominator is the controls the tool evaluates (stated in the output). |
 | **SARIF 2.1.0** | `--sarif` | Static-analysis format for **GitHub code-scanning** / any SARIF viewer — per-rule, dedup, PR annotations, with P-tier/KEV/EPSS in each result's properties. |
 | **OCSF** | `--ocsf` | Open Cybersecurity Schema Framework Compliance Finding events for **SIEM** ingestion (Splunk, Sentinel, Security Lake, Elastic). |
+| **SOAR / ticketing** | `--jira` / `--servicenow` / `--splunk-soar` / `--webhook` | Ready-to-POST **work-item payloads** — Jira issues, ServiceNow incidents, Splunk SOAR containers, or a vendor-neutral **CloudEvents 1.0** webhook — each carrying the full KB remediation and a **stable dedup key** so a re-scan *updates* the ticket instead of duplicating it. With `--history`, resolved findings emit **close** events. `--soar-min-tier` gates by P1–P4. See [SOAR & Ticketing Export](#soar--ticketing-export). |
 | **Unified JSON** | `--inventory + --json` | Aggregated multi-device fleet report. |
 
 All reports are self-contained and dependency-free — the exact same output is produced in live and offline mode.
+
+---
+
+## SOAR & Ticketing Export
+
+A findings report is a dead end until the work lands in the queue someone actually watches. The **Continuous Posture State** already knows what is new, carried, and resolved run-over-run — this turns that record into **action**, emitting ready-to-POST payloads for the four systems firewall teams live in:
+
+```bash
+# Jira issues (P2+ only), ServiceNow incidents, Splunk SOAR containers, or a neutral webhook
+python fortinet_offline_scanner.py fw.conf --history posture.json \
+    --jira jira.json --jira-project SEC --soar-min-tier P2
+python fortinet_offline_scanner.py fw.conf --servicenow snow.json
+python fortinet_offline_scanner.py fw.conf --splunk-soar soar.json
+python fortinet_offline_scanner.py fw.conf --webhook events.json
+```
+
+Each file is a uniform envelope — `{target, meta, items:[{op, dedup_key, body}]}` — where `body` is the **pristine native payload** and `op` (`create`/`update`/`reopen`/`resolve`/`upsert`) tells your poster which HTTP verb to use. The scanner is **offline** (it emits the JSON; a small online poster does the HTTP), so it stays stdlib-only and air-gap-safe.
+
+| Target | Native shape | Idempotency field |
+|--------|--------------|-------------------|
+| **Jira** (`--jira`) | `POST /rest/api/3/issue` body — ADF description (v3) or plain string (`--jira-api-version 2`), priority from tier, KB remediation rendered inline | `fw-fp-<key>` **label** + `fwFinding` entity property (poster searches by label, then POST or PUT) |
+| **ServiceNow** (`--servicenow`) | Incident record — `urgency`+`impact` (never `priority`: the OOB data lookup derives it), truncated to field limits | `correlation_id = fwscan:<key>` (query-then-PATCH, or Import-Set coalesce) |
+| **Splunk SOAR** (`--splunk-soar`) | One container + embedded artifact, `cef` indicators, lowercase `high/medium/low` severity | `source_data_identifier` on **both** container and artifact |
+| **Webhook** (`--webhook`) | **CloudEvents 1.0** + OCSF/ECS-lite `data` — the richest, keeps the KB structured; lifecycle in `type` and `data.event` | `data.dedup_key` (record identity, distinct from the per-emission `id`) |
+
+**The one dedup key that makes it idempotent.** Every item's key is `sha1("<device>|<rule_id>[|<entity>]")[:16]` — the same **stable identity** the posture engine uses, so producer and consumer never disagree on *"is this the same finding?"*. It includes the **device** (two firewalls' identical findings don't collapse into one ticket) and deliberately **excludes the evidence line** (a cosmetic config change — `admintimeout 30 → 20` — maps to the *same* ticket, not a resolve-and-recreate churn).
+
+**Resolved findings close their tickets.** This is the part naïve exporters miss: a resolved finding is *absent* from the current scan — it exists only in the posture delta. With `--history`, each builder emits an explicit **`resolve`** item (keyed identically to the ticket it opened), so stale tickets don't leak open forever. Reopened findings restart the SLA clock on the *same* ticket.
 
 ---
 
@@ -606,7 +636,7 @@ python fortinet_offline_scanner.py fw1.conf \
 python fortinet_offline_scanner.py fw1.conf --severity HIGH -v
 ```
 
-**Works offline (from the `.conf` alone):** all config-audit + rule-base/object-hygiene categories, all 75 CVEs, all 34 MITRE ATT&CK tests, all 89 compliance mappings, SARIF/OCSF export, remediation-script generation, and the full 237-entry remediation runbook. Multi-VDOM configs collapse to the last-seen VDOM as an audit baseline.
+**Works offline (from the `.conf` alone):** all config-audit + rule-base/object-hygiene categories, all 75 CVEs, all 34 MITRE ATT&CK tests, all 89 compliance mappings, SARIF/OCSF + SOAR/ticketing export, remediation-script generation, and the full 237-entry remediation runbook. Multi-VDOM configs collapse to the last-seen VDOM as an audit baseline.
 
 **Skipped offline** (no runtime data in a static `.conf`): live FortiGuard license/subscription state, HA peer sync status, and current signature-database age. These fire normally in live mode.
 
@@ -641,6 +671,15 @@ usage: fortinet_scanner.py [-h] [--token TOKEN] [--verify-ssl] [--timeout SEC]
   --query "SRC DST PORT[/PROTO]"  Traffic-aware reachability query (which rule permits/denies a flow), then exit
   --via "INGRESS,EGRESS"  Optional interface path for --query (else interface scope is not verified)
   --simulate FILE         Simulate a proposed policy (JSON) — shadow + exposure impact, then exit
+  --sarif FILE            Export findings as SARIF 2.1.0 (GitHub code-scanning / CI)
+  --ocsf FILE             Export findings as OCSF Compliance Finding events (SIEM)
+  --jira FILE             Export ready-to-POST Jira create/update issue payloads
+  --servicenow FILE       Export ready-to-POST ServiceNow Incident records
+  --splunk-soar FILE      Export Splunk SOAR container+artifact payloads
+  --webhook FILE          Export vendor-neutral CloudEvents 1.0 finding events
+  --jira-project KEY      Jira project key for --jira (default: SEC)
+  --jira-api-version {2,3}  Jira description format: 3=ADF (default), 2=plain string
+  --soar-min-tier {P1,P2,P3,P4}  Only export findings at/above this tier (default: P4 = all)
   --top [N]               Print the risk-prioritized fix-first queue (top N, default 10)
   --refresh-intel         Refresh the bundled KEV+EPSS threat-intel snapshot, then exit (needs internet)
   --export-intel FILE     Copy the current threat-intel snapshot to FILE (sneakernet), then exit
@@ -658,6 +697,10 @@ usage: fortinet_offline_scanner.py [-h] [--conf-dir DIR] [--fleet-inputs PATH ..
                                    [--remediation FILE] [--compliance-csv FILE]
                                    [--baseline FILE] [--history FILE] [--exceptions FILE]
                                    [--query "..."] [--via "..."] [--simulate FILE]
+                                   [--sarif FILE] [--ocsf FILE]
+                                   [--jira FILE] [--servicenow FILE] [--splunk-soar FILE] [--webhook FILE]
+                                   [--jira-project KEY] [--jira-api-version {2,3}]
+                                   [--soar-min-tier {P1,P2,P3,P4}]
                                    [--top [N]] [--refresh-intel]
                                    [--export-intel FILE] [--import-intel FILE]
                                    [--severity {CRITICAL,HIGH,MEDIUM,LOW,INFO}]
@@ -726,7 +769,7 @@ Fortinet-Network-Security/
 ├── fortinet_html.py              # Rich self-contained HTML report generator
 ├── fortinet_pdf.py               # Paginated PDF report layout
 ├── pdf_writer.py                 # Minimal, dependency-free PDF 1.4 writer (stdlib only)
-├── fortinet_export.py            # SARIF 2.1.0 + OCSF export builders (stdlib only)
+├── fortinet_export.py            # SARIF 2.1.0 + OCSF + SOAR/ticketing (Jira/ServiceNow/Splunk/webhook) export builders (stdlib only)
 ├── test_data/
 │   ├── test_offline_parser.py    # pytest cases for the .conf parser + end-to-end smoke
 │   ├── test_rulebase.py          # rule-base / exposure / drift / object-hygiene tests
@@ -739,6 +782,7 @@ Fortinet-Network-Security/
 │   ├── test_bugfixes.py          # regressions for the 10 adversarial-review bug fixes
 │   ├── test_new_checks.py        # new config checks + MITRE techniques + legacy KEV CVEs
 │   ├── test_exports.py           # SARIF / OCSF / remediation-script generation
+│   ├── test_soar_export.py       # SOAR/ticketing (Jira/ServiceNow/Splunk/webhook): dedup key, lifecycle, min-tier
 │   ├── test_reporting.py         # colour gating, compliance scorecard, enriched JSON, findings CSV
 │   ├── test_benchmark.py         # scored CIS/PCI/NIST/SOC2/HIPAA benchmark profile
 │   ├── test_hardening.py         # hardening check-pack (ADMIN-026/SSLVPN-016/SYS-019/NET-019/NET-020)
