@@ -65,7 +65,7 @@ It runs in **two modes that share one engine, one rule set, and one report layer
 
 Offline mode exists for the places live scanning cannot reach: **OT / ICS networks, air-gapped enclaves, and locked-down operator workstations** where you cannot open a socket to the firewall or `pip install` anything.
 
-> **260+ checks · 22 domains · risk-prioritization engine (P1–P4, KEV + EPSS + reachability gating) · fleet analysis console · continuous posture state (exceptions + SLA + trend) · rule-base analysis + Policy Control Index · attack-surface + config-drift · 31 MITRE ATT&CK techniques · 70 FortiOS CVEs · 5 compliance frameworks · 237-entry remediation knowledge base · HTML + PDF + JSON + CSV reports**
+> **260+ checks · 23 domains · risk-prioritization engine (P1–P4, KEV + EPSS + reachability gating) · fleet analysis console · continuous posture state (exceptions + SLA + trend) · traffic-aware policy engine (reachability query + IP-overlap shadow + simulate) · rule-base analysis + Policy Control Index · attack-surface + config-drift · 31 MITRE ATT&CK techniques · 70 FortiOS CVEs · 5 compliance frameworks · 237-entry remediation knowledge base · HTML + PDF + JSON + CSV reports**
 
 ---
 
@@ -80,6 +80,7 @@ Most config checkers stop at *"you have a problem."* This one is built around *"
 - 🚦 **Tells you what to fix *first*, with evidence.** A [Risk-Prioritization Engine](#risk-prioritized-remediation-queue) fuses base severity with **real-world exploitability** — CISA **KEV** (known-exploited) membership and **FIRST.org EPSS** scores for CVE findings — and the scanner's own **internet-reachability** analysis into transparent **P1–P4 fix-first tiers**. Every ranking shows the exact factors that produced it. A bundled threat-intel snapshot keeps this working **offline**; `--refresh-intel` updates it when online.
 - 🧩 **Fleet-scale & pipeline-native.** Scan a JSON inventory of devices with a unified report, and gate CI/CD on the exit code. A [Fleet Analysis Console](#fleet-analysis-console) aggregates a whole folder of `.conf` backups into a **worst-device ranking** and **"one fix clears N firewalls"** campaigns — offline and stdlib-only.
 - 🧠 **It remembers.** A [Continuous Posture State](#continuous-posture-state) turns each run into a **system of record** — new/resolved since last scan, **risk-acceptance exceptions** that stop nagging until they expire, **SLA aging** against the P1–P4 windows, and **newly-weaponized** alerts — all keyed on a stable finding identity so a cosmetic config edit never corrupts the history.
+- 🚦 **It reasons about traffic, not just names.** A [Traffic-Aware Policy Engine](#traffic-aware-policy-engine) resolves objects to real IP/port intervals to answer *"is this flow permitted, by which rule?"* (`--query`), find **shadowed/redundant rules by true CIDR overlap**, and **simulate a change before deploy** — and it **fails to OPAQUE** rather than guess across a VIP/DNAT, FQDN, or IPv6 it can't resolve.
 
 ---
 
@@ -337,6 +338,32 @@ It tracks:
 
 ---
 
+## Traffic-Aware Policy Engine
+
+Rule-base checks that compare *object names* miss the flows that matter. This engine resolves address objects/groups to real **IP intervals** and services to **(protocol, port) sets** (stdlib `ipaddress` only) and reasons about actual traffic — answering the single most common firewall-audit / incident-response question:
+
+```bash
+# "Is 192.168.1.10 -> 10.0.1.7 : 22 permitted, and by which rule?"
+python fortinet_offline_scanner.py fortigate.conf --query "192.168.1.10 10.0.1.7 22/tcp"
+#   Verdict: DENY   policy 4 ('Deny-DB-SSH', action deny)
+```
+
+Three capabilities:
+
+- **Reachability query** (`--query "SRC DST PORT[/PROTO]"`) — walks the enabled policies in first-match order and returns the **deciding rule** with an ALLOW / DENY / **OPAQUE** verdict. Optionally pin the path with `--via "ingress,egress"`.
+- **True IP/port-overlap shadow analysis** — a new check (`FORTIOS-RULEBASE-101/102`) that finds **shadowed (dead) and redundant rules by real CIDR/port coverage**, catching an earlier broad-subnet rule that silently kills a later specific one even when the object names differ. It is *layered beside* the name-based analysis, not replacing it.
+- **Pre-change simulation** (`--simulate proposed.json`) — splice a proposed policy into the rule base and get a change-impact report **before you deploy**: is it dead-on-arrival (shadowed by an earlier rule), does it shadow existing rules, does it open any-source internet exposure?
+
+**It fails to OPAQUE, never to a guess.** A confidently-wrong *"permitted"* is worse than *"I can't tell"* — so any factor a static config cannot reliably resolve yields an **OPAQUE** verdict (or excludes the object from overlap analysis) with the exact reason, instead of a definitive answer:
+
+- a **VIP / DNAT** on the path (the marquee inbound-to-a-published-IP case) — the translation isn't modelled, so the engine says so rather than guessing;
+- **FQDN / Internet-Service / geography / dynamic / wildcard** address objects, unknown services, and **IPv6**;
+- **negated** matches and **schedule**-restricted rules (time-dependent).
+
+Interface scope is only asserted when you supply `--via`; otherwise the verdict carries an explicit *"interface not verified"* caveat. It's all stdlib — the whole engine runs offline on a `.conf` backup.
+
+---
+
 ## Reports & Output Formats
 
 | Format | Flag | Description |
@@ -584,6 +611,9 @@ usage: fortinet_scanner.py [-h] [--token TOKEN] [--verify-ssl] [--timeout SEC]
   --inventory FILE        Multi-device JSON inventory for batch scanning
   --history FILE          Continuous posture: update the system of record, report what changed
   --exceptions FILE       Risk-acceptance file for the posture report (accept/defer, fail-open)
+  --query "SRC DST PORT[/PROTO]"  Traffic-aware reachability query (which rule permits/denies a flow), then exit
+  --via "INGRESS,EGRESS"  Optional interface path for --query (else interface scope is not verified)
+  --simulate FILE         Simulate a proposed policy (JSON) — shadow + exposure impact, then exit
   --top [N]               Print the risk-prioritized fix-first queue (top N, default 10)
   --refresh-intel         Refresh the bundled KEV+EPSS threat-intel snapshot, then exit (needs internet)
   --export-intel FILE     Copy the current threat-intel snapshot to FILE (sneakernet), then exit
@@ -600,6 +630,7 @@ usage: fortinet_offline_scanner.py [-h] [--conf-dir DIR] [--fleet-inputs PATH ..
                                    [--json FILE] [--html FILE] [--pdf FILE]
                                    [--remediation FILE] [--compliance-csv FILE]
                                    [--baseline FILE] [--history FILE] [--exceptions FILE]
+                                   [--query "..."] [--via "..."] [--simulate FILE]
                                    [--top [N]] [--refresh-intel]
                                    [--export-intel FILE] [--import-intel FILE]
                                    [--severity {CRITICAL,HIGH,MEDIUM,LOW,INFO}]
@@ -611,6 +642,9 @@ usage: fortinet_offline_scanner.py [-h] [--conf-dir DIR] [--fleet-inputs PATH ..
                           (files, globs, or directories of *.json)
   --history FILE          Continuous posture: system of record + what-changed report
   --exceptions FILE       Risk-acceptance file for the posture report (fail-open)
+  --query "SRC DST PORT[/PROTO]"  Traffic-aware reachability query, then exit
+  --via "INGRESS,EGRESS"  Optional interface path for --query
+  --simulate FILE         Simulate a proposed policy (JSON), then exit
   # In fleet mode, --html/--pdf/--json write the aggregated FLEET report.
 ```
 
@@ -661,6 +695,7 @@ Fortinet-Network-Security/
 ├── fleet_html.py                 # Fleet HTML report generator (stdlib, self-contained)
 ├── fleet_pdf.py                  # Fleet PDF report generator (stdlib pdf_writer)
 ├── posture.py                    # Continuous Posture State: stable identity + history/exceptions/SLA/trend
+├── policy_analyzer.py            # Traffic-Aware Policy Engine: IP/port intervals, query, overlap, simulate
 ├── fortinet_html.py              # Rich self-contained HTML report generator
 ├── fortinet_pdf.py               # Paginated PDF report layout
 ├── pdf_writer.py                 # Minimal, dependency-free PDF 1.4 writer (stdlib only)
@@ -671,6 +706,8 @@ Fortinet-Network-Security/
 │   ├── test_cve_reachability.py  # CVE reachability predicates + gating scoring tests
 │   ├── test_fleet_report.py      # fleet aggregation / de-dup / campaigns / rendering tests
 │   ├── test_posture.py           # posture identity / lifecycle / exceptions / SLA / drift tests
+│   ├── test_policy_analyzer.py   # interval math / OPAQUE resolution / query / overlap / simulate tests
+│   ├── sample_policy.conf        # Config with address/service/VIP objects for policy-engine tests
 │   └── sample_insecure.conf      # Intentionally insecure config for demos/tests
 ├── README.md
 ├── CLAUDE.md                     # Architecture & contributor notes

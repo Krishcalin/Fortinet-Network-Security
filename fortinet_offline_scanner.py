@@ -399,6 +399,7 @@ class OfflineFortinetScanner(FortinetScanner):
             ("System Settings",         self._check_system_settings),
             ("Firewall Policies",       self._check_firewall_policies),
             ("Rule-Base Analysis",      self._check_rulebase),
+            ("Policy Overlap (traffic-aware)", self._check_policy_overlap),
             ("Rule Usage",              self._check_rule_usage),
             ("Object Hygiene",          self._check_object_hygiene),
             ("Attack Surface",          self._check_exposure),
@@ -485,6 +486,14 @@ Examples:
                         help="Export compliance CSV (CIS, PCI-DSS, NIST, SOC2, HIPAA)")
     parser.add_argument("--baseline", metavar="FILE",
                         help="Prior --json report to diff against (config drift: new vs resolved + posture delta)")
+    parser.add_argument("--query", metavar='"SRC DST PORT[/PROTO]"',
+                        help="Traffic-aware reachability query: is a flow permitted, and by which policy? "
+                             'e.g. --query "192.168.1.10 8.8.8.8 443/tcp". Then exit.')
+    parser.add_argument("--via", metavar='"INGRESS,EGRESS"',
+                        help="Optional ingress,egress interfaces for --query (else interface scope is not verified).")
+    parser.add_argument("--simulate", metavar="FILE",
+                        help="Simulate a proposed firewall policy (JSON) against the config: shadow relationships + "
+                             "internet-exposure impact, before you deploy it. Then exit.")
     parser.add_argument("--history", metavar="FILE",
                         help="Continuous posture: update the file-based system of record and report what changed "
                              "since last scan (new/resolved/accepted/SLA/newly-weaponized/trend).")
@@ -531,6 +540,15 @@ Examples:
         return 2
 
     scanner = OfflineFortinetScanner(args.conf, verbose=args.verbose)
+
+    # Traffic-aware policy engine actions only need the parsed config, not a full scan.
+    if args.query or args.simulate:
+        if not scanner._get_system_status():
+            print("[!] Could not parse the config header (no '#config-version=').", file=sys.stderr)
+            return 2
+        from fortinet_scanner import policy_action
+        return policy_action(scanner, args)
+
     scanner.scan()
 
     # Posture tracking runs on the FULL finding set, before any severity filter.

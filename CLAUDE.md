@@ -21,6 +21,7 @@ Ships in two modes that share the same 22 check methods and rule set:
   - `cve_reachability.py` — per-CVE config-reachability gating (is the vulnerable feature enabled/internet-facing?)
   - `fleet_report.py` + `fleet_html.py` + `fleet_pdf.py` — Fleet Analysis Console (aggregate many scans → ranking + campaigns)
   - `posture.py` — Continuous Posture State (stable finding identity + history store + exceptions + SLA + trend)
+  - `policy_analyzer.py` — Traffic-Aware Policy Engine (IP/port interval resolution + query + CIDR-overlap shadow + simulate)
   - `fortinet_html.py` — rich self-contained HTML report (`FortinetHTMLReport`)
   - `fortinet_pdf.py` + `pdf_writer.py` — paginated PDF report (`FortinetPDFReport`) on a hand-rolled PDF 1.4 writer (no reportlab/weasyprint)
 - **Version**: 4.0.0 (engine) / 1.0.0 (offline adapter)
@@ -139,6 +140,18 @@ Score is capped at 100 and mapped by `TIER_THRESHOLDS` (P1≥70, P2≥42, P3≥2
 - **`FleetReport(records)`** computes: worst-device ranking (risk_score, P1, crit), **prevalence campaigns** (one entry per rule_id, counted once per device even if it fires multiple times, ranked by device coverage then severity; CVE campaigns show `reachable` count from the per-device verdict; verbatim fix from RemediationKB), **systemic** findings (≥`ceil(0.75*n)` devices), firmware/model distribution.
 - **De-dup is hostname-first** (offline serial is the placeholder `"OFFLINE-CONFIG"`, useless for identity): a real serial disambiguates same-hostname devices; else hostname collisions get a `#N` suffix and are surfaced in `collisions` so counts are neither inflated nor collapsed. GOTCHA: `_record_from_conf` catches `SystemExit`+`Exception` so one unparseable backup can't abort the whole fleet run; `filter_severity` is NOT applied in fleet mode (aggregate needs all findings).
 - **Tests**: `test_data/test_fleet_report.py` (record/counts, dedup+collision, ranking, campaign prevalence+reachability gating, systemic, JSON ingest, render JSON/HTML/PDF, empty-fleet safety, + review regressions: INFO-excluded, systemic float-rounding, phantom-config skip, realpath input dedup). **134 tests total green.** Adversarial review (11 agents) found 8 confirmed issues, all fixed — notably: an unparseable/garbage `.conf` was mis-scanned as a phantom score-100 device (the offline scanner never `sys.exit`s, so the SystemExit skip was dead code) → now requires a parsed FortiOS version; INFO dropped for cross-path consistency; `dict|dict` union replaced (py3.8-safe); systemic threshold `ceil(round(...))`; realpath input de-dup; positional conf folded into fleet mode.
+
+## Traffic-Aware Policy Engine
+
+`policy_analyzer.py` (stdlib `ipaddress` only) — reasons about real traffic, not object names. **Core promise: fail to OPAQUE, never guess** — any factor a static config can't resolve yields an OPAQUE verdict (or is excluded from overlap), never a false ALLOW/DENY.
+- **`IPSet`** (merged [lo,hi] IPv4 interval list: from_cidr/from_subnet_field/from_range, contains/covers/overlaps) + **`PortSet`** (set of (proto,lo,hi) + `*`; matches/covers/overlaps). `PREDEFINED_SERVICES` bundles ~50 common FortiOS services; unknown predefined → OPAQUE (not guessed).
+- **`Resolver`** resolves address objects/groups → `Addr(ipset, opaque, reason, vip)` and services → `Svc(portset, opaque, reason)`, recursive group expansion. OPAQUE on: FQDN/geography/dynamic/wildcard/interface-subnet/mac/internet-service types, IPv6, unknown objects, negated matches, TCP/UDP service with no portrange. A group is opaque if any member is (resolvable part still kept for definite-hit). VIP objects resolve to their extip + flagged `vip`.
+- **`PolicyModel.from_scanner(scanner)`** reads `firewall/address|addrgrp|vip|policy` + **`firewall.service/custom|group`** (DOTTED path). Enabled policies sorted by policyid (first-match order).
+- **`query(src,dst,port,proto,ingress?,egress?)`** → `QueryResult(ALLOW/DENY/OPAQUE, policy, reason, caveats)`. Per-component match is YES/NO/**MAYBE**; any MAYBE before a definite match → OPAQUE. Dst = a VIP extip → OPAQUE (DNAT). Schedule≠always / negation / VIP-dstaddr → MAYBE→OPAQUE. Interface only decisive with `--via`; else a "not verified" caveat (still returns a verdict). IPv6 → OPAQUE.
+- **`overlap_findings()`** — true CIDR/port coverage shadow (earlier action≠later, later is DEAD) / redundant (same action); skips any policy with OPAQUE/VIP objects. Emitted by **`_check_policy_overlap`** as `FORTIOS-RULEBASE-101` (shadowed, HIGH, CWE-561) / `102` (redundant, LOW, CWE-710), **layered beside** the name-based `001/002` (registered in BOTH scan lists).
+- **`simulate(proposed_policy_dict)`** — splice + report dead-on-arrival / shadows-existing / any-source-accept exposure. Descriptive only, never asserts "safe".
+- **CLI** (both scanners): `--query "SRC DST PORT[/PROTO]"` + `--via "in,eg"`, `--simulate FILE`. Dispatched in `main()` BEFORE `scanner.scan()` (only needs parsed config, not a full scan) via `policy_action`/`_run_query`/`_run_simulate` in fortinet_scanner.py.
+- **Tests**: `test_data/test_policy_analyzer.py` (interval math, OPAQUE resolution per type, query ALLOW/DENY/OPAQUE incl. VIP/FQDN/IPv6/negate/schedule/interface-via/zones, overlap redundant/shadowed + skip-opaque + interface-scope + name-covered-dedup, simulate, offline integration) + `test_data/sample_policy.conf`. **189 tests total green.** Adversarial review (13 agents) found 9 confirmed issues, all fixed — **notably 2 HIGH false-ALLOWs**: `srcaddr/dstaddr/service-negate` left the literal members in the set so `_addr_comp`/`_svc_comp` returned a definite YES before checking `opaque` (an IP INSIDE a negated set read as ALLOW) → added a `negated` flag that forces MAYBE→OPAQUE; and `internet-service enable` (ISDB) policies were matched only on srcaddr/dstaddr/service, ignoring the DB → now OPAQUE via `_isdb()`. Also (HIGH): interface **zones** now expand (`system/zone`), and a `--via` mismatch against an unclassifiable interface is OPAQUE not a false DENY; first-match now preserves **config/sequence order** (removed the wrong `policyid` sort). Plus 101 severity is HIGH only for accept-shadows-deny (else MEDIUM), overlap cap raised + `FORTIOS-RULEBASE-103` INFO on truncation, 101/102 de-duplicated vs name-based via `name_covered`, and `--via`/proto input validation.
 
 ## Continuous Posture State
 
@@ -299,7 +312,11 @@ python fortinet_offline_scanner.py --fleet-inputs reports/ --html fleet.html
 # Continuous posture (system of record + what-changed since last scan)
 python fortinet_offline_scanner.py fw1.conf --history posture.json --exceptions accepted.json
 
-# Tests (159 cases: parser + rulebase + risk-prioritizer + cve-reachability + fleet + posture)
+# Traffic-aware policy engine — reachability query / simulate a proposed policy
+python fortinet_offline_scanner.py fw1.conf --query "192.168.1.10 10.0.1.7 22/tcp"
+python fortinet_offline_scanner.py fw1.conf --simulate proposed_policy.json
+
+# Tests (189 cases: parser + rulebase + risk-prioritizer + cve-reachability + fleet + posture + policy-engine)
 python -m pytest test_data/ -v
 ```
 

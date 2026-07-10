@@ -1737,6 +1737,7 @@ class FortinetScanner(_ReportMixin):
             ("System Settings",      self._check_system_settings),
             ("Firewall Policies",    self._check_firewall_policies),
             ("Rule-Base Analysis",   self._check_rulebase),
+            ("Policy Overlap (traffic-aware)", self._check_policy_overlap),
             ("Rule Usage",           self._check_rule_usage),
             ("Object Hygiene",       self._check_object_hygiene),
             ("Attack Surface",       self._check_exposure),
@@ -2638,6 +2639,77 @@ class FortinetScanner(_ReportMixin):
         if b is None:
             return False
         return bool(b) and b.issubset(a)
+
+    def _check_policy_overlap(self) -> None:
+        """Traffic-aware shadow/redundancy via TRUE CIDR/port-interval coverage
+        (not name matching), so it catches an earlier broad-subnet rule that
+        shadows a later specific one even when the object names differ. Layered
+        beside the name-based FORTIOS-RULEBASE-001/002; skips any policy with
+        OPAQUE (FQDN/ISDB/geo/wildcard/VIP) objects — never asserts coverage it
+        cannot prove."""
+        _host = self._sys_info.get("hostname", self.host)
+        try:
+            from policy_analyzer import PolicyModel
+            model = PolicyModel.from_scanner(self)
+        except Exception as exc:  # pragma: no cover - defensive
+            self._warn(f"policy overlap analysis unavailable: {exc}")
+            return
+        if len(model.policies) < 2:
+            return
+        overlaps, truncated = model.overlap_findings()
+        for o in overlaps:
+            # Only report what the coarse name-based FORTIOS-RULEBASE-001/002 would
+            # MISS — pairs whose objects overlap by CIDR/port but not by name — so
+            # the two checks don't double-report the same pair.
+            if o.get("name_covered"):
+                continue
+            shadowed = o["kind"] == "shadowed"
+            rid = "FORTIOS-RULEBASE-101" if shadowed else "FORTIOS-RULEBASE-102"
+            ea, la = o["earlier_action"], o["later_action"]
+            # A shadowed rule is HIGH only when a permissive earlier rule buries a
+            # RESTRICTIVE (deny) later one — the restriction is silently lost.
+            sev = "HIGH" if (shadowed and ea == "accept" and la == "deny") else \
+                  ("MEDIUM" if shadowed else "LOW")
+            if shadowed:
+                effect = (f"Because the actions differ (earlier {ea} / later {la}), policy {o['later']} is DEAD — it can "
+                          "never match. " + ("A restrictive deny rule is silently overridden by the earlier accept."
+                                             if ea == "accept" and la == "deny" else
+                                             "Its intended effect is silently lost."))
+            else:
+                effect = (f"Because the actions match ({ea}), policy {o['later']} is redundant and can be removed to "
+                          "simplify the rule base.")
+            self._add(Finding(
+                rule_id=rid,
+                name=("Shadowed policy (dead rule) — by IP/port overlap" if shadowed
+                      else "Redundant policy — by IP/port overlap"),
+                category="Rule-Base Analysis", severity=sev,
+                file_path=_host, line_num=None,
+                line_content=(f"policy {o['later']} ('{o['later_name']}') is {o['kind']} by earlier policy "
+                              f"{o['earlier']} ('{o['earlier_name']}') [{ea}/{la}] via CIDR/port coverage"),
+                description=(
+                    f"Earlier policy {o['earlier']} ('{o['earlier_name']}', action {ea}) fully covers policy "
+                    f"{o['later']} ('{o['later_name']}', action {la}) on interfaces, source, destination and service "
+                    f"by real IP/port-interval overlap — which name-based analysis does not catch. " + effect),
+                recommendation=(
+                    f"Review policies {o['earlier']} and {o['later']}. "
+                    + ("Move the more-specific rule above the broader one, or narrow the earlier rule, so the "
+                       "intended restriction actually applies." if shadowed
+                       else "Remove the redundant later rule after confirming no logging/UTM difference.")),
+                cwe="CWE-561" if shadowed else "CWE-710",
+            ))
+        if truncated:
+            self._add(Finding(
+                rule_id="FORTIOS-RULEBASE-103",
+                name="Policy overlap analysis truncated (large rule base)",
+                category="Rule-Base Analysis", severity="INFO",
+                file_path=_host, line_num=None,
+                line_content="CIDR/port overlap comparison cap reached — not all policy pairs were compared",
+                description=("The rule base is large enough that the interval-overlap shadow analysis hit its "
+                             "comparison cap and did not evaluate every policy pair. Some shadowed/redundant rules "
+                             "may not be reported."),
+                recommendation="Reduce rule-base size, or run overlap analysis on a per-VDOM / per-interface subset.",
+                cwe="CWE-710",
+            ))
 
     def _check_rulebase(self) -> None:
         _host = self._sys_info.get("hostname", self.host)
@@ -6453,6 +6525,14 @@ Examples:
     parser.add_argument("--compliance-csv", metavar="FILE", help="Export compliance mapping CSV (CIS, PCI-DSS, NIST, SOC2, HIPAA)")
     parser.add_argument("--baseline", metavar="FILE", help="Prior --json report to diff against (config drift: new vs resolved findings + posture delta)")
     parser.add_argument("--inventory", metavar="FILE", help="Multi-device inventory JSON file for batch scanning")
+    parser.add_argument("--query", metavar='"SRC DST PORT[/PROTO]"',
+                        help="Traffic-aware reachability query: is a flow permitted, and by which policy? "
+                             'e.g. --query "10.1.1.5 8.8.8.8 443/tcp". Then exit.')
+    parser.add_argument("--via", metavar='"INGRESS,EGRESS"',
+                        help="Optional ingress,egress interfaces for --query (else interface scope is not verified).")
+    parser.add_argument("--simulate", metavar="FILE",
+                        help="Simulate a proposed firewall policy (JSON): shadow relationships + internet-exposure "
+                             "impact, before you deploy it. Then exit.")
     parser.add_argument("--history", metavar="FILE",
                         help="Continuous posture: update the file-based system of record and report what changed "
                              "since last scan (new/resolved/accepted/SLA/newly-weaponized/trend).")
@@ -6534,6 +6614,14 @@ Examples:
         timeout=args.timeout,
         verbose=args.verbose,
     )
+
+    # Traffic-aware policy engine actions only need config data, not a full scan.
+    if args.query or args.simulate:
+        if not scanner._get_system_status():
+            print("[!] Could not connect / retrieve system status.", file=sys.stderr)
+            sys.exit(1)
+        sys.exit(policy_action(scanner, args))
+
     scanner.scan()
 
     # Posture tracking runs on the FULL finding set, before any severity filter,
@@ -6608,6 +6696,113 @@ def _transfer_intel(action: str, path: str) -> int:
     except Exception as exc:
         print(f"[!] Threat-intel {action} failed: {exc}", file=sys.stderr)
         return 1
+    return 0
+
+
+# ========================================================================== #
+#  TRAFFIC-AWARE POLICY ENGINE (--query / --simulate)                          #
+# ========================================================================== #
+
+def policy_action(scanner, args) -> int:
+    """Run a --query reachability check or a --simulate change-impact against the
+    scanner's parsed configuration. Returns a process exit code."""
+    try:
+        from policy_analyzer import PolicyModel
+    except Exception as exc:  # pragma: no cover
+        print(f"[!] Policy engine unavailable: {exc}", file=sys.stderr)
+        return 1
+    model = PolicyModel.from_scanner(scanner)
+    if getattr(args, "query", None):
+        return _run_query(model, args.query, getattr(args, "via", None))
+    if getattr(args, "simulate", None):
+        return _run_simulate(model, args.simulate)
+    return 0
+
+
+def _run_query(model, spec: str, via) -> int:
+    from policy_analyzer import ALLOW, DENY, OPAQUE
+    parts = str(spec).replace(",", " ").split()
+    if len(parts) < 3:
+        print('[!] --query needs "SRC DST PORT[/PROTO]", e.g. "10.1.1.5 8.8.8.8 443/tcp"', file=sys.stderr)
+        return 2
+    src, dst, pp = parts[0], parts[1], parts[2]
+    proto = "tcp"
+    if "/" in pp:
+        port_s, proto = pp.split("/", 1)
+    else:
+        port_s = pp
+        proto = parts[3] if len(parts) > 3 else "tcp"
+    try:
+        port = int(port_s)
+    except ValueError:
+        print(f"[!] invalid port: {port_s}", file=sys.stderr)
+        return 2
+    if proto.lower() not in ("tcp", "udp", "sctp", "icmp", "icmp6", "ip"):
+        print(f"[!] unknown protocol '{proto}' — expected tcp/udp/sctp/icmp/icmp6/ip.", file=sys.stderr)
+        return 2
+    ingress = egress = None
+    if via:
+        vv = str(via).replace(",", " ").split()
+        if len(vv) >= 2:
+            ingress, egress = vv[0], vv[1]
+        else:
+            print('[!] --via needs "INGRESS,EGRESS" (two interfaces) — ignoring; '
+                  "interface scope will not be verified.", file=sys.stderr)
+    r = model.query(src, dst, port, proto, ingress, egress)
+    color = {ALLOW: "\033[91m", DENY: "\033[92m", OPAQUE: "\033[93m"}.get(r.verdict, "")
+    sep = "=" * 72
+    print(f"\n\033[1m{sep}")
+    print("  Traffic-Aware Reachability Query")
+    print(f"{sep}\033[0m")
+    print(f"  Flow   : {src} -> {dst} : {port}/{proto}"
+          + (f"   via {ingress} -> {egress}" if ingress else ""))
+    p = r.policy or {}
+    pol = (f"policy {p.get('policyid')} ('{p.get('name')}', action {p.get('action')})"
+           if r.policy else "no matching policy")
+    print(f"  Verdict: {color}\033[1m{r.verdict}\033[0m   {pol}")
+    print(f"  Reason : {r.reason}")
+    for c in r.caveats:
+        print(f"    \033[93m- {c}\033[0m")
+    if r.verdict == OPAQUE:
+        print("  \033[93mThe engine will not assert reachability here — resolve the factor above and re-query.\033[0m")
+    print()
+    return 0
+
+
+def _run_simulate(model, path: str) -> int:
+    try:
+        with open(path, encoding="utf-8") as fh:
+            proposed = json.load(fh)
+    except (OSError, ValueError) as exc:
+        print(f"[!] Could not load proposed policy '{path}': {exc}", file=sys.stderr)
+        return 2
+    if not isinstance(proposed, dict):
+        print("[!] The proposed-policy file must be a single JSON policy object.", file=sys.stderr)
+        return 2
+    s = model.simulate(proposed)
+    sep = "=" * 72
+    print(f"\n\033[1m{sep}")
+    print(f"  Policy Change Simulation — proposed policy {proposed.get('policyid', '?')} "
+          f"('{proposed.get('name', 'unnamed')}', action {s['action']})")
+    print(f"{sep}\033[0m")
+    if s["dead_on_arrival"]:
+        who = (s["shadowed_by"] or s["redundant_under"])[0]
+        print(f"  \033[91m[!] DEAD ON ARRIVAL\033[0m — covered by earlier policy {who['earlier']} "
+              f"('{who['earlier_name']}'); the new rule would never match.")
+    else:
+        print("  Reachable: not shadowed by an earlier rule.")
+    if s["shadows_existing"]:
+        ids = ", ".join(str(r["later"]) for r in s["shadows_existing"])
+        print(f"  \033[93m[!] Would SHADOW existing policy(ies): {ids} — they become dead.\033[0m")
+    if s["any_source_accept"]:
+        print("  \033[91m[!] Internet exposure: this is an ANY-SOURCE accept rule — it opens broad inbound access.\033[0m")
+    if s["opaque_objects"]:
+        print("  \033[93mNote: proposed policy references OPAQUE objects (FQDN/Internet-Service/VIP/wildcard) — "
+              "impact on those is not fully modelled; verify manually.\033[0m")
+    if not (s["dead_on_arrival"] or s["shadows_existing"] or s["any_source_accept"]):
+        print("  No shadow conflicts or any-source exposure detected by interval analysis.")
+    print("  (Descriptive analysis — always review the change against your policy before deploying.)")
+    print()
     return 0
 
 
