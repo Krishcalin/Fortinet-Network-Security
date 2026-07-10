@@ -56,6 +56,8 @@ REF_LIST_FIELDS = frozenset({
     "api-gateway",
     # VPN portal split-tunnel address objects
     "split-tunneling-routing-address",
+    # SSL-VPN source restriction (address-object references)
+    "source-address", "source-address6",
 })
 
 # Sections whose `edit <id>` ID maps to a numeric ``policyid`` field instead
@@ -484,6 +486,18 @@ Examples:
                         help="Export a detailed remediation runbook to FILE")
     parser.add_argument("--compliance-csv", metavar="FILE",
                         help="Export compliance CSV (CIS, PCI-DSS, NIST, SOC2, HIPAA)")
+    parser.add_argument("--sarif", metavar="FILE",
+                        help="Export findings as SARIF 2.1.0 (GitHub code-scanning / CI ingestion)")
+    parser.add_argument("--ocsf", metavar="FILE",
+                        help="Export findings as OCSF Compliance Finding events (SIEM ingestion)")
+    parser.add_argument("--fix-script", metavar="FILE",
+                        help="Generate a fix-first FortiOS CLI remediation script from the knowledge base")
+    parser.add_argument("--rollback-script", metavar="FILE",
+                        help="Also write the paired rollback script (use with --fix-script)")
+    parser.add_argument("--fix-tier", choices=["P1", "P2", "P3", "P4"], default="P4",
+                        help="Highest priority tier to include in the fix script (default: P4 = all)")
+    parser.add_argument("--fix-script-force", action="store_true",
+                        help="Include disruptive fixes (reboot/HA/VPN-drop) uncommented in the fix script")
     parser.add_argument("--baseline", metavar="FILE",
                         help="Prior --json report to diff against (config drift: new vs resolved + posture delta)")
     parser.add_argument("--query", metavar='"SRC DST PORT[/PROTO]"',
@@ -515,6 +529,16 @@ Examples:
         default="LOW",
         help="Minimum severity to report (default: LOW)",
     )
+    parser.add_argument("--csv", metavar="FILE",
+                        help="Export a full findings CSV (severity, tier, KEV, EPSS, CVE, compliance, evidence)")
+    parser.add_argument("--framework", choices=["cis", "pci", "nist", "soc2", "hipaa"],
+                        help="Print a scored benchmark (pass/fail per mapped control, per-section %) for the framework")
+    parser.add_argument("--benchmark", metavar="FILE",
+                        help="Save the per-control benchmark to FILE (.json or .csv); framework from --framework (default cis)")
+    parser.add_argument("--no-color", action="store_true",
+                        help="Disable ANSI colour in console output (also honours the NO_COLOR env var)")
+    parser.add_argument("--summary-only", "--quiet", dest="summary_only", action="store_true",
+                        help="Print only the scorecard + fix-first queue (skip the full per-finding dump)")
     parser.add_argument("--verbose", "-v", action="store_true", help="Verbose output")
     parser.add_argument("--version", action="version",
                         version=f"%(prog)s {VERSION} (engine {ENGINE_VERSION})")
@@ -550,6 +574,7 @@ Examples:
         return policy_action(scanner, args)
 
     scanner.scan()
+    scanner.set_color(False if args.no_color else None)
 
     # Posture tracking runs on the FULL finding set, before any severity filter.
     if args.history:
@@ -562,11 +587,23 @@ Examples:
     if args.baseline:
         scanner.apply_drift(args.baseline)
 
-    scanner.print_report()
-    scanner.print_priorities(args.top if args.top is not None else 10)
+    if args.summary_only:
+        scanner.print_summary_only()
+    else:
+        scanner.print_report()
+        scanner.print_compliance_scorecard()
+        scanner.print_priorities(args.top if args.top is not None else 10)
+
+    benchmark_fw = args.framework or ("cis" if args.benchmark else None)
+    if benchmark_fw:
+        scanner.print_benchmark(benchmark_fw)
 
     if args.json:
         scanner.save_json(args.json)
+    if args.csv:
+        scanner.save_findings_csv(args.csv)
+    if args.benchmark:
+        scanner.save_benchmark(args.benchmark, benchmark_fw)
     if args.html:
         scanner.save_html(args.html)
     if args.pdf:
@@ -575,6 +612,13 @@ Examples:
         scanner.save_remediation(args.remediation)
     if args.compliance_csv:
         scanner.save_compliance_csv(args.compliance_csv)
+    if args.sarif:
+        scanner.save_sarif(args.sarif)
+    if args.ocsf:
+        scanner.save_ocsf(args.ocsf)
+    if args.fix_script:
+        scanner.save_remediation_script(args.fix_script, args.rollback_script,
+                                        tier_max=args.fix_tier, force=args.fix_script_force)
 
     counts = scanner.summary()
     if counts.get("CRITICAL", 0) or counts.get("HIGH", 0):

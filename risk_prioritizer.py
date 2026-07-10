@@ -591,6 +591,28 @@ def _validate_intel_doc(doc: Any) -> Tuple[bool, str]:
     return True, "ok"
 
 
+def _normalize_cve_keys(doc: Dict[str, Any]) -> List[str]:
+    """Upper-case + strip the CVE keys of ``doc['cves']`` IN PLACE so the on-disk
+    map matches exactly what ThreatIntel._load() retains (it upper-cases keys on
+    load). Without this, two entries for the same CVE in different case (e.g.
+    'cve-2022-40684' and 'CVE-2022-40684') survive validation and the meta count,
+    then silently collapse to one on load — a count mismatch and lost entry.
+    Returns the list of normalized keys that collided (last-writer-wins, matching
+    dict-build semantics)."""
+    cves = doc.get("cves")
+    if not isinstance(cves, dict):
+        return []
+    norm: Dict[str, Any] = {}
+    collisions: List[str] = []
+    for k, v in cves.items():
+        nk = str(k).strip().upper()
+        if nk in norm:
+            collisions.append(nk)
+        norm[nk] = v
+    doc["cves"] = norm
+    return collisions
+
+
 def _safe_meta(doc: Dict[str, Any]) -> Dict[str, Any]:
     """Return the doc's meta as a dict with accurate counts recomputed from the
     actual cves map (never trust an incoming/hand-edited count)."""
@@ -608,6 +630,7 @@ def export_intel(dest: str, src: Optional[str] = None) -> Dict[str, Any]:
     src = src or DEFAULT_INTEL_PATH
     with open(src, encoding="utf-8") as fh:
         doc = json.load(fh)
+    _normalize_cve_keys(doc)  # match loader's key casing so exported counts are honest
     ok, reason = _validate_intel_doc(doc)
     if not ok:
         raise ValueError(f"current snapshot at {src} is invalid ({reason})")
@@ -626,6 +649,8 @@ def import_intel(src: str, dest: Optional[str] = None) -> Dict[str, Any]:
     dest = dest or DEFAULT_INTEL_PATH
     with open(src, encoding="utf-8") as fh:
         doc = json.load(fh)
+    _normalize_cve_keys(doc)  # upper-case keys BEFORE validate/count so the written
+                              # snapshot's key set matches what _load() will retain
     ok, reason = _validate_intel_doc(doc)
     if not ok:
         raise ValueError(f"refusing to import {src}: {reason}")

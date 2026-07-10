@@ -229,6 +229,7 @@ class FortinetHTMLReport:
         by_sev: Dict[str, int] = {}
         by_cat: Dict[str, int] = {}
         by_fw: Dict[str, int] = {k: 0 for k in FRAMEWORKS}
+        fw_controls: Dict[str, set] = {k: set() for k in FRAMEWORKS}
         mitre_fail = 0
         for f in self.findings:
             sev = _g(f, "severity", "INFO")
@@ -237,11 +238,13 @@ class FortinetHTMLReport:
             comp = _g(f, "compliance", {}) or {}
             if isinstance(comp, dict):
                 for fw in FRAMEWORKS:
-                    if comp.get(fw):
+                    controls = comp.get(fw)
+                    if controls:
                         by_fw[fw] += 1
+                        fw_controls[fw].update(controls)
             if str(_g(f, "rule_id", "")).startswith("MITRE-T"):
                 mitre_fail += 1
-        return by_sev, by_cat, by_fw, mitre_fail
+        return by_sev, by_cat, by_fw, mitre_fail, fw_controls
 
     @staticmethod
     def _band(score: int):
@@ -254,7 +257,7 @@ class FortinetHTMLReport:
         return "Low", "#a6e3a1"
 
     def generate(self, output_path: str) -> None:
-        by_sev, by_cat, by_fw, mitre_fail = self._stats()
+        by_sev, by_cat, by_fw, mitre_fail, fw_controls = self._stats()
         crit = by_sev.get("CRITICAL", 0); high = by_sev.get("HIGH", 0)
         med = by_sev.get("MEDIUM", 0); low = by_sev.get("LOW", 0); info = by_sev.get("INFO", 0)
         total = len(self.findings)
@@ -312,15 +315,20 @@ class FortinetHTMLReport:
                      "<div class=\"bar-track\"><div class=\"bar-fill\" style=\"width:" + f"{n / maxc * 100:.0f}" + "%\"></div></div>"
                      "<div class=\"val\">" + str(n) + "</div></div>")
         p.append("</div>")
-        p.append("<div class=\"panel\"><h2>Compliance Framework Exposure</h2>")
-        maxf = max(by_fw.values()) if any(by_fw.values()) else 1
+        p.append("<div class=\"panel\"><h2>Compliance Scorecard</h2>")
+        maxf = max((len(fw_controls[fw]) for fw in FRAMEWORKS), default=1) or 1
         for fw in FRAMEWORKS:
-            n = by_fw[fw]
+            n_ctrl = len(fw_controls[fw])
+            n_find = by_fw[fw]
             p.append("<div class=\"bar-row\"><div class=\"lbl\">" + fw + "</div>"
-                     "<div class=\"bar-track\"><div class=\"bar-fill\" style=\"width:" + f"{n / maxf * 100:.0f}" + "%\"></div></div>"
-                     "<div class=\"val\">" + str(n) + "</div></div>")
-        resil = max(0, 31 - mitre_fail)
-        p.append("<div class=\"mitre-note\">MITRE ATT&amp;CK resilience: <b>" + str(resil) + "/31</b> techniques mitigated "
+                     "<div class=\"bar-track\"><div class=\"bar-fill\" style=\"width:" + f"{n_ctrl / maxf * 100:.0f}" + "%\"></div></div>"
+                     "<div class=\"val\">" + str(n_ctrl) + " ctrl</div></div>")
+            if n_ctrl:
+                p.append("<div class=\"mitre-note\" style=\"margin:-4px 0 8px 0\">" + fw +
+                         ": " + str(n_ctrl) + " distinct failing control(s) across " + str(n_find) + " finding(s)</div>")
+        _TOTAL_MITRE = 34
+        resil = max(0, _TOTAL_MITRE - mitre_fail)
+        p.append("<div class=\"mitre-note\">MITRE ATT&amp;CK resilience: <b>" + str(resil) + "/" + str(_TOTAL_MITRE) + "</b> techniques mitigated "
                  "(" + str(mitre_fail) + " gap" + ("" if mitre_fail == 1 else "s") + " found).</div>")
         p.append("</div></div>")
 
