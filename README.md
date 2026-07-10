@@ -65,7 +65,7 @@ It runs in **two modes that share one engine, one rule set, and one report layer
 
 Offline mode exists for the places live scanning cannot reach: **OT / ICS networks, air-gapped enclaves, and locked-down operator workstations** where you cannot open a socket to the firewall or `pip install` anything.
 
-> **270+ checks · 22 domains · risk-prioritization engine (P1–P4, KEV + EPSS) · rule-base analysis + Policy Control Index · attack-surface + config-drift · 34 MITRE ATT&CK techniques · 75 FortiOS CVEs · 5 compliance frameworks · 237-entry remediation knowledge base · SARIF/OCSF + fix-script generation · HTML + PDF + JSON + CSV reports**
+> **280+ checks · 22 domains · risk-prioritization engine (P1–P4, KEV + EPSS) · rule-base analysis + Policy Control Index · attack-surface + config-drift · 34 MITRE ATT&CK techniques · 75 FortiOS CVEs · 5 compliance frameworks (scored benchmark) · 237-entry remediation knowledge base · SARIF/OCSF + fix-script generation · HTML + PDF + JSON + CSV reports**
 
 ---
 
@@ -111,7 +111,7 @@ Open `report.html` in any browser, hand `report.pdf` to management, give `runboo
 
 | Capability | Details |
 |-----------|---------|
-| **270+ security rules** | 22 check methods covering every FortiGate security domain |
+| **280+ security rules** | 22 check methods covering every FortiGate security domain |
 | **Risk-prioritization engine** | **P1–P4 fix-first tiers** fusing severity × exploitability (**CISA KEV** + **FIRST.org EPSS**) × internet-reachability; bundled offline threat-intel snapshot, `--refresh-intel` to update, `--top N` fix-first queue, and a "Top Risks" section in every report |
 | **Rule-base analysis (FireMon-style)** | Shadowed & redundant rule detection, a 0–100 **Policy Control Index**, dormant-rule cleanup (live), orphaned object hygiene, **internet attack-surface** modelling, and **config-drift** diffing between scans |
 | **34 MITRE ATT&CK techniques** | Resilience testing across 11 tactics with a 0–100% score |
@@ -632,6 +632,7 @@ Fortinet-Network-Security/
 │   ├── test_exports.py           # SARIF / OCSF / remediation-script generation
 │   ├── test_reporting.py         # colour gating, compliance scorecard, enriched JSON, findings CSV
 │   ├── test_benchmark.py         # scored CIS/PCI/NIST/SOC2/HIPAA benchmark profile
+│   ├── test_hardening.py         # hardening check-pack (ADMIN-026/SSLVPN-016/SYS-019/NET-019/NET-020)
 │   └── sample_insecure.conf      # Intentionally insecure config for demos/tests
 ├── README.md
 ├── CLAUDE.md                     # Architecture & contributor notes

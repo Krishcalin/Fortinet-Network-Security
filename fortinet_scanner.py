@@ -1059,9 +1059,14 @@ COMPLIANCE_MAP: dict[str, dict[str, list[str]]] = {
     "FORTIOS-ADMIN-008": {"CIS": ["2.1.8"], "PCI-DSS": ["7.1.2"], "NIST": ["AC-6(1)"], "SOC2": ["CC6.3"]},
     # New hardening checks (2026-07)
     "FORTIOS-ADMIN-025": {"CIS": ["2.1.9"], "NIST": ["AC-6", "PE-3"], "SOC2": ["CC6.1"]},
+    "FORTIOS-ADMIN-026": {"CIS": ["2.1.6"], "PCI-DSS": ["1.3", "7.2"], "NIST": ["AC-3", "SC-7"], "SOC2": ["CC6.1"], "HIPAA": ["164.312(a)(1)"]},
     "FORTIOS-CERT-012":  {"CIS": ["8.1.3"], "PCI-DSS": ["4.2.1"], "NIST": ["SC-17", "SC-23"], "SOC2": ["CC6.7"]},
     "FORTIOS-SSLVPN-015": {"CIS": ["5.1.4"], "PCI-DSS": ["1.3"], "NIST": ["AC-3", "SC-7"], "SOC2": ["CC6.6"]},
+    "FORTIOS-SSLVPN-016": {"CIS": ["5.1.6"], "PCI-DSS": ["2.2.2"], "NIST": ["CM-7", "SC-7"], "SOC2": ["CC6.6"]},
     "FORTIOS-SSLVPN-017": {"CIS": ["5.1.5"], "PCI-DSS": ["4.2.1"], "NIST": ["SC-8", "SC-13"], "SOC2": ["CC6.7"]},
+    "FORTIOS-SYS-019":   {"CIS": ["3.1.7"], "PCI-DSS": ["2.2.7", "4.2.1"], "NIST": ["SC-8", "SC-13"], "SOC2": ["CC6.7"], "HIPAA": ["164.312(e)(1)"]},
+    "FORTIOS-NET-019":   {"CIS": ["9.1.4"], "PCI-DSS": ["1.3"], "NIST": ["SC-7", "AC-17"], "SOC2": ["CC6.6"], "HIPAA": ["164.312(a)(1)"]},
+    "FORTIOS-NET-020":   {"CIS": ["9.1.5"], "PCI-DSS": ["1.3"], "NIST": ["SC-7", "AC-17"], "SOC2": ["CC6.6"]},
     "FORTIOS-SYS-001":   {"CIS": ["3.1.1"], "PCI-DSS": ["2.2.4"], "NIST": ["SC-13"], "SOC2": ["CC6.1"]},
     "FORTIOS-SYS-002":   {"CIS": ["3.1.2"], "PCI-DSS": ["2.2.4"], "NIST": ["SC-13"]},
     "FORTIOS-SYS-003":   {"CIS": ["3.1.3"], "PCI-DSS": ["2.2.2"], "NIST": ["AC-8"], "SOC2": ["CC6.1"]},
@@ -1155,9 +1160,14 @@ REMEDIATION_COMMANDS: dict[str, str] = {
     "FORTIOS-ADMIN-007": "config system interface\n  edit <wan-interface>\n    set allowaccess ping https ssh\n    unset allowaccess http\n  next\nend",
     "FORTIOS-ADMIN-008": "config system admin\n  edit <admin-name>\n    set accprofile <least-privilege-profile>\n  next\nend",
     "FORTIOS-ADMIN-025": "config system global\n  set admin-maintainer disable\nend",
+    "FORTIOS-ADMIN-026": "config system admin\n  edit <admin-name>\n    set ip6-trusthost1 <ipv6-mgmt-prefix>\n  next\nend",
     "FORTIOS-CERT-012":  "config system global\n  set admin-server-cert \"<your-ca-issued-cert>\"\nend",
     "FORTIOS-SSLVPN-015": "config vpn ssl settings\n  set source-address \"<trusted-address-group>\"\nend",
+    "FORTIOS-SSLVPN-016": "config vpn ssl web portal\n  edit <portal>\n    set web-mode disable\n    set tunnel-mode enable\n  next\nend",
     "FORTIOS-SSLVPN-017": "config vpn ssl settings\n  set algorithm high\nend",
+    "FORTIOS-SYS-019":   "config system global\n  set strong-crypto enable\n  set ssh-enc-algo aes256-ctr aes256-gcm@openssh.com\n  set ssh-kex-algo diffie-hellman-group14-sha256 curve25519-sha256@libssh.org\n  set ssh-mac-algo hmac-sha2-256 hmac-sha2-512\nend",
+    "FORTIOS-NET-019":   "config firewall local-in-policy\n  edit 1\n    set intf <wan>\n    set srcaddr <MGMT-TRUSTED>\n    set dstaddr all\n    set service HTTPS SSH\n    set action accept\n  next\nend",
+    "FORTIOS-NET-020":   "config firewall address\n  edit Geo-Allow\n    set type geography\n    set country <CC>\n  end",
     "FORTIOS-ADMIN-013": "config system password-policy\n  set min-upper-case-letter 1\nend",
     "FORTIOS-ADMIN-014": "config system password-policy\n  set min-lower-case-letter 1\nend",
     "FORTIOS-ADMIN-015": "config system password-policy\n  set min-number 1\nend",
@@ -2209,6 +2219,28 @@ class FortinetScanner(_ReportMixin):
     #  CHECK: Admin Access                                                 #
     # ================================================================== #
 
+    def _ipv6_admin_exposure(self) -> tuple:
+        """(exposed, on_wan): is IPv6 admin login (https/http/ssh) enabled on any
+        interface, and is any such interface a WAN interface? Gates ADMIN-026 so a
+        pure-IPv4 device (no ip6-allowaccess management) is never flagged."""
+        try:
+            wan = self._wan_interfaces()
+        except Exception:
+            wan = set()
+        exposed = on_wan = False
+        for iface in (self._api_get("system/interface") or []):
+            if not isinstance(iface, dict):
+                continue
+            v6 = iface.get("ipv6")
+            if not isinstance(v6, dict):
+                continue
+            toks = set(str(v6.get("ip6-allowaccess", "")).lower().split())
+            if toks & {"https", "http", "ssh"}:
+                exposed = True
+                if iface.get("name") in wan:
+                    on_wan = True
+        return exposed, on_wan
+
     def _check_admin_access(self) -> None:
         _host = self._sys_info.get("hostname", self.host)
         # System global settings
@@ -2380,6 +2412,7 @@ class FortinetScanner(_ReportMixin):
         # Check admin accounts
         admins = self._api_get("system/admin")
         if isinstance(admins, list):
+            ipv6_admin_exposed, ipv6_admin_on_wan = self._ipv6_admin_exposure()
             for admin in admins:
                 aname = admin.get("name", "unknown")
 
@@ -2424,6 +2457,34 @@ class FortinetScanner(_ReportMixin):
                         recommendation="Configure trusted hosts for each admin account to restrict management access.",
                         cwe="CWE-284",
                     ))
+                # IPv6 trusted-host gap: only when IPv6 admin access is actually enabled
+                # on the device AND this admin HAS IPv4 trusted hosts set (so it never
+                # double-reports ADMIN-006). FortiOS filters trusted hosts per address
+                # family, so an IPv4-only lockdown is bypassable over IPv6.
+                elif ipv6_admin_exposed:
+                    ipv6_trust = []
+                    for i in range(1, 11):
+                        th6 = str(admin.get(f"ip6-trusthost{i}", "::/0")).strip().lower()
+                        if th6 and th6 not in ("::/0", "::", "0::/0", "::/0 ::"):
+                            ipv6_trust.append(th6)
+                    if not ipv6_trust:
+                        self._add(Finding(
+                            rule_id="FORTIOS-ADMIN-026",
+                            name="Admin account without IPv6 trusted-host restriction",
+                            category="Admin Access",
+                            severity="HIGH" if ipv6_admin_on_wan else "MEDIUM",
+                            file_path=_host, line_num=None,
+                            line_content=f"admin={aname}, ipv4 trusted hosts set but ip6-trusthost1..10=::/0 (any IPv6)",
+                            description=(f"Admin account '{aname}' restricts IPv4 login via trusted hosts but leaves every IPv6 "
+                                         "trusted-host slot (ip6-trusthost1..10) at the default ::/0, allowing administrative login "
+                                         "from ANY IPv6 source. IPv6 admin access (https/http/ssh) is enabled on this device, so the "
+                                         "IPv4 trusted-host lockdown is bypassable over IPv6 — FortiOS applies trusted-host filtering "
+                                         "per address family."),
+                            recommendation=("Set ip6-trusthost1..10 to the specific IPv6 management prefixes for this admin, mirroring "
+                                            "the IPv4 trusted hosts: config system admin / edit <name> / set ip6-trusthost1 <prefix>. "
+                                            "Or remove IPv6 management from internet-facing interfaces (unset ip6-allowaccess)."),
+                            cwe="CWE-284",
+                        ))
 
                 # Using default prof_admin (super_admin)
                 profile = admin.get("accprofile", "")
@@ -3641,10 +3702,14 @@ class FortinetScanner(_ReportMixin):
                 cwe="CWE-307",
             ))
 
-        # SSL-VPN is only actually in service once it is bound to an interface; gate
-        # the two exposure/hardening checks below on that so they don't fire on a box
-        # that merely has a leftover vpn.ssl/settings block but no live SSL-VPN.
-        sslvpn_bound = bool(settings.get("source-interface"))
+        # SSL-VPN is only actually in service once it is bound to an interface AND not
+        # explicitly turned off; gate the exposure/hardening checks below on that so
+        # they don't fire on a box that merely has a leftover vpn.ssl/settings block
+        # (source-interface residue) with SSL-VPN administratively disabled — a common
+        # post-CVE hardened baseline. Absent status (pre-7.4.1) => not "disable" => still
+        # gated on source-interface, matching the codebase's MITRE-T1133 semantics.
+        sslvpn_bound = (bool(settings.get("source-interface"))
+                        and str(settings.get("status", "")).lower() != "disable")
         if sslvpn_bound:
             # No source-address restriction -> portal reachable from the whole internet.
             src_addr = settings.get("source-address")
@@ -3789,6 +3854,26 @@ class FortinetScanner(_ReportMixin):
                 pname = portal.get("name", "unknown")
                 web_mode = portal.get("web-mode", "")
                 if str(web_mode).lower() == "enable":
+                    # Web/clientless mode is the code path behind most critical SSL-VPN
+                    # RCEs (CVE-2024-21762, CVE-2018-13379, CVE-2022-42475); flag it as an
+                    # attack-surface reduction where tunnel-only would suffice. Only when
+                    # SSL-VPN is actually bound to an interface (advisory MEDIUM).
+                    if sslvpn_bound:
+                        self._add(Finding(
+                            rule_id="FORTIOS-SSLVPN-016",
+                            name="SSL VPN web (clientless) mode enabled — reduce attack surface",
+                            category="SSL VPN", severity="MEDIUM",
+                            file_path=_host, line_num=None,
+                            line_content=f"portal={pname}, web-mode=enable",
+                            description=(f"SSL VPN portal '{pname}' has web (clientless) mode enabled. The web-mode/proxy code path "
+                                         "hosts the majority of critical SSL-VPN RCEs (CVE-2024-21762, CVE-2018-13379, "
+                                         "CVE-2022-42475). Where users only need network access, tunnel mode eliminates this "
+                                         "highest-risk surface."),
+                            recommendation=("If clientless access is not required, disable web mode: config vpn ssl web portal / "
+                                            "edit <portal> / set web-mode disable / set tunnel-mode enable. On FortiOS 7.4.1+ you can "
+                                            "also enforce it globally: config vpn ssl settings / set sslvpn-web-mode disable."),
+                            cwe="CWE-693",
+                        ))
                     # Check for host check (endpoint compliance)
                     host_check = portal.get("host-check", "")
                     if str(host_check).lower() != "enable":
@@ -4892,6 +4977,39 @@ class FortinetScanner(_ReportMixin):
     #  CHECK: Network Hardening                                            #
     # ================================================================== #
 
+    def _mgmt_exposure(self) -> dict:
+        """Shared management-plane exposure signals for NET-019 / NET-020.
+        Returns sslvpn_enabled, mgmt_on_wan, the WAN interfaces exposing HTTPS/SSH,
+        and the SSL-VPN settings dict (for its source-address)."""
+        try:
+            wan = self._wan_interfaces()
+        except Exception:
+            wan = set()
+        mgmt_wan = []
+        for i in (self._api_get("system/interface") or []):
+            if not isinstance(i, dict) or i.get("name") not in wan:
+                continue
+            aa = i.get("allowaccess", "")
+            if isinstance(aa, str):
+                al = set(aa.lower().split())
+            elif isinstance(aa, (list, set, tuple)):
+                al = {str(x).lower() for x in aa}
+            else:
+                al = set()
+            hit = al & {"https", "ssh"}
+            if hit:
+                mgmt_wan.append((i.get("name"), sorted(hit)))
+        ssl = self._api_get("vpn.ssl/settings")
+        if isinstance(ssl, list) and ssl:
+            ssl = ssl[0] if isinstance(ssl[0], dict) else {}
+        ssl = ssl if isinstance(ssl, dict) else {}
+        return {
+            "sslvpn_enabled": bool(ssl.get("source-interface")),
+            "mgmt_on_wan": bool(mgmt_wan),
+            "mgmt_wan": mgmt_wan,
+            "ssl_settings": ssl,
+        }
+
     def _check_network(self) -> None:
         _host = self._sys_info.get("hostname", self.host)
 
@@ -5164,6 +5282,89 @@ class FortinetScanner(_ReportMixin):
                         description="NTP authentication is not enabled. Attackers can inject false time via NTP spoofing, breaking log correlation and certificates.",
                         recommendation="Enable NTP authentication: config system ntp / set authentication enable.",
                         cwe="CWE-345",
+                    ))
+
+        # ---- Management-plane source restriction (local-in-policy + GeoIP) ----
+        # Only evaluated when the management plane is actually exposed (SSL-VPN
+        # enabled OR HTTPS/SSH on a WAN interface); a fully-internal box is exempt.
+        expo = self._mgmt_exposure()
+        if expo["sslvpn_enabled"] or expo["mgmt_on_wan"]:
+            lip = self._api_get("firewall/local-in-policy")
+            enabled_lip = ([p for p in lip if isinstance(p, dict)
+                            and str(p.get("status", "enable")).lower() != "disable"]
+                           if isinstance(lip, list) else [])
+            if not enabled_lip:
+                where = ("management (" + ", ".join(f"{n}:{'/'.join(p)}" for n, p in expo["mgmt_wan"])
+                         + ") reachable on WAN" if expo["mgmt_on_wan"] else "SSL-VPN enabled")
+                self._add(Finding(
+                    rule_id="FORTIOS-NET-019",
+                    name="No local-in-policy restricting management-plane access",
+                    category="Network Hardening",
+                    severity="HIGH" if expo["mgmt_on_wan"] else "MEDIUM",
+                    file_path=_host, line_num=None,
+                    line_content=f"firewall/local-in-policy: none; exposure: {where}",
+                    description=("No firewall local-in-policy restricts which sources may reach the FortiGate's own management / "
+                                 "VPN services (admin GUI/SSH, SSL-VPN, IKE). "
+                                 + ("Management (HTTPS/SSH) is reachable on a WAN interface. " if expo["mgmt_on_wan"]
+                                    else "SSL-VPN is enabled. ")
+                                 + "A local-in-policy is the control Fortinet recommends to whitelist trusted management sources "
+                                   "and blunt SSL-VPN CVE scanning and brute-force from the internet."),
+                    recommendation=("Add local-in-policies that permit admin/VPN services only from trusted sources and deny the rest: "
+                                    "config firewall local-in-policy / edit 1 / set intf <wan> / set srcaddr <MGMT-TRUSTED> / "
+                                    "set dstaddr all / set service HTTPS SSH / set action accept / next / end (add a trailing deny)."),
+                    cwe="CWE-284",
+                ))
+            else:
+                # Management IS source-restricted via local-in-policy — advise GeoIP as
+                # an additional layer if no geography object is referenced anywhere.
+                # Default the address table to empty when absent (offline configs often
+                # omit the firewall/address section): "no address objects" means "no
+                # geography objects", which is exactly what NET-020 flags — so absence
+                # must NOT skip the finding (would be a false negative).
+                addrs = self._api_get("firewall/address")
+                addr_list = addrs if isinstance(addrs, list) else []
+                geo_names = {a.get("name") for a in addr_list if isinstance(a, dict)
+                             and str(a.get("type", "")).lower() == "geography" and a.get("name")}
+                grps = self._api_get("firewall/addrgrp")
+                gmap = ({g.get("name"): g for g in grps if isinstance(g, dict) and g.get("name")}
+                        if isinstance(grps, list) else {})
+
+                def _grp_has_geo(nm, seen=None):
+                    seen = seen or set()
+                    g = gmap.get(nm)
+                    if not g or nm in seen:
+                        return False
+                    seen.add(nm)
+                    for m in (g.get("member") or []):
+                        mn = m.get("name") if isinstance(m, dict) else None
+                        if mn in geo_names or _grp_has_geo(mn, seen):
+                            return True
+                    return False
+
+                geo_like = geo_names | {n for n in gmap if _grp_has_geo(n)}
+
+                def _refs_geo(objs):
+                    return any((o.get("name") if isinstance(o, dict) else None) in geo_like
+                               for o in (objs or []))
+
+                geo_ref = any(isinstance(p, dict) and _refs_geo(p.get("srcaddr")) for p in enabled_lip)
+                if not geo_ref:
+                    geo_ref = _refs_geo(expo["ssl_settings"].get("source-address"))
+                if not geo_ref:
+                    self._add(Finding(
+                        rule_id="FORTIOS-NET-020",
+                        name="No GeoIP source restriction on internet-facing management/VPN",
+                        category="Network Hardening", severity="MEDIUM",
+                        file_path=_host, line_num=None,
+                        line_content="no geography address object referenced by any local-in-policy or SSL-VPN source-address",
+                        description=("The exposed management / SSL-VPN plane is source-restricted, but no GeoIP (geography) "
+                                     "address object further limits the source countries. Geo-blocking untrusted regions on the "
+                                     "management/VPN plane sharply cuts brute-force and CVE-scan noise. Advisory — only relevant "
+                                     "where your administrators/users are geographically bounded."),
+                        recommendation=("Create a geography allow object and reference it from the management/VPN local-in-policy "
+                                        "or the SSL-VPN source-address: config firewall address / edit Geo-Allow / "
+                                        "set type geography / set country <CC> / end."),
+                        cwe="CWE-284",
                     ))
 
     # ================================================================== #
@@ -5797,6 +5998,42 @@ class FortinetScanner(_ReportMixin):
                 description=f"SSH grace time is {ssh_grace}s. This allows unauthenticated SSH sessions to remain open, consuming resources.",
                 recommendation="Set admin-ssh-grace-time to 60: config system global / set admin-ssh-grace-time 60.",
                 cwe="CWE-400",
+            ))
+
+        # ── Weak admin SSH KEX / cipher / MAC algorithms (version-aware) ──
+        # FortiOS 7.0.2 is the boundary: earlier trains use boolean knobs
+        # (ssh-cbc-cipher / ssh-hmac-md5 / ssh-kex-sha1 / ssh-mac-weak, default
+        # enable = weak allowed); 7.0.2+ uses algo lists (ssh-kex-algo / ssh-enc-algo
+        # / ssh-mac-algo, strong by default). Both branches fire only on an EXPLICIT
+        # weak value, never on an absent (default) field — so no false positives.
+        def _ssh_toks(raw):
+            if isinstance(raw, list):
+                return [(t.get("name") if isinstance(t, dict) else str(t)).lower() for t in raw if t]
+            return [t.lower() for t in str(raw).replace(",", " ").split() if t]
+        kex_weak = [t for t in _ssh_toks(glb.get("ssh-kex-algo", "")) if t.endswith("-sha1")]
+        enc_weak = [t for t in _ssh_toks(glb.get("ssh-enc-algo", ""))
+                    if t.endswith("-cbc") or t.startswith("3des") or t.startswith("arcfour") or t == "des"]
+        mac_weak = [t for t in _ssh_toks(glb.get("ssh-mac-algo", ""))
+                    if t.startswith("hmac-md5") or t == "hmac-sha1" or t.startswith("hmac-sha1-")
+                    or t.startswith("hmac-ripemd") or t.startswith("umac-64")]
+        legacy_weak = []
+        if self._ver_lt("7.0.2") and str(glb.get("strong-crypto", "")).lower() != "enable":
+            legacy_weak = [k for k in ("ssh-cbc-cipher", "ssh-hmac-md5", "ssh-kex-sha1", "ssh-mac-weak")
+                           if str(glb.get(k, "")).lower() == "enable"]
+        if kex_weak or enc_weak or mac_weak or legacy_weak:
+            detail = f"kex={kex_weak} enc={enc_weak} mac={mac_weak} legacy={legacy_weak}"
+            self._add(Finding(
+                rule_id="FORTIOS-SYS-019", name="Weak SSH algorithms allowed on the admin SSH service",
+                category="System Settings", severity="HIGH",
+                file_path=_host, line_num=None, line_content=detail,
+                description=("The administrative SSH service permits weak key-exchange / cipher / MAC algorithms "
+                             f"({detail}). SHA-1 KEX, CBC-mode ciphers, 3DES/arcfour and MD5/SHA-1 MACs are cryptographically "
+                             "weak and expose admin SSH to downgrade and integrity attacks."),
+                recommendation=("Restrict admin SSH to strong algorithms. FortiOS 7.0.2+: config system global / "
+                                "set ssh-kex-algo diffie-hellman-group14-sha256 curve25519-sha256@libssh.org / "
+                                "set ssh-enc-algo aes256-gcm@openssh.com aes256-ctr / set ssh-mac-algo hmac-sha2-256 hmac-sha2-512. "
+                                "Pre-7.0.2: enable strong-crypto and disable ssh-cbc-cipher / ssh-hmac-md5 / ssh-kex-sha1 / ssh-mac-weak."),
+                cwe="CWE-326",
             ))
 
         # ── DNS over TLS/HTTPS ──────────────────────────────────────
