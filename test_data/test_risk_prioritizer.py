@@ -43,7 +43,7 @@ def _rp():
 def test_bundled_snapshot_loads_and_has_kev():
     intel = _intel()
     assert intel.available
-    assert len(intel.cves) == 75
+    assert len(intel.cves) == 93
     assert intel.kev_count == 19
     # meta counts must match the actual cves map (guards against drift)
     assert intel.meta.get("cve_count") == len(intel.cves)

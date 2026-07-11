@@ -938,6 +938,246 @@ FORTIOS_CVES: list[dict] = [
         "recommendation": "Upgrade to FortiOS 7.0.3 / 6.4.8 / 6.2.10 / 6.0.14 or later. Restrict administrative CLI access to trusted management hosts.",
         "cwe": "CWE-494",
     },
+    {
+        "id": "FORTIOS-CVE-076", "cve": "CVE-2023-45584", "severity": "HIGH",
+        "name": "Double free in automation-stitch (FortiOS)",
+        "affected": [
+            {"train": "7.4", "fixed": "7.4.1"},
+            {"train": "7.2", "fixed": "7.2.6"},
+            {"train": "7.0", "fixed": "7.0.13"},
+            {"train": "6.4", "fixed": "6.4.999"},
+        ],
+        "description": "A double-free vulnerability (CWE-415) in the FortiOS automation-stitch feature allows a privileged (authenticated administrator) attacker to execute arbitrary code or commands by sending crafted HTTP or HTTPS requests to the administrative interface.",
+        "recommendation": "Upgrade FortiOS to a fixed build: 7.4.0 -> 7.4.1 or later; 7.2.0-7.2.5 -> 7.2.6 or later; 7.0.0-7.0.12 -> 7.0.13 or later. FortiOS 6.4 is affected on all versions with no dedicated fix in-train - migrate to a fixed release (7.0.13+ / 7.2.6+). FortiOS 7.6 is not affected. No specific configuration workaround is published; because exploitation requires administrative privileges, mitigate by restricting and tightly controlling admin GUI access (trusted hosts, MFA, least-privilege admin profiles) and monitoring automation-stitch configuration changes.",
+        "cwe": "CWE-415",
+    },
+    {
+        "id": "FORTIOS-CVE-077", "cve": "CVE-2023-46718", "severity": "HIGH",
+        "name": "FortiOS stack-based buffer overflow via crafted CLI commands (fortitoken import)",
+        "affected": [
+            {"train": "7.4", "fixed": "7.4.2"},
+            {"train": "7.2", "fixed": "7.2.12"},
+            {"train": "7.0", "fixed": "7.0.999"},
+            {"train": "6.4", "fixed": "6.4.999"},
+            {"train": "6.2", "fixed": "6.2.999"},
+            {"train": "6.0", "fixed": "6.0.999"},
+        ],
+        "description": "A stack-based buffer overflow (CWE-121) in the FortiOS command-line interface (specifically the fortitoken import CLI feature) allows an authenticated attacker with high administrative privileges and local/CLI access to execute unauthorized code or commands by supplying specially crafted CLI command arguments. The attack vector is local (AV:L) and requires prior authentication to the management plane.",
+        "recommendation": "Upgrade FortiOS to a fixed build: 7.4.x -> 7.4.2 or later; 7.2.x -> 7.2.12 or later. FortiOS 7.0, 6.4, 6.2 and 6.0 trains are End-of-Life with no in-train fix per FG-IR-23-354 — migrate to a supported fixed release (7.4.2+/7.2.12+). FortiOS 7.6 is not affected. No workaround is available; restrict CLI/SSH administrative access to trusted admins and networks to reduce exposure, since exploitation requires authenticated high-privilege CLI access.",
+        "cwe": "CWE-121",
+    },
+    {
+        "id": "FORTIOS-CVE-078", "cve": "CVE-2024-40593", "severity": "MEDIUM",
+        "name": "Private key readable by admin via admin shell (FortiOS)",
+        "affected": [
+            {"train": "7.6", "fixed": "7.6.1"},
+            {"train": "7.4", "fixed": "7.4.5"},
+            {"train": "7.2", "fixed": "7.2.8"},
+            {"train": "7.0", "fixed": "7.0.15"},
+        ],
+        "description": "A key management error (CWE-320) in FortiOS allows an authenticated administrator to read a configured certificate's private key material through the device admin shell (CLI). The exploit requires existing high-privilege admin access (local, no user interaction), so it is not a remote/unauthenticated flaw; impact is confined to confidentiality — exposure of certificate private keys that could then be reused to impersonate the device or decrypt protected traffic.",
+        "recommendation": "Upgrade FortiOS to a fixed build: 7.6.x to 7.6.1+, 7.4.x to 7.4.5+, 7.2.x to 7.2.8+, 7.0.x to 7.0.15+ (6.4 not affected). No configuration workaround exists; as compensating controls, restrict admin CLI/SSH access to trusted administrators and management networks, and after patching, rotate/reissue any certificates whose private keys may have been exposed to non-super-admin operators.",
+        "cwe": "CWE-320",
+    },
+    {
+        "id": "FORTIOS-CVE-079", "cve": "CVE-2024-47569", "severity": "MEDIUM",
+        "name": "Insertion of Sensitive Information Into Sent Data in csfd (Security Fabric) daemon",
+        "affected": [
+            {"train": "7.6", "fixed": "7.6.1"},
+            {"train": "7.4", "fixed": "7.4.5"},
+            {"train": "7.2", "fixed": "7.2.9"},
+            {"train": "7.0", "fixed": "7.0.16"},
+            {"train": "6.4", "fixed": "6.4.16"},
+            {"train": "6.2", "fixed": "6.2.999"},
+            {"train": "6.0", "fixed": "6.0.999"},
+        ],
+        "description": "An insertion of sensitive information into sent data vulnerability (CWE-201) in the csfd (Fortinet Security Fabric) daemon of FortiOS and multiple other Fortinet products allows a remote authenticated attacker to read small, non-arbitrary portions of process memory by sending specially crafted packets to the daemon. Impact is limited to confidentiality (low): the attacker can disclose sensitive information but cannot modify data or affect availability.",
+        "recommendation": "Upgrade FortiOS to a fixed build for the affected train: 7.6.0 -> 7.6.1+, 7.4.0-7.4.4 -> 7.4.5+, 7.2.0-7.2.8 -> 7.2.9+, 7.0.0-7.0.15 -> 7.0.16+, 6.4.0-6.4.15 -> 6.4.16+. FortiOS 6.2 and 6.0 are end-of-life with no fix for this issue (all versions affected) - migrate to a supported fixed release. No specific config workaround is published; because exploitation requires an authenticated session, restrict/limit administrative and Security Fabric access to trusted management networks as a mitigating control.",
+        "cwe": "CWE-201",
+    },
+    {
+        "id": "FORTIOS-CVE-080", "cve": "CVE-2024-47570", "severity": "MEDIUM",
+        "name": "FortiOS REST API log token disclosure to read-only administrators (FG-IR-24-268)",
+        "affected": [
+            {"train": "7.4", "fixed": "7.4.4"},
+            {"train": "7.2", "fixed": "7.2.8"},
+            {"train": "7.0", "fixed": "7.0.999"},
+        ],
+        "description": "An insertion of sensitive information into a log file vulnerability (CWE-532) in FortiOS may allow an authenticated read-only administrator to retrieve the API tokens of other administrators by observing REST API logs. The condition requires REST API logging to be enabled, which is a non-default configuration. Tokens passed in the request URL are written to the logs; a low-privilege (read-only) admin who can view those logs can harvest higher-privilege API tokens, enabling privilege escalation / account takeover within the management plane. Attack vector is network (management interface), attack complexity is high, and it requires high privileges (an existing admin account). NVD",
+        "recommendation": "Upgrade FortiOS to 7.4.4 or above (7.4.0-7.4.3 affected) or 7.2.8 or above (7.2.0-7.2.7 affected). The 7.0 train (7.0.4-7.0.17) has no fixed build - migrate to a fixed release (7.2.8+/7.4.4+). FortiOS 7.6 and 6.4 are not affected. Workarounds/hardening: pass API tokens in the request header (Authorization: Bearer <token>) instead of in the URL so they are not logged; disable REST API logging if not required (set rest-api-get disable / set rest-api-set disable - it is disabled by default); and restrict access to logs and the REST API to essential personnel.",
+        "cwe": "CWE-532",
+    },
+    {
+        "id": "FORTIOS-CVE-081", "cve": "CVE-2024-52965", "severity": "HIGH",
+        "name": "FortiOS PKI-via-API authentication bypass with invalid client certificate",
+        "affected": [
+            {"train": "7.6", "fixed": "7.6.3"},
+            {"train": "7.4", "fixed": "7.4.6"},
+            {"train": "7.2", "fixed": "7.2.11"},
+            {"train": "7.0", "fixed": "7.0.17"},
+        ],
+        "description": "A missing critical authentication step (CWE-304) in FortiOS and FortiProxy allows an API-user authenticating with an api-key combined with PKI user-certificate credentials to log in even when the presented client certificate is invalid. The certificate validation result is not properly enforced, so an attacker who already possesses a valid api-key (privileged position, PR:H) can complete authentication over the network without a legitimate PKI certificate, undermining the second authentication factor and gaining full confidentiality/integrity/availability impact on the affected API session.",
+        "recommendation": "Upgrade FortiOS to the fixed build for your train: 7.6.x -> 7.6.3+, 7.4.x -> 7.4.6+, 7.2.x -> 7.2.11+, 7.0.x -> 7.0.17+ (FortiOS 6.4 is not affected). No workaround is published; as interim mitigation, restrict API access to trusted management hosts/networks, rotate/limit api-keys, and audit PKI-certificate-authenticated API users. FortiProxy is separately affected (7.6->7.6.2, 7.4->7.4.9, 7.2->7.2.14, 7.0->7.0.21).",
+        "cwe": "CWE-304",
+    },
+    {
+        "id": "FORTIOS-CVE-082", "cve": "CVE-2025-22862", "severity": "MEDIUM",
+        "name": "FortiOS privilege escalation via malicious Webhook action in Automation Stitch",
+        "affected": [
+            {"train": "7.4", "fixed": "7.4.8"},
+            {"train": "7.2", "fixed": "7.2.12"},
+            {"train": "7.0", "fixed": "7.0.999"},
+        ],
+        "description": "An Authentication Bypass Using an Alternate Path or Channel vulnerability (CWE-288) in the Automation Stitch component of FortiOS. An already-authenticated attacker possessing high privileges (PR:H, local vector AV:L) can elevate their privileges by triggering a malicious Webhook automation action. Automation Stitch is an administrative feature managed through the FortiOS admin GUI; the flaw lets the crafted webhook action bypass the normal privilege/authorization path, yielding full confidentiality, integrity, and availability impact on the device. Requires authenticated administrative access; no unauthenticated remote exploitation. Not known to be exploited in the wild.",
+        "recommendation": "Upgrade FortiOS 7.4.x (7.4.0-7.4.7) to 7.4.8 or later, and 7.2.x (7.2.0-7.2.11) to 7.2.12 or later. FortiOS 7.0.x (7.0.6 and above) is EOL with no dedicated fixed build - migrate to a fixed supported release (7.2.12+ or 7.4.8+). FortiOS 7.6 and 6.4 are not affected. No workaround is documented by Fortinet; mitigate by tightly restricting administrative (GUI) access and enforcing least-privilege admin profiles, since exploitation requires an authenticated high-privilege admin session.",
+        "cwe": "CWE-288",
+    },
+    {
+        "id": "FORTIOS-CVE-083", "cve": "CVE-2025-24477", "severity": "MEDIUM",
+        "name": "FortiOS cw_stad (CAPWAP station daemon) heap-based buffer overflow privilege escalation",
+        "affected": [
+            {"train": "7.6", "fixed": "7.6.3"},
+            {"train": "7.4", "fixed": "7.4.8"},
+            {"train": "7.2", "fixed": "7.2.13"},
+        ],
+        "description": "A heap-based buffer overflow (CWE-122) in the FortiOS cw_stad daemon (the CAPWAP station/wireless-client daemon, primarily on FortiWiFi appliances operating as wireless clients) allows a local, already-authenticated attacker with high privileges to overflow a fixed-size heap buffer via specially crafted CLI commands/requests, enabling arbitrary code/command execution and privilege escalation. Attack vector is local (AV:L), low complexity, requires high privileges and no user interaction. NVD (NIST) primary",
+        "recommendation": "Upgrade FortiOS to a fixed build: 7.6.x -> 7.6.3 or above; 7.4.x -> 7.4.8 or above; 7.2.x -> 7.2.13 or above. FortiOS 7.0 and 6.4 are not affected. No specific workaround is published; as defense-in-depth, restrict CLI/administrative access to trusted administrators and networks and enforce least-privilege admin roles, since exploitation requires high (admin) privileges.",
+        "cwe": "CWE-122",
+    },
+    {
+        "id": "FORTIOS-CVE-084", "cve": "CVE-2025-25248", "severity": "MEDIUM",
+        "name": "FortiOS SSL-VPN RDP/VNC Bookmark Integer Overflow (DoS)",
+        "affected": [
+            {"train": "7.6", "fixed": "7.6.3"},
+            {"train": "7.4", "fixed": "7.4.8"},
+            {"train": "7.2", "fixed": "7.2.11"},
+            {"train": "7.0", "fixed": "7.0.999"},
+            {"train": "6.4", "fixed": "6.4.999"},
+        ],
+        "description": "An integer overflow / wraparound (CWE-190) in the FortiOS SSL-VPN web portal RDP and VNC bookmark handling. A remote, authenticated SSL-VPN user can send crafted requests that trigger the overflow and affect the availability of the SSL-VPN service (denial of service). Impact is availability-only (no confidentiality/integrity loss); it requires valid low-privilege SSL-VPN credentials and is network-reachable. NVD (NIST) primary CVSS v3.1 = 6.5 MEDIUM (AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H);",
+        "recommendation": "Upgrade FortiOS to a fixed build: 7.6.x -> 7.6.3+, 7.4.x -> 7.4.8+, 7.2.x -> 7.2.11+. FortiOS 7.0 and 6.4 are end-of-life for this advisory with no fixed build - migrate to a supported fixed release. No workaround is published by Fortinet; as a mitigating measure, restrict/disable SSL-VPN web-mode RDP/VNC bookmarks and limit SSL-VPN portal access to trusted users until patched.",
+        "cwe": "CWE-190",
+    },
+    {
+        "id": "FORTIOS-CVE-085", "cve": "CVE-2025-25252", "severity": "MEDIUM",
+        "name": "FortiOS SSL-VPN SAML session re-use (insufficient session expiration)",
+        "affected": [
+            {"train": "7.6", "fixed": "7.6.3"},
+            {"train": "7.4", "fixed": "7.4.7"},
+            {"train": "7.2", "fixed": "7.2.11"},
+            {"train": "7.0", "fixed": "7.0.17"},
+            {"train": "6.4", "fixed": "6.4.999"},
+        ],
+        "description": "An Insufficient Session Expiration vulnerability (CWE-613) in the FortiOS SSL-VPN when SAML authentication is used. A remote attacker in possession of the SAML record of a user session (for example, a former administrator whose account was removed and whose active session was terminated) can access or re-open that SSL-VPN session by re-using the captured SAML record, because the session is not properly invalidated. Exploitation requires possession of a valid prior SAML record; NVD rates it 6.5 (MEDIUM, unauthenticated network vector), Fortinet secondary 4.8/FG-IR 4.3. Not known to be exploited in the wild.",
+        "recommendation": "Upgrade FortiOS to a fixed build: 7.6 -> 7.6.3+, 7.4 -> 7.4.7+, 7.2 -> 7.2.11+, 7.0 -> 7.0.17+. FortiOS 6.4 is End of Life with no fix - migrate to a fixed release. Workaround: use the FortiClient built-in browser during SAML authentication (do not enable \"Use external browser as user-agent for saml user authentication\").",
+        "cwe": "CWE-613",
+    },
+    {
+        "id": "FORTIOS-CVE-086", "cve": "CVE-2025-25253", "severity": "HIGH",
+        "name": "FortiOS ZTNA proxy improper certificate validation (host mismatch) enables MITM interception",
+        "affected": [
+            {"train": "7.6", "fixed": "7.6.3"},
+            {"train": "7.4", "fixed": "7.4.9"},
+            {"train": "7.2", "fixed": "7.2.999"},
+            {"train": "7.0", "fixed": "7.0.999"},
+        ],
+        "description": "An Improper Validation of Certificate with Host Mismatch vulnerability (CWE-297) in the FortiOS ZTNA access proxy fails to verify that the presented server certificate matches the expected host. An unauthenticated attacker in a network-adjacent man-in-the-middle position can therefore present a certificate for a different host, which the ZTNA proxy incorrectly accepts, allowing the attacker to intercept and tamper with connections to the ZTNA proxy (confidentiality and integrity impact).",
+        "recommendation": "Upgrade FortiOS to a fixed build: 7.6.x -> 7.6.3 or above; 7.4.x -> 7.4.9 or above. FortiOS 7.2 and 7.0 are affected in all versions with no in-train fix — migrate to a fixed 7.4.9+/7.6.3+ release. FortiOS 6.4 is not affected. No official workaround is published; where feasible, limit exposure of the ZTNA access proxy and validate/enforce server certificate trust on ZTNA-protected servers. Attack requires an adjacent MITM position, so also review the trust path/network segmentation between clients and the ZTNA proxy.",
+        "cwe": "CWE-297",
+    },
+    {
+        "id": "FORTIOS-CVE-087", "cve": "CVE-2025-25255", "severity": "MEDIUM",
+        "name": "FortiOS/FortiProxy explicit web proxy domain-fronting protection bypass",
+        "affected": [
+            {"train": "7.6", "fixed": "7.6.4"},
+        ],
+        "description": "An improperly implemented security check (CWE-358) in the explicit web proxy of FortiOS and FortiProxy allows an unauthenticated proxy user to bypass the domain-fronting protection feature by sending crafted HTTP requests that carry a mismatch between the Host header and the TLS SNI. By exploiting this weakness, an attacker/proxy user can reach destinations that domain-fronting protection is meant to block, effectively evading URL/destination filtering. Impact is limited to an integrity issue (I:L) with no direct confidentiality or availability impact; NVD/NIST rates it CVSS v3.1 4.3 (Fortinet secondary score 5.3).",
+        "recommendation": "Upgrade affected FortiOS to 7.6.4 or above (only the 7.6 train, 7.6.0-7.6.3, is affected; FortiOS 7.4, 7.2, 7.0 and 6.4 are Not Affected per FG-IR-24-372). After upgrading, harden the feature with the newly introduced non-default option: 'set domain-fronting strict', which blocks Host-header/SNI mismatches when matching by domain or IP. No pre-patch workaround is published. (FortiProxy is separately affected: 7.6.0-7.6.3 -> 7.6.4+, 7.4.0-7.4.11 -> 7.4.12+, 7.2 all versions and 7.0.1-7.0.22 migrate to a fixed release.)",
+        "cwe": "CWE-358",
+    },
+    {
+        "id": "FORTIOS-CVE-088", "cve": "CVE-2025-31366", "severity": "MEDIUM",
+        "name": "FortiOS Web Filter Warning Page Unauthenticated Reflected XSS (FG-IR-24-542)",
+        "affected": [
+            {"train": "7.6", "fixed": "7.6.4"},
+            {"train": "7.4", "fixed": "7.4.9"},
+            {"train": "7.2", "fixed": "7.2.999"},
+            {"train": "7.0", "fixed": "7.0.999"},
+            {"train": "6.4", "fixed": "6.4.999"},
+        ],
+        "description": "An Improper Neutralization of Input During Web Page Generation (CWE-79) vulnerability in FortiOS allows an unauthenticated, network-based attacker to perform a reflected cross-site scripting (XSS) attack via crafted HTTP requests, requiring user interaction. Per FG-IR-24-542 the flaw resides in the Web Filter warning/block page (\"others\" category) served by the FortiGate's inspection/proxy engine when web filtering is enabled; injected input is echoed back into the warning page and executes in the victim's browser. The advisory bundles this with CVE-2025-47890 (URL redirection / open redirect to an untrusted site). NVD NIST primary CVSS v3.1 = 6.1 MEDIUM (AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N); Fortinet secondary CVSS = 4.7 and the vendor advisory lists 4.5. Also affects FortiProxy and FortiSASE, but FortiOS (fortinet:fortios) is explicitly in the NVD CPE set.",
+        "recommendation": "Upgrade FortiOS to a fixed build: 7.6 train -> 7.6.4 or above; 7.4 train -> 7.4.9 or above. FortiOS 7.2, 7.0 and 6.4 are affected with no fixed build on those trains (EOL) - migrate to 7.4.9+ or 7.6.4+. Workarounds/mitigation: restrict which users/networks can reach FortiGate-served web filter warning pages, and where feasible avoid serving the web filter warning/block page to untrusted clients. No known in-the-wild exploitation (not on CISA KEV as of 2026-07-11); user interaction is required.",
+        "cwe": "CWE-79",
+    },
+    {
+        "id": "FORTIOS-CVE-089", "cve": "CVE-2025-47890", "severity": "MEDIUM",
+        "name": "FortiOS Web Filter warning page open redirect (URL redirection to untrusted site)",
+        "affected": [
+            {"train": "7.6", "fixed": "7.6.4"},
+            {"train": "7.4", "fixed": "7.4.9"},
+            {"train": "7.2", "fixed": "7.2.999"},
+            {"train": "7.0", "fixed": "7.0.999"},
+            {"train": "6.4", "fixed": "6.4.999"},
+        ],
+        "description": "An improper URL redirection (open redirect, CWE-601) vulnerability in the FortiOS Web Filter warning/block replacement page allows a remote, unauthenticated attacker to redirect a victim to an arbitrary untrusted site via crafted HTTP requests, enabling phishing/social-engineering. The victim must interact (click a crafted link), so exploitation requires user interaction and yields no direct code execution. NVD's NIST-primary score is 6.1 MEDIUM (CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N);",
+        "recommendation": "Upgrade FortiOS to a fixed build: 7.6 -> 7.6.4 or later; 7.4 -> 7.4.9 or later. FortiOS 7.2, 7.0 and 6.4 are affected with no in-train fix — migrate to a fixed 7.4.9+/7.6.4+ release. As interim mitigation, limit exposure of the web filter warning/block page and educate users against following unexpected redirect links. Not on CISA KEV; low real-world risk (requires user interaction, no confidentiality/integrity of device compromised).",
+        "cwe": "CWE-601",
+    },
+    {
+        "id": "FORTIOS-CVE-090", "cve": "CVE-2025-53744", "severity": "HIGH",
+        "name": "FortiOS Security Fabric Incorrect Privilege Assignment Privilege Escalation to Super-Admin",
+        "affected": [
+            {"train": "7.6", "fixed": "7.6.3"},
+            {"train": "7.4", "fixed": "7.4.8"},
+            {"train": "7.2", "fixed": "7.2.999"},
+            {"train": "7.0", "fixed": "7.0.999"},
+            {"train": "6.4", "fixed": "6.4.999"},
+        ],
+        "description": "An incorrect privilege assignment vulnerability (CWE-266) in the FortiOS Security Fabric allows a remote, authenticated administrator who already holds high privileges to escalate to full super-admin. The device trusts privilege metadata associated with FortiManager registration, so an attacker who directs a FortiGate to register with an attacker-controlled (\"malicious\") FortiManager can obtain a role beyond what the original account permitted, breaking the separation between standard admins and super-admin. Impact is full control over firewall policy, routing, and connected Security Fabric assets. NVD CPE confirms fortinet:fortios is affected.",
+        "recommendation": "Upgrade FortiOS to a fixed build: 7.6.x -> 7.6.3 or above; 7.4.x -> 7.4.8 or above. FortiOS 7.2, 7.0, and 6.4 are affected on all versions with no dedicated fix (end-of-engineering/EOL) and must be migrated to a fixed release (7.4.8+ or 7.6.3+). As mitigation, restrict which administrators can modify Security Fabric / central-management (FortiManager) settings, and only register devices with trusted, authenticated FortiManager instances. Exploitation requires an already high-privileged authenticated admin account, so also review and minimize non-super-admin accounts that hold broad privileges.",
+        "cwe": "CWE-266",
+    },
+    {
+        "id": "FORTIOS-CVE-091", "cve": "CVE-2025-53843", "severity": "HIGH",
+        "name": "FortiOS CAPWAP daemon stack-based buffer overflow (RCE)",
+        "affected": [
+            {"train": "7.6", "fixed": "7.6.4"},
+            {"train": "7.4", "fixed": "7.4.9"},
+            {"train": "7.2", "fixed": "7.2.999"},
+            {"train": "7.0", "fixed": "7.0.999"},
+            {"train": "6.4", "fixed": "6.4.999"},
+        ],
+        "description": "A stack-based buffer overflow in the FortiOS CAPWAP daemon (the process managing WiFi access-point control/provisioning) results from insufficient bounds checking when copying attacker-controlled length/content fields from an inbound CAPWAP packet into a stack-allocated buffer. A remote, authenticated low-privileged attacker who can reach the CAPWAP/Security-Fabric service and send specially crafted packets can overflow the stack buffer and execute unauthorized code or commands.",
+        "recommendation": "Upgrade FortiOS to a fixed build: 7.6.x -> 7.6.4 or above; 7.4.x -> 7.4.9 or above. FortiOS 7.2, 7.0 and 6.4 have no fixed in-train release (advisory instructs \"migrate to a fixed release\") -> migrate to 7.4.9+ or 7.6.4+. Interim workarounds from FG-IR-25-358: disable Security Fabric access on the affected interface; permit only legitimate devices under WiFi Controller > Managed FortiAPs; and verify auto-auth-extension-device remains disabled (its default state).",
+        "cwe": "CWE-121",
+    },
+    {
+        "id": "FORTIOS-CVE-092", "cve": "CVE-2025-58903", "severity": "MEDIUM",
+        "name": "FortiOS API Unchecked Return Value Null Pointer Dereference (httpd DoS)",
+        "affected": [
+            {"train": "7.6", "fixed": "7.6.4"},
+            {"train": "7.4", "fixed": "7.4.9"},
+            {"train": "7.2", "fixed": "7.2.999"},
+            {"train": "7.0", "fixed": "7.0.999"},
+            {"train": "6.4", "fixed": "6.4.999"},
+        ],
+        "description": "An Unchecked Return Value vulnerability (CWE-252) in the FortiOS API allows an authenticated user (privilege required) to send a specially crafted request that triggers a NULL pointer dereference, crashing the HTTP daemon (httpsd) and causing a denial of service on the administrative/API web interface. Impact is limited to availability; there is no disclosure or integrity impact. NVD (NIST) rates the base score 4.9 MEDIUM (CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:N/I:N/A:H); the vendor (Fortinet secondary) rates it lower at 2.7/2.5 LOW using A:L. Discovered internally by Loic Pantano of Fortinet PSIRT.",
+        "recommendation": "Upgrade FortiOS to a fixed build: 7.6 -> 7.6.4 or later; 7.4 -> 7.4.9 or later. Trains 7.2, 7.0, and 6.4 are affected with no fixed build in-branch and should be migrated to a fixed release (7.4.9+/7.6.4+). No workaround is documented; as defense-in-depth, restrict administrative/REST-API access to trusted management networks and enforce least-privilege admin accounts since exploitation requires authentication. Use the Fortinet upgrade tool (docs.fortinet.com/upgrade-tool).",
+        "cwe": "CWE-252",
+    },
+    {
+        "id": "FORTIOS-CVE-093", "cve": "CVE-2025-62631", "severity": "MEDIUM",
+        "name": "FortiOS SSL-VPN insufficient session expiration after password change",
+        "affected": [
+            {"train": "7.4", "fixed": "7.4.1"},
+            {"train": "7.2", "fixed": "7.2.999"},
+            {"train": "7.0", "fixed": "7.0.999"},
+            {"train": "6.4", "fixed": "6.4.999"},
+        ],
+        "description": "An insufficient session expiration flaw (CWE-613) in Fortinet FortiOS allows an attacker who holds an already-established SSL-VPN session to retain access to network resources after the associated user's password is changed. Because the active SSL-VPN session is not invalidated on password change (under particular conditions outside the attacker's control), a stolen or hijacked session survives the credential rotation that would normally revoke access. Attack vector is network (AV:N) with high attack complexity (AC:H) and no privileges/user interaction required; impact is low across confidentiality, integrity, and availability (C:L/I:L/A:L), yielding CVSS v3.1 5.6 (MEDIUM).",
+        "recommendation": "Upgrade FortiOS to a fixed release: 7.4 -> 7.4.1 or later. FortiOS 7.2, 7.0, and 6.4 are affected in all versions with no in-train fixed build, so migrate those devices to a fixed release (7.4.1+). FortiOS 7.6 is not affected. After patching, force-terminate existing SSL-VPN sessions and, as an interim workaround, administratively disconnect/expire active SSL-VPN sessions whenever a user's password is changed.",
+        "cwe": "CWE-613",
+    },
 ]
 
 # ========================================================================== #
@@ -1030,6 +1270,24 @@ CVE_COMPONENTS: dict[str, str] = {
     # CVE-074 (CVE-2019-6693, hard-coded backup key) is data-at-rest, not network-
     # reachable -> intentionally untagged so it stays INDETERMINATE.
     "FORTIOS-CVE-075": "admin-auth",      # CVE-2021-44168 execute restore (authenticated CLI)
+    "FORTIOS-CVE-076": "admin-gui",       # CVE-2023-45584
+    "FORTIOS-CVE-077": "admin-ssh",       # CVE-2023-46718
+    "FORTIOS-CVE-078": "admin-ssh",       # CVE-2024-40593
+    # FORTIOS-CVE-079 (CVE-2024-47569): component indeterminate -> untagged (INDETERMINATE).
+    "FORTIOS-CVE-080": "rest-api",        # CVE-2024-47570
+    "FORTIOS-CVE-081": "rest-api",        # CVE-2024-52965
+    "FORTIOS-CVE-082": "admin-gui",       # CVE-2025-22862
+    "FORTIOS-CVE-083": "capwap",          # CVE-2025-24477
+    "FORTIOS-CVE-084": "sslvpn",          # CVE-2025-25248
+    "FORTIOS-CVE-085": "sslvpn",          # CVE-2025-25252
+    "FORTIOS-CVE-086": "proxy",           # CVE-2025-25253 ZTNA access-proxy (WAD), reachable independently of SSL-VPN
+    "FORTIOS-CVE-087": "proxy",           # CVE-2025-25255
+    "FORTIOS-CVE-088": "proxy",           # CVE-2025-31366
+    # FORTIOS-CVE-089 (CVE-2025-47890): component indeterminate -> untagged (INDETERMINATE).
+    # FORTIOS-CVE-090 (CVE-2025-53744): component indeterminate -> untagged (INDETERMINATE).
+    "FORTIOS-CVE-091": "capwap",          # CVE-2025-53843
+    "FORTIOS-CVE-092": "rest-api",        # CVE-2025-58903
+    "FORTIOS-CVE-093": "sslvpn",          # CVE-2025-62631
 }
 
 # ========================================================================== #

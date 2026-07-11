@@ -1,8 +1,8 @@
 {
   "meta": {
     "schema": "fortinet-threat-intel/1",
-    "snapshot_date": "2026-07-09",
-    "cve_count": 75,
+    "snapshot_date": "2026-07-11",
+    "cve_count": 93,
     "kev_count": 19,
     "sources": {
       "kev": "CISA Known Exploited Vulnerabilities Catalog (cisa.gov/kev)",
@@ -11,39 +11,73 @@
     "note": "Threat-intel snapshot for the Risk-Prioritization Engine. Refreshed online with: fortinet_scanner.py --refresh-intel"
   },
   "cves": {
+    "CVE-2018-13379": {
+      "epss": 0.99999,
+      "epss_pct": 0.99994,
+      "kev": true,
+      "kev_date": "2021-11-03",
+      "ransomware": true
+    },
+    "CVE-2018-13382": {
+      "epss": 0.81691,
+      "epss_pct": 0.99601,
+      "kev": true,
+      "kev_date": "2022-01-10",
+      "ransomware": true
+    },
+    "CVE-2018-13383": {
+      "epss": 0.33647,
+      "epss_pct": 0.98189,
+      "kev": true,
+      "kev_date": "2022-01-10",
+      "ransomware": true
+    },
     "CVE-2019-5591": {
       "epss": 0.18566,
-      "epss_pct": 0.96908,
+      "epss_pct": 0.96914,
       "kev": true,
       "kev_date": "2021-11-03"
     },
+    "CVE-2019-6693": {
+      "epss": 0.05663,
+      "epss_pct": 0.92059,
+      "kev": true,
+      "kev_date": "2025-06-25",
+      "ransomware": true
+    },
     "CVE-2020-12812": {
       "epss": 0.49344,
-      "epss_pct": 0.9875,
+      "epss_pct": 0.98752,
       "kev": true,
       "kev_date": "2021-11-03",
       "ransomware": true
     },
     "CVE-2021-26109": {
       "epss": 0.01823,
-      "epss_pct": 0.762,
+      "epss_pct": 0.76238,
       "kev": false
+    },
+    "CVE-2021-44168": {
+      "epss": 0.00873,
+      "epss_pct": 0.54625,
+      "kev": true,
+      "kev_date": "2021-12-10"
     },
     "CVE-2022-35843": {
       "epss": 0.00889,
-      "epss_pct": 0.54995,
+      "epss_pct": 0.55082,
       "kev": false
     },
     "CVE-2022-40684": {
       "epss": 0.99984,
-      "epss_pct": 0.99983,
+      "epss_pct": 0.99982,
       "kev": true,
       "kev_date": "2022-10-11",
       "ransomware": true
     },
     "CVE-2022-41328": {
       "epss": 0.12316,
-      "epss_pct": 0.95708,
+      "epss_pct": 0.95716,
       "kev": true,
       "kev_date": "2023-03-14"
     },
@@ -56,174 +90,199 @@
     },
     "CVE-2023-25610": {
       "epss": 0.17797,
-      "epss_pct": 0.96806,
+      "epss_pct": 0.96811,
       "kev": false
     },
     "CVE-2023-27997": {
       "epss": 0.85689,
-      "epss_pct": 0.99697,
+      "epss_pct": 0.99698,
       "kev": true,
       "kev_date": "2023-06-13",
       "ransomware": true
     },
     "CVE-2023-28001": {
       "epss": 0.0043,
-      "epss_pct": 0.34596,
+      "epss_pct": 0.34671,
       "kev": false
     },
     "CVE-2023-33308": {
       "epss": 0.01873,
-      "epss_pct": 0.76863,
+      "epss_pct": 0.76895,
       "kev": false
     },
     "CVE-2023-36554": {
       "epss": 0.00765,
-      "epss_pct": 0.51028,
+      "epss_pct": 0.51117,
       "kev": false
     },
     "CVE-2023-36639": {
       "epss": 0.01059,
-      "epss_pct": 0.60458,
+      "epss_pct": 0.60539,
       "kev": false
     },
     "CVE-2023-41677": {
       "epss": 0.00732,
-      "epss_pct": 0.49883,
+      "epss_pct": 0.49979,
       "kev": false
     },
     "CVE-2023-41678": {
       "epss": 0.01068,
-      "epss_pct": 0.60765,
+      "epss_pct": 0.60846,
       "kev": false
     },
     "CVE-2023-42789": {
       "epss": 0.03279,
-      "epss_pct": 0.86948,
+      "epss_pct": 0.86975,
       "kev": false
     },
     "CVE-2023-44249": {
       "epss": 0.00872,
-      "epss_pct": 0.5452,
+      "epss_pct": 0.5461,
       "kev": false
     },
     "CVE-2023-44250": {
       "epss": 0.00899,
-      "epss_pct": 0.55298,
+      "epss_pct": 0.55381,
+      "kev": false
+    },
+    "CVE-2023-45584": {
+      "epss": 0.00535,
+      "epss_pct": 0.41315,
       "kev": false
     },
     "CVE-2023-46714": {
       "epss": 0.014,
-      "epss_pct": 0.69217,
+      "epss_pct": 0.69277,
+      "kev": false
+    },
+    "CVE-2023-46718": {
+      "epss": 0.00176,
+      "epss_pct": 0.07256,
       "kev": false
     },
     "CVE-2023-46720": {
       "epss": 0.00279,
-      "epss_pct": 0.19728,
+      "epss_pct": 0.19768,
       "kev": false
     },
     "CVE-2023-48788": {
       "epss": 0.97591,
-      "epss_pct": 0.99893,
+      "epss_pct": 0.99894,
       "kev": true,
       "kev_date": "2024-03-25",
       "ransomware": true
     },
     "CVE-2023-50176": {
       "epss": 0.00551,
-      "epss_pct": 0.42105,
+      "epss_pct": 0.42199,
       "kev": false
     },
     "CVE-2024-21762": {
       "epss": 0.83428,
-      "epss_pct": 0.99647,
+      "epss_pct": 0.99648,
       "kev": true,
       "kev_date": "2024-02-09",
       "ransomware": true
     },
     "CVE-2024-23110": {
       "epss": 0.00281,
-      "epss_pct": 0.19968,
+      "epss_pct": 0.2001,
       "kev": false
     },
     "CVE-2024-23112": {
       "epss": 0.00663,
-      "epss_pct": 0.47235,
+      "epss_pct": 0.47332,
       "kev": false
     },
     "CVE-2024-23113": {
       "epss": 0.61725,
-      "epss_pct": 0.99066,
+      "epss_pct": 0.99069,
       "kev": true,
       "kev_date": "2024-10-09"
     },
     "CVE-2024-26008": {
-      "epss": 0.00434,
-      "epss_pct": 0.34881,
+      "epss": 0.00444,
+      "epss_pct": 0.35724,
       "kev": false
     },
     "CVE-2024-26009": {
       "epss": 0.00556,
-      "epss_pct": 0.42333,
+      "epss_pct": 0.42426,
       "kev": false
     },
     "CVE-2024-26010": {
       "epss": 0.00786,
-      "epss_pct": 0.51688,
+      "epss_pct": 0.51783,
       "kev": false
     },
     "CVE-2024-26011": {
       "epss": 0.00589,
-      "epss_pct": 0.4394,
+      "epss_pct": 0.44037,
       "kev": false
     },
     "CVE-2024-26013": {
-      "epss": 0.00457,
-      "epss_pct": 0.36548,
+      "epss": 0.00481,
+      "epss_pct": 0.38161,
       "kev": false
     },
     "CVE-2024-33510": {
       "epss": 0.00557,
-      "epss_pct": 0.42419,
+      "epss_pct": 0.42511,
       "kev": false
     },
     "CVE-2024-35279": {
-      "epss": 0.00938,
-      "epss_pct": 0.56575,
+      "epss": 0.01006,
+      "epss_pct": 0.58911,
       "kev": false
     },
     "CVE-2024-3596": {
       "epss": 0.14859,
-      "epss_pct": 0.96292,
+      "epss_pct": 0.96298,
       "kev": false
     },
     "CVE-2024-36505": {
       "epss": 0.00159,
-      "epss_pct": 0.05399,
+      "epss_pct": 0.05427,
       "kev": false
     },
     "CVE-2024-40591": {
-      "epss": 0.00574,
-      "epss_pct": 0.43239,
+      "epss": 0.00598,
+      "epss_pct": 0.44483,
+      "kev": false
+    },
+    "CVE-2024-40593": {
+      "epss": 0.00099,
+      "epss_pct": 0.0101,
       "kev": false
     },
     "CVE-2024-45324": {
       "epss": 0.00679,
-      "epss_pct": 0.47915,
+      "epss_pct": 0.48007,
       "kev": false
     },
     "CVE-2024-46666": {
       "epss": 0.00668,
-      "epss_pct": 0.4745,
+      "epss_pct": 0.47546,
       "kev": false
     },
     "CVE-2024-46668": {
       "epss": 0.00969,
-      "epss_pct": 0.57627,
+      "epss_pct": 0.57712,
       "kev": false
     },
     "CVE-2024-46670": {
       "epss": 0.00609,
-      "epss_pct": 0.44873,
+      "epss_pct": 0.44968,
+      "kev": false
+    },
+    "CVE-2024-47569": {
+      "epss": 0.00429,
+      "epss_pct": 0.34588,
+      "kev": false
+    },
+    "CVE-2024-47570": {
+      "epss": 0.00362,
+      "epss_pct": 0.28283,
       "kev": false
     },
     "CVE-2024-47575": {
@@ -234,27 +293,32 @@
     },
     "CVE-2024-48884": {
       "epss": 0.14944,
-      "epss_pct": 0.96306,
+      "epss_pct": 0.96311,
       "kev": false
     },
     "CVE-2024-48886": {
       "epss": 0.00462,
-      "epss_pct": 0.36854,
+      "epss_pct": 0.36935,
       "kev": false
     },
     "CVE-2024-50562": {
       "epss": 0.01076,
-      "epss_pct": 0.60981,
+      "epss_pct": 0.61063,
       "kev": false
     },
     "CVE-2024-50563": {
       "epss": 0.00557,
-      "epss_pct": 0.42421,
+      "epss_pct": 0.42513,
       "kev": false
     },
     "CVE-2024-50571": {
-      "epss": 0.00489,
-      "epss_pct": 0.38554,
+      "epss": 0.005,
+      "epss_pct": 0.39278,
+      "kev": false
+    },
+    "CVE-2024-52965": {
+      "epss": 0.00251,
+      "epss_pct": 0.16347,
       "kev": false
     },
     "CVE-2024-55591": {
@@ -266,152 +330,182 @@
     },
     "CVE-2024-55599": {
       "epss": 0.00342,
-      "epss_pct": 0.26191,
+      "epss_pct": 0.26247,
       "kev": false
     },
     "CVE-2025-22252": {
       "epss": 0.00804,
-      "epss_pct": 0.52292,
+      "epss_pct": 0.52387,
       "kev": false
     },
     "CVE-2025-22254": {
       "epss": 0.00712,
-      "epss_pct": 0.49164,
+      "epss_pct": 0.4926,
       "kev": false
     },
     "CVE-2025-22258": {
       "epss": 0.00523,
-      "epss_pct": 0.40596,
+      "epss_pct": 0.4068,
+      "kev": false
+    },
+    "CVE-2025-22862": {
+      "epss": 0.00237,
+      "epss_pct": 0.14622,
       "kev": false
     },
     "CVE-2025-24471": {
       "epss": 0.00322,
-      "epss_pct": 0.24109,
+      "epss_pct": 0.24158,
       "kev": false
     },
     "CVE-2025-24472": {
-      "epss": 0.02988,
-      "epss_pct": 0.85687,
+      "epss": 0.03092,
+      "epss_pct": 0.86176,
       "kev": true,
       "kev_date": "2025-03-18",
       "ransomware": true
     },
+    "CVE-2025-24477": {
+      "epss": 0.00211,
+      "epss_pct": 0.11379,
+      "kev": false
+    },
+    "CVE-2025-25248": {
+      "epss": 0.00418,
+      "epss_pct": 0.33718,
+      "kev": false
+    },
     "CVE-2025-25249": {
       "epss": 0.00746,
-      "epss_pct": 0.50365,
+      "epss_pct": 0.50457,
       "kev": false
     },
     "CVE-2025-25250": {
       "epss": 0.00457,
-      "epss_pct": 0.36568,
+      "epss_pct": 0.36648,
+      "kev": false
+    },
+    "CVE-2025-25252": {
+      "epss": 0.00278,
+      "epss_pct": 0.19655,
+      "kev": false
+    },
+    "CVE-2025-25253": {
+      "epss": 0.00106,
+      "epss_pct": 0.01318,
+      "kev": false
+    },
+    "CVE-2025-25255": {
+      "epss": 0.00402,
+      "epss_pct": 0.32242,
+      "kev": false
+    },
+    "CVE-2025-31366": {
+      "epss": 0.00374,
+      "epss_pct": 0.2952,
+      "kev": false
+    },
+    "CVE-2025-47890": {
+      "epss": 0.00237,
+      "epss_pct": 0.14577,
+      "kev": false
+    },
+    "CVE-2025-53744": {
+      "epss": 0.00571,
+      "epss_pct": 0.43241,
+      "kev": false
+    },
+    "CVE-2025-53843": {
+      "epss": 0.0056,
+      "epss_pct": 0.42626,
       "kev": false
     },
     "CVE-2025-53844": {
       "epss": 0.00564,
-      "epss_pct": 0.42786,
+      "epss_pct": 0.42878,
       "kev": false
     },
     "CVE-2025-53847": {
       "epss": 0.00283,
-      "epss_pct": 0.20106,
+      "epss_pct": 0.20148,
       "kev": false
     },
     "CVE-2025-54821": {
       "epss": 0.00135,
-      "epss_pct": 0.03362,
+      "epss_pct": 0.03379,
       "kev": false
     },
     "CVE-2025-55018": {
       "epss": 0.00351,
-      "epss_pct": 0.27109,
+      "epss_pct": 0.27175,
       "kev": false
     },
     "CVE-2025-57740": {
-      "epss": 0.00621,
-      "epss_pct": 0.45479,
+      "epss": 0.00636,
+      "epss_pct": 0.4618,
       "kev": false
     },
     "CVE-2025-58325": {
-      "epss": 0.00282,
-      "epss_pct": 0.20012,
+      "epss": 0.00288,
+      "epss_pct": 0.20682,
       "kev": false
     },
     "CVE-2025-58413": {
       "epss": 0.00302,
-      "epss_pct": 0.21933,
+      "epss_pct": 0.21983,
+      "kev": false
+    },
+    "CVE-2025-58903": {
+      "epss": 0.00581,
+      "epss_pct": 0.4367,
       "kev": false
     },
     "CVE-2025-59718": {
       "epss": 0.66322,
-      "epss_pct": 0.99188,
+      "epss_pct": 0.99191,
       "kev": true,
       "kev_date": "2025-12-16"
     },
     "CVE-2025-61624": {
       "epss": 0.00498,
-      "epss_pct": 0.3913,
+      "epss_pct": 0.39212,
       "kev": false
     },
     "CVE-2025-62439": {
       "epss": 0.00138,
-      "epss_pct": 0.03564,
+      "epss_pct": 0.03586,
+      "kev": false
+    },
+    "CVE-2025-62631": {
+      "epss": 0.00285,
+      "epss_pct": 0.20405,
       "kev": false
     },
     "CVE-2025-64157": {
       "epss": 0.01365,
-      "epss_pct": 0.68483,
+      "epss_pct": 0.68551,
       "kev": false
     },
     "CVE-2025-67862": {
       "epss": 0.00144,
-      "epss_pct": 0.04039,
+      "epss_pct": 0.04063,
       "kev": false
     },
     "CVE-2025-68686": {
       "epss": 0.00477,
-      "epss_pct": 0.37781,
+      "epss_pct": 0.37864,
       "kev": false
     },
     "CVE-2026-22153": {
       "epss": 0.00698,
-      "epss_pct": 0.48628,
+      "epss_pct": 0.48726,
       "kev": false
     },
     "CVE-2026-24858": {
       "epss": 0.85844,
-      "epss_pct": 0.99701,
+      "epss_pct": 0.99702,
       "kev": true,
       "kev_date": "2026-01-27"
-    },
-    "CVE-2018-13379": {
-      "epss": 0.94,
-      "epss_pct": 0.999,
-      "kev": true,
-      "kev_date": "2021-11-03"
-    },
-    "CVE-2018-13382": {
-      "epss": 0.86,
-      "epss_pct": 0.989,
-      "kev": true,
-      "kev_date": "2021-11-03"
-    },
-    "CVE-2018-13383": {
-      "epss": 0.72,
-      "epss_pct": 0.982,
-      "kev": true,
-      "kev_date": "2021-11-03"
-    },
-    "CVE-2019-6693": {
-      "epss": 0.33,
-      "epss_pct": 0.97,
-      "kev": true,
-      "kev_date": "2025-06-25"
-    },
-    "CVE-2021-44168": {
-      "epss": 0.68,
-      "epss_pct": 0.975,
-      "kev": true,
-      "kev_date": "2022-12-13"
     }
   }
 }

@@ -4,7 +4,7 @@
 
 Fortinet FortiGate Security Scanner — a security posture assessment tool that audits FortiGate
 NGFW configuration against security best practices, 5 compliance frameworks (CIS, PCI-DSS,
-NIST 800-53, SOC 2, HIPAA), 75 known CVEs (2018–2026), and 34 MITRE ATT&CK technique
+NIST 800-53, SOC 2, HIPAA), 93 known CVEs (2018–2026), and 34 MITRE ATT&CK technique
 resilience tests. Findings export to HTML/PDF/JSON/CSV plus **SARIF 2.1.0 and OCSF** for
 CI / SIEM ingestion, **SOAR/ticketing payloads** (Jira / ServiceNow / Splunk SOAR / webhook)
 for work-management systems, a **tamper-evident compliance attestation pack** (hash-manifest +
@@ -33,7 +33,7 @@ Ships in two modes that share the same 22 check methods and rule set:
 
 ## Architecture
 
-1. **`FORTIOS_CVES` list** — 75 known FortiOS CVEs (2018-2026) with train-based version matching, sourced from FortiGuard PSIRT + NVD. Cross-product advisories (FortiManager/FortiClient EMS = `product` field) are tracked for documentation but **skipped** in `_check_cves` so they never false-positive against FortiGate firmware. Every entry is verified to affect FortiOS specifically (a prior bogus PAN-OS entry, CVE-2024-0012, was removed).
+1. **`FORTIOS_CVES` list** — 93 known FortiOS CVEs (2018-2026) with train-based version matching, sourced from FortiGuard PSIRT + NVD. Cross-product advisories (FortiManager/FortiClient EMS = `product` field) are tracked for documentation but **skipped** in `_check_cves` so they never false-positive against FortiGate firmware. Every entry is verified to affect FortiOS specifically (a prior bogus PAN-OS entry, CVE-2024-0012, was removed).
 2. **`COMPLIANCE_MAP` dict** — 94 rule-to-framework mappings (CIS, PCI-DSS, NIST 800-53, SOC 2, HIPAA).
 3. **`REMEDIATION_COMMANDS` dict** — 52 FortiOS CLI config commands mapped to rule IDs.
 4. **`Finding` class** — `__slots__` with `rule_id, name, category, severity, description, recommendation, cwe, cve, compliance, remediation_cmd`. Auto-resolves compliance + remediation on init.
@@ -80,7 +80,7 @@ Ships in two modes that share the same 22 check methods and rule set:
 | Authentication | FORTIOS-AUTH | `_check_authentication` | 6 |
 | Advanced Hardening | FORTIOS-SYS/NET/POLICY/LOG/CERT/ZTNA | `_check_advanced_hardening` | ~15 |
 | MITRE ATT&CK Resilience | MITRE-T{NNNN}-{NNN} | `_check_mitre_attack_resilience` | 34 |
-| Known CVEs | FORTIOS-CVE | `_check_cves` | 75 |
+| Known CVEs | FORTIOS-CVE | `_check_cves` | 93 |
 
 ## Compliance Framework Mapping
 
@@ -150,7 +150,7 @@ CLI flags: `--html`, `--pdf`, `--csv`, `--compliance-csv`, `--sarif`, `--ocsf`, 
 
 Score is capped at 100 and mapped by `TIER_THRESHOLDS` (P1≥70, P2≥42, P3≥20, else P4), with one **floor**: a KEV-listed CVE is never below P2. Every `PriorityResult` carries `factors` (label + points + detail) and a `rationale` string, so the ranking is fully explainable. `RiskPrioritizer.prioritize(findings)` returns them ordered fix-first.
 
-- **`threat_intel.json`** — bundled snapshot (`meta` + `cves{CVE: {epss, epss_pct, kev, kev_date?}}`) for all 75 tracked CVEs (19 KEV-listed). Keeps the engine working **offline**; loader degrades to empty (severity+reachability only) if missing/corrupt.
+- **`threat_intel.json`** — bundled snapshot (`meta` + `cves{CVE: {epss, epss_pct, kev, kev_date?}}`) for all 93 tracked CVEs (19 KEV-listed; snapshot 2026-07-11). Keeps the engine working **offline**; loader degrades to empty (severity+reachability only) if missing/corrupt.
 - **`--refresh-intel`** (`_refresh_intel` / `_refresh_intel_offline`) — rebuilds the snapshot from the live CISA KEV catalog + FIRST.org EPSS API via **`urllib` (stdlib only)**, then exits. Handled *before* host/inventory validation so it runs standalone. EPSS is batched (60/req). Captures KEV `knownRansomwareCampaignUse` -> per-entry `ransomware` flag.
 - **`--export-intel FILE` / `--import-intel FILE`** (`_transfer_intel`, `export_intel`/`import_intel`) — sneakernet a snapshot to/from an air-gapped host; import **validates** (`_validate_intel_doc`) before overwriting so a corrupt file can't replace a good snapshot. Staleness: `ThreatIntel.age_days()`/`is_stale(threshold=45)`; console + reports show a stale warning.
 - **`--top [N]`** — `print_priorities(N)` prints the tier summary + fix-first queue (KEV/ransomware/EPSS/exposed tags) to the console (default 10).
@@ -235,7 +235,7 @@ Score is capped at 100 and mapped by `TIER_THRESHOLDS` (P1≥70, P2≥42, P3≥2
 
 Scoring: `MITRE-SUMMARY-PASS` (all 34 pass) or `MITRE-SUMMARY-SCORE` (percentage).
 
-## Known CVEs (75 entries, 2018-2026)
+## Known CVEs (93 entries, 2018-2026)
 
 | Range | Count | Severity Mix | Notes |
 |-------|-------|-------------|-------|
@@ -244,11 +244,13 @@ Scoring: `MITRE-SUMMARY-PASS` (all 34 pass) or `MITRE-SUMMARY-SCORE` (percentage
 | CVE-031 to 046 | 16 | 2 CRITICAL, 14 HIGH | 2023-2026 sweep: CAPWAP, IPsec IKE, FGFM, restricted CLI escape, LDAP bypass |
 | CVE-047 to 070 | 24 | + proxy-mode RCE | SSL-VPN symlink re-persistence, RADIUS Blast-RADIUS, request smuggling, DNS-65 filter bypass, FSSO bypass, CVE-2023-33308 |
 | CVE-071 to 075 | 5 | 1 CRITICAL, 2 HIGH, 2 MEDIUM | **Legacy CISA-KEV set (2018-2021)**: CVE-2018-13379/13382/13383 (SSL-VPN), CVE-2019-6693 (hard-coded config-backup key), CVE-2021-44168 (`execute restore` integrity) — legacy 5.x/6.0 trains |
+| CVE-076 to 093 | 18 | 6 HIGH, 12 MEDIUM | **2026-07 freshness pack** (research→NVD/FG-IR verify): CVE-2024-52965 (PKI-via-API bypass), CVE-2025-53843 (CAPWAP RCE), CVE-2025-25253 (ZTNA proxy MITM), REST-API token disclosure, automation-stitch, SSL-VPN session-expiration/SAML, Web-Filter XSS/open-redirect. Every fixed-version matrix FG-IR-verified; components 086→`proxy` (ZTNA not SSL-VPN), 079/089/090 INDETERMINATE. |
 
 Cross-product entries (FORTIOS-CVE-006/007/010 = FortiManager / FortiClient EMS) carry a `product`
 field and are **skipped** by `_check_cves` — kept for documentation, never matched against FortiGate
 firmware. Every new CVE that has a KEV floor is also present in `threat_intel.json`
-(19 KEV-listed CVEs). CVE-002/004 now also carry the affected **6.0** train (EOL, sentinel `6.0.999`).
+(19 KEV-listed CVEs, snapshot 2026-07-11; the 18-CVE freshness pack added no KEV entries). CVE-002/004
+now also carry the affected **6.0** train (EOL, sentinel `6.0.999`).
 
 Train-based matching: `_parse_ver()`, `_ver_in_train()`, `_ver_lt()`. Trains: 5.2, 5.4, 5.6, 6.0, 6.2, 6.4, 7.0, 7.2, 7.4, 7.6.
 

@@ -5,7 +5,7 @@
 <h1 align="center">Fortinet FortiGate Security Scanner</h1>
 
 <p align="center">
-  <strong>Agentless FortiGate NGFW posture assessment — live API or offline <code>.conf</code> — with MITRE ATT&CK resilience scoring,<br/>75 CVE checks, 5-framework compliance mapping, a tamper-evident compliance attestation pack, SARIF/OCSF + SOAR/ticketing export, remediation-script generation, and a 237-entry detailed remediation runbook.</strong>
+  <strong>Agentless FortiGate NGFW posture assessment — live API or offline <code>.conf</code> — with MITRE ATT&CK resilience scoring,<br/>93 CVE checks, 5-framework compliance mapping, a tamper-evident compliance attestation pack, SARIF/OCSF + SOAR/ticketing export, remediation-script generation, and a 237-entry detailed remediation runbook.</strong>
 </p>
 
 <p align="center">
@@ -14,7 +14,7 @@
   <img src="https://img.shields.io/badge/FortiOS-6.x%20%7C%207.x-red?style=flat-square" alt="FortiOS"/>
   <img src="https://img.shields.io/badge/rules-260%2B-orange?style=flat-square" alt="Rules"/>
   <img src="https://img.shields.io/badge/MITRE_ATT%26CK-31_techniques-dc2626?style=flat-square" alt="MITRE"/>
-  <img src="https://img.shields.io/badge/CVEs-70-critical?style=flat-square" alt="CVEs"/>
+  <img src="https://img.shields.io/badge/CVEs-93-critical?style=flat-square" alt="CVEs"/>
   <img src="https://img.shields.io/badge/remediation_KB-226_entries-2ea043?style=flat-square" alt="Remediation KB"/>
   <img src="https://img.shields.io/badge/reports-HTML%20%7C%20PDF%20%7C%20JSON%20%7C%20CSV-8957e5?style=flat-square" alt="Reports"/>
   <img src="https://img.shields.io/badge/compliance-CIS%20%7C%20PCI--DSS%20%7C%20NIST%20%7C%20SOC2%20%7C%20HIPAA-blueviolet?style=flat-square" alt="Compliance"/>
@@ -65,7 +65,7 @@ It runs in **two modes that share one engine, one rule set, and one report layer
 
 Offline mode exists for the places live scanning cannot reach: **OT / ICS networks, air-gapped enclaves, and locked-down operator workstations** where you cannot open a socket to the firewall or `pip install` anything.
 
-> **280+ checks · risk-prioritization engine (P1–P4, KEV + EPSS + reachability gating) · fleet analysis console · continuous posture state (exceptions + SLA + trend) · traffic-aware policy engine (reachability query + IP-overlap shadow + simulate) · scored compliance benchmark · rule-base analysis + Policy Control Index · attack-surface + config-drift · 34 MITRE ATT&CK techniques · 75 FortiOS CVEs · 5 compliance frameworks · 237-entry remediation knowledge base · scored compliance benchmark · tamper-evident compliance attestation pack (OSCAL-aligned, hash-manifest + HMAC seal) · SARIF/OCSF + fix-script generation · SOAR/ticketing export (Jira · ServiceNow · Splunk SOAR · webhook) · HTML + PDF + JSON + CSV reports**
+> **280+ checks · risk-prioritization engine (P1–P4, KEV + EPSS + reachability gating) · fleet analysis console · continuous posture state (exceptions + SLA + trend) · traffic-aware policy engine (reachability query + IP-overlap shadow + simulate) · scored compliance benchmark · rule-base analysis + Policy Control Index · attack-surface + config-drift · 34 MITRE ATT&CK techniques · 93 FortiOS CVEs (NVD/FG-IR-verified) · 5 compliance frameworks · 237-entry remediation knowledge base · scored compliance benchmark · tamper-evident compliance attestation pack (OSCAL-aligned, hash-manifest + HMAC seal) · SARIF/OCSF + fix-script generation · SOAR/ticketing export (Jira · ServiceNow · Splunk SOAR · webhook) · HTML + PDF + JSON + CSV reports**
 
 ---
 
@@ -117,7 +117,7 @@ Open `report.html` in any browser, hand `report.pdf` to management, give `runboo
 | **Risk-prioritization engine** | **P1–P4 fix-first tiers** fusing severity × exploitability (**CISA KEV** + **FIRST.org EPSS**) × internet-reachability; bundled offline threat-intel snapshot, `--refresh-intel` to update, `--top N` fix-first queue, and a "Top Risks" section in every report |
 | **Rule-base analysis (FireMon-style)** | Shadowed & redundant rule detection, a 0–100 **Policy Control Index**, dormant-rule cleanup (live), orphaned object hygiene, **internet attack-surface** modelling, and **config-drift** diffing between scans |
 | **34 MITRE ATT&CK techniques** | Resilience testing across 11 tactics with a 0–100% score |
-| **75 known CVEs** | FortiGuard PSIRT 2018–2026 + CISA KEV, train-based firmware version matching (FortiOS 5.2 → 7.6) |
+| **93 known CVEs** | FortiGuard PSIRT 2018–2026 + CISA KEV, train-based firmware version matching (FortiOS 5.2 → 7.6) |
 | **5 compliance frameworks** | CIS FortiGate, PCI-DSS 4.0, NIST 800-53 Rev 5, SOC 2 Type II, HIPAA — 89 rule-to-control mappings |
 | **SARIF 2.1.0 + OCSF export** | `--sarif` for GitHub code-scanning / CI, `--ocsf` for SIEM (Splunk/Sentinel/Security Lake) — stdlib-only |
 | **SOAR / ticketing export** | `--jira` / `--servicenow` / `--splunk-soar` / `--webhook` emit ready-to-POST payloads with a stable dedup key (re-scan *updates*, never duplicates) and posture-driven **close** events for resolved findings; `--soar-min-tier` gates by P1–P4 |
@@ -146,7 +146,7 @@ Open `report.html` in any browser, hand `report.pdf` to management, give `runboo
                                         ┌───────────────────────────────┐
                                         │  FortinetScanner engine        │
                                         │  22 _check_* methods (270+)     │
-                                        │  + 75 CVE matches               │
+                                        │  + 93 CVE matches               │
                                         │  + 34 MITRE ATT&CK tests        │
                                         │  + compliance auto-mapping      │
                                         └───────────────┬───────────────┘
@@ -477,7 +477,7 @@ Everything is stdlib-only and offline — the whole pack runs on an air-gapped O
 | 15 | Authentication | `FORTIOS-AUTH` | 6 | LDAP/RADIUS/SAML security, MFA, server-identity verification |
 | 16 | Advanced Hardening | mixed | ~15 | FIPS 140-2, TCP timers, SSH grace, SCP, MFA %, default admin, policy-profile analysis, log transport |
 
-Plus dynamic categories: **Rule-Base Analysis**, **Rule Usage**, **Object Hygiene**, **MITRE ATT&CK Resilience** (34 techniques) and **Known CVEs** (75).
+Plus dynamic categories: **Rule-Base Analysis**, **Rule Usage**, **Object Hygiene**, **MITRE ATT&CK Resilience** (34 techniques) and **Known CVEs** (93).
 
 ### Rule-Base Analysis & Policy Control Index
 
@@ -524,13 +524,13 @@ The scanner tests **34 MITRE ATT&CK Enterprise techniques across 11 tactics**, v
 
 ### Known CVEs
 
-**75 CVEs (2018–2026)**, sourced from [FortiGuard PSIRT advisories](https://www.fortiguard.com/psirt?product=FortiOS), NVD and the CISA KEV catalog, and matched against the parsed FortiOS version via train-based logic (trains 5.2, 5.4, 5.6, 6.0, 6.2, 6.4, 7.0, 7.2, 7.4, 7.6). Every entry is verified to affect **FortiOS specifically** — cross-product advisories (FortiManager/FortiClient EMS) carry a `product` field and are skipped in matching so they never false-positive against FortiGate firmware.
+**93 CVEs (2018–2026)**, sourced from [FortiGuard PSIRT advisories](https://www.fortiguard.com/psirt?product=FortiOS), NVD and the CISA KEV catalog, and matched against the parsed FortiOS version via train-based logic (trains 5.2, 5.4, 5.6, 6.0, 6.2, 6.4, 7.0, 7.2, 7.4, 7.6). Every entry is verified to affect **FortiOS specifically** — cross-product advisories (FortiManager/FortiClient EMS) carry a `product` field and are skipped in matching so they never false-positive against FortiGate firmware. The database is kept fresh against FortiGuard PSIRT + NVD, and each new entry's fixed-version matrix is verified against its FG-IR advisory (the 2026-07 refresh added 18 CVEs, each independently NVD/FG-IR-confirmed).
 
 | Severity | Count | Highlights |
 |----------|:-----:|------------|
-| **CRITICAL** | 19 | CVE-2026-24858 (FortiCloud SSO bypass), CVE-2025-59718 (FortiCloud SSO SAML, CISA KEV), CVE-2024-55591 & CVE-2022-40684 (admin auth bypass, KEV), CVE-2024-21762 (SSL-VPN OOB write), CVE-2023-33308 (proxy-policy stack RCE), CVE-2023-27997 (xortigate), CVE-2022-42475 (sslvpnd RCE), CVE-2022-35843 (SSH/RADIUS bypass), CVE-2021-26109 (SSL-VPN heap RCE) |
-| **HIGH** | 27 | CVE-2026-22153 (LDAP/Agentless VPN bypass), CVE-2025-58325 (restricted CLI bypass), CVE-2025-53844 / CVE-2025-25249 (CAPWAP), CVE-2024-46670 (IPsec IKE OOB), CVE-2024-26009 (FGFM weak auth), CVE-2023-44250 (HA auth) |
-| **MEDIUM** | 24 | CVE-2025-62439 (FSSO policy source-verification bypass), CVE-2025-68686 (SSL-VPN symlink re-persistence), CVE-2025-67862 (Lua CLI escape), CVE-2025-55018 (request smuggling), CVE-2024-3596 (Blast-RADIUS), CVE-2024-55599 (DNS-65 filter bypass), CVE-2024-50562 (SSL-VPN session expiration) |
+| **CRITICAL** | 20 | CVE-2026-24858 (FortiCloud SSO bypass), CVE-2025-59718 (FortiCloud SSO SAML, CISA KEV), CVE-2024-55591 & CVE-2022-40684 (admin auth bypass, KEV), CVE-2024-21762 (SSL-VPN OOB write), CVE-2023-33308 (proxy-policy stack RCE), CVE-2023-27997 (xortigate), CVE-2022-42475 (sslvpnd RCE), CVE-2021-26109 (SSL-VPN heap RCE) |
+| **HIGH** | 35 | CVE-2024-52965 (PKI-via-API auth bypass), CVE-2025-53843 (CAPWAP daemon RCE), CVE-2025-25253 (ZTNA proxy cert-validation MITM), CVE-2026-22153 (LDAP/Agentless VPN bypass), CVE-2024-46670 (IPsec IKE OOB), CVE-2024-26009 (FGFM weak auth), CVE-2023-44250 (HA auth) |
+| **MEDIUM** | 38 | CVE-2025-62439 (FSSO source-verification bypass), CVE-2025-25252 (SSL-VPN SAML session re-use), CVE-2025-31366 (Web Filter reflected XSS), CVE-2024-47570 (REST-API log token disclosure), CVE-2024-3596 (Blast-RADIUS), CVE-2024-50562 (SSL-VPN session expiration) |
 
 > Related hardening check (not version-matched): `FORTIOS-SYS-018` flags disabled **private-data encryption**, the default-key weakness behind CVE-2026-25815 (exploited in the wild).
 
@@ -666,7 +666,7 @@ python fortinet_offline_scanner.py fw1.conf \
 python fortinet_offline_scanner.py fw1.conf --severity HIGH -v
 ```
 
-**Works offline (from the `.conf` alone):** all config-audit + rule-base/object-hygiene categories, all 75 CVEs, all 34 MITRE ATT&CK tests, all 89 compliance mappings, SARIF/OCSF + SOAR/ticketing export, remediation-script generation, and the full 237-entry remediation runbook. Multi-VDOM configs collapse to the last-seen VDOM as an audit baseline.
+**Works offline (from the `.conf` alone):** all config-audit + rule-base/object-hygiene categories, all 93 CVEs, all 34 MITRE ATT&CK tests, all 89 compliance mappings, SARIF/OCSF + SOAR/ticketing export, remediation-script generation, and the full 237-entry remediation runbook. Multi-VDOM configs collapse to the last-seen VDOM as an audit baseline.
 
 **Skipped offline** (no runtime data in a static `.conf`): live FortiGuard license/subscription state, HA peer sync status, and current signature-database age. These fire normally in live mode.
 
@@ -798,7 +798,7 @@ Fortinet-Network-Security/
 ├── remediation_kb.py             # RemediationKB loader (exact + family-prefix resolution)
 ├── risk_prioritizer.py           # Risk-Prioritization Engine (P1–P4: severity × KEV/EPSS × reachability)
 ├── cve_reachability.py           # Per-CVE config-reachability gating (feature enabled/internet-facing?)
-├── threat_intel.json             # Bundled offline KEV+ransomware+EPSS snapshot for the 75 tracked CVEs
+├── threat_intel.json             # Bundled offline KEV+ransomware+EPSS snapshot for the 93 tracked CVEs
 ├── fleet_report.py               # Fleet Analysis Console: aggregate many scans (ranking + campaigns)
 ├── fleet_html.py                 # Fleet HTML report generator (stdlib, self-contained)
 ├── fleet_pdf.py                  # Fleet PDF report generator (stdlib pdf_writer)
