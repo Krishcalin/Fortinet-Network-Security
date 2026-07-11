@@ -1908,6 +1908,38 @@ class _ReportMixin:
             cwe="CWE-710",
         ))
 
+    def verify_fixes_report(self, prior_path: str, html_path: "str | None" = None,
+                            json_path: "str | None" = None) -> int:
+        """Remediation-verification loop: classify each finding in a prior --json
+        report as REMEDIATED / PERSISTING / CHANGED given the current scan (plus new
+        REGRESSIONS), with before→after evidence and the KB verify command. Prints a
+        report and returns an exit code: 0 = clean (every prior CRITICAL/HIGH
+        remediated and no new CRITICAL/HIGH), else 2. Distinct from --baseline/--history."""
+        try:
+            with open(prior_path, encoding="utf-8") as fh:
+                doc = json.load(fh)
+        except (OSError, ValueError) as exc:
+            print(f"[!] Could not load prior report '{prior_path}': {exc}", file=sys.stderr)
+            return 2
+        raw = doc.get("findings", []) if isinstance(doc, dict) else (doc if isinstance(doc, list) else [])
+        prior = [d for d in raw if isinstance(d, dict)]
+        from remediation_verify import build_verification, render_text, render_html
+        current = getattr(self, "_all_findings", None) or self.findings
+        report = build_verification(prior, current, kb=self._report_kb(),
+                                    prio_by_id=self._prio_by_id(),
+                                    host=self._posture_host())
+        import os as _os
+        print(render_text(report, baseline_label=_os.path.basename(prior_path)))
+        if json_path:
+            with open(json_path, "w", encoding="utf-8") as fh:
+                json.dump(report, fh, indent=2, ensure_ascii=False)
+            print(f"[+] Verification JSON saved to: {json_path}")
+        if html_path:
+            with open(html_path, "w", encoding="utf-8") as fh:
+                fh.write(render_html(report, baseline_label=_os.path.basename(prior_path)))
+            print(f"[+] Verification HTML saved to: {html_path}")
+        return 0 if report["summary"]["clean"] else 2
+
     def print_report(self) -> None:
         sep = "=" * 72
         print(f"\n{self.BOLD}{sep}")
@@ -3761,7 +3793,7 @@ class FortinetScanner(_ReportMixin):
                                 name="Redundant / duplicate firewall policy",
                                 category="Rule-Base Analysis", severity="LOW",
                                 file_path=_host, line_num=None,
-                                line_content=f"policy {pid_b} ({name_b}) is covered by earlier policy {pid_a} ({name_a}); same action '{act_b}'",
+                                line_content=f"policy {pid_b} ({name_b}) is covered by earlier policy {pid_a} ({name_a}); same action={act_b}",
                                 description=f"Policy {pid_b} '{name_b}' matches only traffic already matched by the earlier policy {pid_a} '{name_a}', which has the same action. It is redundant and never changes the outcome.",
                                 recommendation=f"Remove policy {pid_b}, or merge its objects into policy {pid_a}. Fewer, clearer rules cut audit effort and misconfiguration risk.",
                                 cwe="CWE-1164",
@@ -7894,6 +7926,9 @@ Examples:
     parser.add_argument("--fix-script-force", action="store_true",
                         help="Include disruptive fixes (reboot/HA/VPN-drop) uncommented in the fix script")
     parser.add_argument("--baseline", metavar="FILE", help="Prior --json report to diff against (config drift: new vs resolved findings + posture delta)")
+    parser.add_argument("--verify-fixes", metavar="FILE", help="Remediation-verification loop: re-scan and prove which findings in a prior --json report are REMEDIATED / PERSISTING / CHANGED (+ regressions), then exit")
+    parser.add_argument("--verify-html", metavar="FILE", help="Also write the remediation-verification report as HTML (use with --verify-fixes)")
+    parser.add_argument("--verify-json", metavar="FILE", help="Also write the remediation-verification report as JSON (use with --verify-fixes)")
     parser.add_argument("--inventory", metavar="FILE", help="Multi-device inventory JSON file for batch scanning")
     parser.add_argument("--query", metavar='"SRC DST PORT[/PROTO]"',
                         help="Traffic-aware reachability query: is a flow permitted, and by which policy? "
@@ -8013,6 +8048,10 @@ Examples:
     if args.severity:
         scanner.filter_severity(args.severity)
         scanner._sev_filter = f"{args.severity} and above"
+
+    if args.verify_fixes:
+        sys.exit(scanner.verify_fixes_report(args.verify_fixes,
+                                             html_path=args.verify_html, json_path=args.verify_json))
 
     if args.baseline:
         scanner.apply_drift(args.baseline)

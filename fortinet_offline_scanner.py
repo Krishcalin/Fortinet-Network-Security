@@ -526,6 +526,13 @@ Examples:
                         help="Include disruptive fixes (reboot/HA/VPN-drop) uncommented in the fix script")
     parser.add_argument("--baseline", metavar="FILE",
                         help="Prior --json report to diff against (config drift: new vs resolved + posture delta)")
+    parser.add_argument("--verify-fixes", metavar="FILE",
+                        help="Remediation-verification loop: re-scan and prove which findings in a prior --json "
+                             "report are REMEDIATED / PERSISTING / CHANGED (+ regressions), then exit")
+    parser.add_argument("--verify-html", metavar="FILE",
+                        help="Also write the remediation-verification report as HTML (use with --verify-fixes)")
+    parser.add_argument("--verify-json", metavar="FILE",
+                        help="Also write the remediation-verification report as JSON (use with --verify-fixes)")
     parser.add_argument("--query", metavar='"SRC DST PORT[/PROTO]"',
                         help="Traffic-aware reachability query: is a flow permitted, and by which policy? "
                              'e.g. --query "192.168.1.10 8.8.8.8 443/tcp". Then exit.')
@@ -612,6 +619,10 @@ Examples:
     if args.severity:
         scanner.filter_severity(args.severity)
         scanner._sev_filter = f"{args.severity} and above"
+
+    if args.verify_fixes:
+        return scanner.verify_fixes_report(args.verify_fixes,
+                                           html_path=args.verify_html, json_path=args.verify_json)
 
     if args.baseline:
         scanner.apply_drift(args.baseline)

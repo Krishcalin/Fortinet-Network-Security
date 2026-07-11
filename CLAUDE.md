@@ -8,7 +8,8 @@ NIST 800-53, SOC 2, HIPAA), 93 known CVEs (2018–2026), and 34 MITRE ATT&CK tec
 resilience tests. Findings export to HTML/PDF/JSON/CSV plus **SARIF 2.1.0 and OCSF** for
 CI / SIEM ingestion, **SOAR/ticketing payloads** (Jira / ServiceNow / Splunk SOAR / webhook)
 for work-management systems, a **tamper-evident compliance attestation pack** (hash-manifest +
-Merkle root + HMAC seal, OSCAL-aligned) for auditors, and a fix-first **remediation + rollback CLI script** can be generated
+Merkle root + HMAC seal, OSCAL-aligned) for auditors, a **remediation-verification loop** that re-scans and
+proves which fixes landed, and a fix-first **remediation + rollback CLI script** can be generated
 from the knowledge base.
 
 Ships in two modes that share the same 22 check methods and rule set:
@@ -138,7 +139,8 @@ CLI flags: `--html`, `--pdf`, `--csv`, `--compliance-csv`, `--sarif`, `--ocsf`, 
 `--fix-script` / `--rollback-script` / `--fix-tier` / `--fix-script-force`, `--baseline`, `--top`,
 `--jira` / `--servicenow` / `--splunk-soar` / `--webhook` / `--jira-project` / `--jira-api-version` /
 `--soar-min-tier`, `--attest` / `--attest-key` / `--attest-html` / `--attest-oscal` / `--attest-org` /
-`--attest-verify`, `--no-color`, `--summary-only`, `--refresh-intel` (both live and offline scanners).
+`--attest-verify`, `--verify-fixes` / `--verify-html` / `--verify-json`, `--no-color`, `--summary-only`,
+`--refresh-intel` (both live and offline scanners).
 
 ## Risk-Prioritization Engine
 
@@ -210,6 +212,14 @@ Score is capped at 100 and mapped by `TIER_THRESHOLDS` (P1≥70, P2≥42, P3≥2
 - **`to_oscal(body)`** — optional loosely-conformant OSCAL 1.1.2 assessment-results projection (`--attest-oscal`): one `finding` per (control, framework) with PASS/FAIL at `target.status.state` (satisfied/not-satisfied) + sibling `reason`; observations carry evidence; risk-acceptances → risks with `status=deviation-approved`; `deadline` normalized through `_iso()` (tz-qualified); stable `uuid5` ids; cross-links (observation/risk UUIDs) all resolve. Labelled "aligned, not strictly conformant" (`import-ap` placeholder).
 - **`render_attestation_text` / `render_attestation_html`** — human-readable statement, disclaimer + coverage first.
 - **Tests**: `test_data/test_attestation.py` (reproducibility + float-free body, tamper localization/reorder/delete, SHA-256 + HMAC seal, **seal-downgrade-forgery rejected**, fail-open incl. expired/partial + **INFO-doesn't-block-acceptance**, anti-overclaim denominator/scope + severity-filter-invariance, OSCAL legality/no-dangling-links/tz-deadline, malformed-bundle safety, save/verify end-to-end, keyed env-var seal). **311 tests total green.** Built research(5-agent: OSCAL/DSSE/auditor-evidence/tamper-evidence)→build→adversarial-review(6-lens+refute-verify) → 5 confirmed bugs fixed, notably a **HIGH seal-downgrade forgery** (verifier trusted the untrusted `seal.alg`).
+
+## Remediation Verification Loop
+
+`remediation_verify.py` (stdlib) — closes the runbook loop: prove a fix landed. `build_verification(prior, current, kb, prio_by_id, host)` classifies each finding in a prior `--json` report vs the current scan as **REMEDIATED** (gone) / **PERSISTING** (present, same evidence) / **CHANGED** (present, evidence line differs) and finds **REGRESSIONS** (current findings absent from prior); `render_text`/`render_html` render it. CLI **`--verify-fixes prev.json`** (+ `--verify-html`/`--verify-json`) on BOTH scanners, dispatched **after `filter_severity`** in `main()` and exits (live `sys.exit`, offline `return`). `_ReportMixin.verify_fixes_report` loads the prior JSON, uses `_all_findings` (not the severity-filtered set) as current, prints, returns **0 = clean / 2 = action** (also 2 on missing/corrupt prior).
+- **Stable identity, not evidence**: matches on `posture.finding_fingerprint` (`rule_id|entity`), so a cosmetic value change reads as CHANGED, not remediated+new; entity-distinct instances stay separate. `_reportable` drops pseudo-findings (`*-SUMMARY`/`*-SCORE`/`*-PASS`) and INFO from both sides. `RemediationKB.lookup(rule_id)` supplies the per-finding **verify command** (works for dict priors + object currents; `detail_for` needs an object, `lookup` doesn't).
+- **`clean`** = no CRITICAL/HIGH persisting-or-changed AND no CRITICAL/HIGH regression → the CI gate.
+- **Adversarial review (5-lens+refute-verify) → 2 distinct bugs fixed**: (HIGH) **severity-scope false regressions** — a prior produced with `--severity` only contains high-sev findings, so current lower-sev findings looked like regressions (and a `--severity CRITICAL` prior could flip `clean`→False and falsely exit-2-gate CI); fixed by inferring the prior report's **severity floor** (least-severe finding present) and never flagging a below-floor current finding as a regression. (LOW) **RULEBASE-002 entity collapse** — its `line_content` single-quoted the *action* (`'accept'`), so `finding_entity`'s `_RE_QUOTED` (tried before `_RE_POLICY`) keyed every redundant-policy finding on `name:accept` and collapsed instances; fixed by writing `same action=accept` unquoted so the policy id becomes the entity (also fixes posture/drift fingerprinting for that rule).
+- **Tests**: `test_data/test_remediation_verify.py` (four-state classification, pseudo/INFO exclusion, cosmetic-change→CHANGED, entity-distinct instances, clean/exit logic, empty-prior, KB verify-cmd, render, save/verify end-to-end, **severity-filtered-prior no-false-regressions**, genuine-HIGH-regression-still-flagged, RULEBASE-002 distinct fingerprints). **324 tests total green.**
 
 ## Multi-Device Scanning
 

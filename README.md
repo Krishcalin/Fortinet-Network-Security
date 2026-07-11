@@ -5,7 +5,7 @@
 <h1 align="center">Fortinet FortiGate Security Scanner</h1>
 
 <p align="center">
-  <strong>Agentless FortiGate NGFW posture assessment — live API or offline <code>.conf</code> — with MITRE ATT&CK resilience scoring,<br/>93 CVE checks, 5-framework compliance mapping, a tamper-evident compliance attestation pack, SARIF/OCSF + SOAR/ticketing export, remediation-script generation, and a 237-entry detailed remediation runbook.</strong>
+  <strong>Agentless FortiGate NGFW posture assessment — live API or offline <code>.conf</code> — with MITRE ATT&CK resilience scoring,<br/>93 CVE checks, 5-framework compliance mapping, a tamper-evident compliance attestation pack, SARIF/OCSF + SOAR/ticketing export, remediation-script generation with a re-scan verification loop, and a 237-entry detailed remediation runbook.</strong>
 </p>
 
 <p align="center">
@@ -65,7 +65,7 @@ It runs in **two modes that share one engine, one rule set, and one report layer
 
 Offline mode exists for the places live scanning cannot reach: **OT / ICS networks, air-gapped enclaves, and locked-down operator workstations** where you cannot open a socket to the firewall or `pip install` anything.
 
-> **280+ checks · risk-prioritization engine (P1–P4, KEV + EPSS + reachability gating) · fleet analysis console · continuous posture state (exceptions + SLA + trend) · traffic-aware policy engine (reachability query + IP-overlap shadow + simulate) · scored compliance benchmark · rule-base analysis + Policy Control Index · attack-surface + config-drift · 34 MITRE ATT&CK techniques · 93 FortiOS CVEs (NVD/FG-IR-verified) · 5 compliance frameworks · 237-entry remediation knowledge base · scored compliance benchmark · tamper-evident compliance attestation pack (OSCAL-aligned, hash-manifest + HMAC seal) · SARIF/OCSF + fix-script generation · SOAR/ticketing export (Jira · ServiceNow · Splunk SOAR · webhook) · HTML + PDF + JSON + CSV reports**
+> **280+ checks · risk-prioritization engine (P1–P4, KEV + EPSS + reachability gating) · fleet analysis console · continuous posture state (exceptions + SLA + trend) · traffic-aware policy engine (reachability query + IP-overlap shadow + simulate) · scored compliance benchmark · rule-base analysis + Policy Control Index · attack-surface + config-drift · 34 MITRE ATT&CK techniques · 93 FortiOS CVEs (NVD/FG-IR-verified) · 5 compliance frameworks · 237-entry remediation knowledge base · scored compliance benchmark · tamper-evident compliance attestation pack (OSCAL-aligned, hash-manifest + HMAC seal) · SARIF/OCSF + fix-script generation · SOAR/ticketing export (Jira · ServiceNow · Splunk SOAR · webhook) · remediation-verification loop (prove the fix landed) · HTML + PDF + JSON + CSV reports**
 
 ---
 
@@ -123,6 +123,7 @@ Open `report.html` in any browser, hand `report.pdf` to management, give `runboo
 | **SOAR / ticketing export** | `--jira` / `--servicenow` / `--splunk-soar` / `--webhook` emit ready-to-POST payloads with a stable dedup key (re-scan *updates*, never duplicates) and posture-driven **close** events for resolved findings; `--soar-min-tier` gates by P1–P4 |
 | **Compliance attestation pack** | `--attest` emits a **tamper-evident** point-in-time evidence bundle: per-control PASS/FAIL/RISK-ACCEPTED across all 5 frameworks with finding evidence, risk-acceptance sign-offs, a per-record SHA-256 manifest + Merkle root, and a SHA-256 digest or **HMAC seal** (`--attest-key`); `--attest-verify` re-checks integrity; `--attest-oscal` writes an OSCAL-1.1.2-aligned projection. Auditor evidence, not a certification |
 | **Remediation + rollback scripts** | `--fix-script` assembles a fix-first FortiOS CLI batch from the KB (disruptive fixes commented out); `--rollback-script` writes the paired undo |
+| **Remediation-verification loop** | `--verify-fixes prev.json` re-scans and proves which findings you set out to fix are **REMEDIATED / PERSISTING / CHANGED** (+ **REGRESSIONS**), with before→after evidence, the KB verify command, a remediation-rate, and a CI-gating exit code |
 | **237-entry remediation KB** | Per finding: risk · numbered steps · GUI path · verified CLI · verification command · rollback · service impact · references |
 | **HTML + PDF reports** | Rich self-contained HTML and paginated PDF — both **stdlib-only** (no reportlab / weasyprint) |
 | **Offline / OT mode** | Audit from a `.conf` backup with no network access and no `pip install` |
@@ -390,6 +391,7 @@ Interface scope is only asserted when you supply `--via`; otherwise the verdict 
 | **OCSF** | `--ocsf` | Open Cybersecurity Schema Framework Compliance Finding events for **SIEM** ingestion (Splunk, Sentinel, Security Lake, Elastic). |
 | **SOAR / ticketing** | `--jira` / `--servicenow` / `--splunk-soar` / `--webhook` | Ready-to-POST **work-item payloads** — Jira issues, ServiceNow incidents, Splunk SOAR containers, or a vendor-neutral **CloudEvents 1.0** webhook — each carrying the full KB remediation and a **stable dedup key** so a re-scan *updates* the ticket instead of duplicating it. With `--history`, resolved findings emit **close** events. `--soar-min-tier` gates by P1–P4. See [SOAR & Ticketing Export](#soar--ticketing-export). |
 | **Compliance attestation** | `--attest` (+ `--attest-key` / `--attest-html` / `--attest-oscal` / `--attest-verify`) | A **tamper-evident** point-in-time compliance evidence bundle for auditors — per-control PASS/FAIL/RISK-ACCEPTED with evidence, sign-offs, a SHA-256 manifest + Merkle root, and a SHA-256 or HMAC integrity seal. See [Compliance Attestation Pack](#compliance-attestation-pack). |
+| **Remediation verification** | `--verify-fixes prev.json` (+ `--verify-html` / `--verify-json`) | Re-scan and **prove the fixes landed**: per prior finding REMEDIATED / PERSISTING / CHANGED (+ regressions), before→after evidence, remediation-rate, CI-gating exit. See [Remediation Verification](#remediation-verification). |
 | **Unified JSON** | `--inventory + --json` | Aggregated multi-device fleet report. |
 
 All reports are self-contained and dependency-free — the exact same output is produced in live and offline mode.
@@ -449,6 +451,35 @@ What the bundle carries:
 - **OSCAL-1.1.2-aligned** — `--attest-oscal` writes a NIST OSCAL *assessment-results* projection (loosely conformant) so it drops into a GRC pipeline.
 
 Everything is stdlib-only and offline — the whole pack runs on an air-gapped OT jump box, and the on-disk pretty JSON is never what gets hashed (the seal is over a separate canonical serialization, so it verifies byte-for-byte anywhere).
+
+---
+
+## Remediation Verification
+
+The runbook tells you how to fix each finding. This closes the loop: after you apply the fixes, **prove they landed**. Point `--verify-fixes` at the `--json` report you were remediating; the scanner re-reads the device *now* and classifies each finding you set out to fix.
+
+```bash
+# 1) capture the report you're about to remediate
+python fortinet_offline_scanner.py fw.conf --json before.json
+# 2) ...apply fixes... then re-scan and verify against it
+python fortinet_offline_scanner.py fw.conf --verify-fixes before.json --verify-html verified.html
+#   Remediated 14/20 (70%)  Still-open 4  Changed 1  Regressions 1
+#   [!] 1 CRITICAL/HIGH finding(s) NOT remediated
+#   Verdict: ACTION REQUIRED            (exit 2; exit 0 when the targeted criticals are all fixed)
+```
+
+Per prior finding:
+
+| Status | Meaning |
+|--------|---------|
+| **REMEDIATED** | gone — the fix worked |
+| **PERSISTING** | still present, *same* evidence — the fix wasn't applied |
+| **CHANGED** | rule still fires but the evidence value moved (a partial/ineffective change, e.g. `admintimeout 30 → 20`, still over the limit) |
+| **REGRESSION** | present now, absent from the prior report — a new problem introduced since (often by the change itself) |
+
+Each carries **before → after** config evidence and the KB **verify command** so an operator can independently confirm. A **remediation-rate** and a CI-gating **exit code** (0 when every targeted CRITICAL/HIGH is remediated and no new CRITICAL/HIGH appeared, else 2) let you sign off — or block — a change window.
+
+**It matches on stable identity, not the evidence line** (`rule_id | entity`, same as the posture engine), so a cosmetic value change reads as CHANGED — never as remediated-and-new. It also **won't cry wolf on a severity-filtered baseline**: it infers the prior report's severity floor and never reports a below-floor finding as a "regression" (it couldn't have appeared in the filtered report). Distinct from `--baseline` (a bidirectional drift *summary* folded into the normal report) and `--history` (a multi-scan system of record): this is a focused, finding-level *"did my fixes work?"* A/B with evidence pairing. Stdlib, offline.
 
 ---
 
@@ -716,6 +747,10 @@ usage: fortinet_scanner.py [-h] [--token TOKEN] [--verify-ssl] [--timeout SEC]
   --attest-oscal FILE     Also write an OSCAL-1.1.2-aligned assessment-results projection
   --attest-org NAME       Attester organization recorded in the bundle
   --attest-verify FILE    Verify an attestation bundle's integrity (with --attest-key if keyed), then exit
+  --verify-fixes FILE     Remediation-verification loop: re-scan and classify a prior --json report's findings
+                          as REMEDIATED / PERSISTING / CHANGED (+ regressions), then exit (0 clean / 2 action)
+  --verify-html FILE      Also write the remediation-verification report as HTML
+  --verify-json FILE      Also write the remediation-verification report as JSON
   --top [N]               Print the risk-prioritized fix-first queue (top N, default 10)
   --refresh-intel         Refresh the bundled KEV+EPSS threat-intel snapshot, then exit (needs internet)
   --export-intel FILE     Copy the current threat-intel snapshot to FILE (sneakernet), then exit
@@ -739,6 +774,7 @@ usage: fortinet_offline_scanner.py [-h] [--conf-dir DIR] [--fleet-inputs PATH ..
                                    [--soar-min-tier {P1,P2,P3,P4}]
                                    [--attest FILE] [--attest-key SPEC] [--attest-html FILE]
                                    [--attest-oscal FILE] [--attest-org NAME] [--attest-verify FILE]
+                                   [--verify-fixes FILE] [--verify-html FILE] [--verify-json FILE]
                                    [--top [N]] [--refresh-intel]
                                    [--export-intel FILE] [--import-intel FILE]
                                    [--severity {CRITICAL,HIGH,MEDIUM,LOW,INFO}]
@@ -809,6 +845,7 @@ Fortinet-Network-Security/
 ├── pdf_writer.py                 # Minimal, dependency-free PDF 1.4 writer (stdlib only)
 ├── fortinet_export.py            # SARIF 2.1.0 + OCSF + SOAR/ticketing (Jira/ServiceNow/Splunk/webhook) export builders (stdlib only)
 ├── attestation.py                # Compliance attestation pack: tamper-evident bundle (SHA-256 manifest + Merkle + HMAC seal) + OSCAL projection (stdlib only)
+├── remediation_verify.py         # Remediation-verification loop: prior-vs-current A/B (remediated/persisting/changed/regression) + evidence + verify-cmd (stdlib only)
 ├── test_data/
 │   ├── test_offline_parser.py    # pytest cases for the .conf parser + end-to-end smoke
 │   ├── test_rulebase.py          # rule-base / exposure / drift / object-hygiene tests
@@ -823,6 +860,7 @@ Fortinet-Network-Security/
 │   ├── test_exports.py           # SARIF / OCSF / remediation-script generation
 │   ├── test_soar_export.py       # SOAR/ticketing (Jira/ServiceNow/Splunk/webhook): dedup key, lifecycle, min-tier
 │   ├── test_attestation.py       # Attestation: reproducibility, tamper localization, seal/downgrade, fail-open, OSCAL
+│   ├── test_remediation_verify.py # Remediation-verify: classification, stable identity, severity-scope guard, exit code
 │   ├── test_reporting.py         # colour gating, compliance scorecard, enriched JSON, findings CSV
 │   ├── test_benchmark.py         # scored CIS/PCI/NIST/SOC2/HIPAA benchmark profile
 │   ├── test_hardening.py         # hardening check-pack (ADMIN-026/SSLVPN-016/SYS-019/NET-019/NET-020)
