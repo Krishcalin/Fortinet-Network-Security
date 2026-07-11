@@ -5,7 +5,7 @@
 <h1 align="center">Fortinet FortiGate Security Scanner</h1>
 
 <p align="center">
-  <strong>Agentless FortiGate NGFW posture assessment — live API or offline <code>.conf</code> — with MITRE ATT&CK resilience scoring,<br/>75 CVE checks, 5-framework compliance mapping, SARIF/OCSF + SOAR/ticketing export, remediation-script generation, and a 237-entry detailed remediation runbook.</strong>
+  <strong>Agentless FortiGate NGFW posture assessment — live API or offline <code>.conf</code> — with MITRE ATT&CK resilience scoring,<br/>75 CVE checks, 5-framework compliance mapping, a tamper-evident compliance attestation pack, SARIF/OCSF + SOAR/ticketing export, remediation-script generation, and a 237-entry detailed remediation runbook.</strong>
 </p>
 
 <p align="center">
@@ -65,7 +65,7 @@ It runs in **two modes that share one engine, one rule set, and one report layer
 
 Offline mode exists for the places live scanning cannot reach: **OT / ICS networks, air-gapped enclaves, and locked-down operator workstations** where you cannot open a socket to the firewall or `pip install` anything.
 
-> **280+ checks · risk-prioritization engine (P1–P4, KEV + EPSS + reachability gating) · fleet analysis console · continuous posture state (exceptions + SLA + trend) · traffic-aware policy engine (reachability query + IP-overlap shadow + simulate) · scored compliance benchmark · rule-base analysis + Policy Control Index · attack-surface + config-drift · 34 MITRE ATT&CK techniques · 75 FortiOS CVEs · 5 compliance frameworks · 237-entry remediation knowledge base · SARIF/OCSF + fix-script generation · SOAR/ticketing export (Jira · ServiceNow · Splunk SOAR · webhook) · HTML + PDF + JSON + CSV reports**
+> **280+ checks · risk-prioritization engine (P1–P4, KEV + EPSS + reachability gating) · fleet analysis console · continuous posture state (exceptions + SLA + trend) · traffic-aware policy engine (reachability query + IP-overlap shadow + simulate) · scored compliance benchmark · rule-base analysis + Policy Control Index · attack-surface + config-drift · 34 MITRE ATT&CK techniques · 75 FortiOS CVEs · 5 compliance frameworks · 237-entry remediation knowledge base · scored compliance benchmark · tamper-evident compliance attestation pack (OSCAL-aligned, hash-manifest + HMAC seal) · SARIF/OCSF + fix-script generation · SOAR/ticketing export (Jira · ServiceNow · Splunk SOAR · webhook) · HTML + PDF + JSON + CSV reports**
 
 ---
 
@@ -121,6 +121,7 @@ Open `report.html` in any browser, hand `report.pdf` to management, give `runboo
 | **5 compliance frameworks** | CIS FortiGate, PCI-DSS 4.0, NIST 800-53 Rev 5, SOC 2 Type II, HIPAA — 89 rule-to-control mappings |
 | **SARIF 2.1.0 + OCSF export** | `--sarif` for GitHub code-scanning / CI, `--ocsf` for SIEM (Splunk/Sentinel/Security Lake) — stdlib-only |
 | **SOAR / ticketing export** | `--jira` / `--servicenow` / `--splunk-soar` / `--webhook` emit ready-to-POST payloads with a stable dedup key (re-scan *updates*, never duplicates) and posture-driven **close** events for resolved findings; `--soar-min-tier` gates by P1–P4 |
+| **Compliance attestation pack** | `--attest` emits a **tamper-evident** point-in-time evidence bundle: per-control PASS/FAIL/RISK-ACCEPTED across all 5 frameworks with finding evidence, risk-acceptance sign-offs, a per-record SHA-256 manifest + Merkle root, and a SHA-256 digest or **HMAC seal** (`--attest-key`); `--attest-verify` re-checks integrity; `--attest-oscal` writes an OSCAL-1.1.2-aligned projection. Auditor evidence, not a certification |
 | **Remediation + rollback scripts** | `--fix-script` assembles a fix-first FortiOS CLI batch from the KB (disruptive fixes commented out); `--rollback-script` writes the paired undo |
 | **237-entry remediation KB** | Per finding: risk · numbered steps · GUI path · verified CLI · verification command · rollback · service impact · references |
 | **HTML + PDF reports** | Rich self-contained HTML and paginated PDF — both **stdlib-only** (no reportlab / weasyprint) |
@@ -388,6 +389,7 @@ Interface scope is only asserted when you supply `--via`; otherwise the verdict 
 | **SARIF 2.1.0** | `--sarif` | Static-analysis format for **GitHub code-scanning** / any SARIF viewer — per-rule, dedup, PR annotations, with P-tier/KEV/EPSS in each result's properties. |
 | **OCSF** | `--ocsf` | Open Cybersecurity Schema Framework Compliance Finding events for **SIEM** ingestion (Splunk, Sentinel, Security Lake, Elastic). |
 | **SOAR / ticketing** | `--jira` / `--servicenow` / `--splunk-soar` / `--webhook` | Ready-to-POST **work-item payloads** — Jira issues, ServiceNow incidents, Splunk SOAR containers, or a vendor-neutral **CloudEvents 1.0** webhook — each carrying the full KB remediation and a **stable dedup key** so a re-scan *updates* the ticket instead of duplicating it. With `--history`, resolved findings emit **close** events. `--soar-min-tier` gates by P1–P4. See [SOAR & Ticketing Export](#soar--ticketing-export). |
+| **Compliance attestation** | `--attest` (+ `--attest-key` / `--attest-html` / `--attest-oscal` / `--attest-verify`) | A **tamper-evident** point-in-time compliance evidence bundle for auditors — per-control PASS/FAIL/RISK-ACCEPTED with evidence, sign-offs, a SHA-256 manifest + Merkle root, and a SHA-256 or HMAC integrity seal. See [Compliance Attestation Pack](#compliance-attestation-pack). |
 | **Unified JSON** | `--inventory + --json` | Aggregated multi-device fleet report. |
 
 All reports are self-contained and dependency-free — the exact same output is produced in live and offline mode.
@@ -419,6 +421,34 @@ Each file is a uniform envelope — `{target, meta, items:[{op, dedup_key, body}
 **The one dedup key that makes it idempotent.** Every item's key is `sha1("<device>|<rule_id>[|<entity>]")[:16]` — the same **stable identity** the posture engine uses, so producer and consumer never disagree on *"is this the same finding?"*. It includes the **device** (two firewalls' identical findings don't collapse into one ticket) and deliberately **excludes the evidence line** (a cosmetic config change — `admintimeout 30 → 20` — maps to the *same* ticket, not a resolve-and-recreate churn).
 
 **Resolved findings close their tickets.** This is the part naïve exporters miss: a resolved finding is *absent* from the current scan — it exists only in the posture delta. With `--history`, each builder emits an explicit **`resolve`** item (keyed identically to the ticket it opened), so stale tickets don't leak open forever. Reopened findings restart the SLA clock on the *same* ticket.
+
+---
+
+## Compliance Attestation Pack
+
+Auditors don't want a findings list — they want *point-in-time evidence they can trust wasn't edited after the fact*. `--attest` produces a **tamper-evident compliance attestation bundle**: a self-contained JSON system-of-record with a per-record hash manifest and an integrity seal an auditor can independently verify.
+
+```bash
+# Emit a bundle + a human-readable HTML statement + an OSCAL projection
+python fortinet_offline_scanner.py fw.conf --attest attest.json \
+    --attest-html attest.html --attest-oscal attest.oscal.json \
+    --exceptions accepted.json --attest-org "Phalanx Cyber"
+
+# Forgery-resistant: seal with an operator key (HMAC-SHA256), then verify later
+python fortinet_offline_scanner.py fw.conf --attest attest.json --attest-key env:FORTI_ATTEST_KEY
+python fortinet_offline_scanner.py --attest-verify attest.json --attest-key env:FORTI_ATTEST_KEY
+#   [+] Attestation integrity OK — 146 record(s), seal HMAC-SHA256.   (exit 0; exit 2 if tampered)
+```
+
+What the bundle carries:
+
+- **Per-control PASS / FAIL / RISK-ACCEPTED** across CIS, PCI-DSS, NIST 800-53, SOC 2 and HIPAA — reusing the same `benchmark_score()` engine as `--framework`, so the attestation can never disagree with the scorecard. Each failing control links to the **finding evidence** (rule id, severity, config line) that produced it.
+- **Risk-acceptance sign-offs** — an accepted risk (from `--exceptions`) becomes a formal record with reason, approver and expiry; a control drops to RISK-ACCEPTED **only if every** failing finding on it is actively accepted, and an **expired** sign-off never downgrades a control (it stays FAIL, flagged) — the same fail-open rule as the posture report.
+- **Tamper-evidence** — a canonical-JSON, per-record **SHA-256 manifest** + an **RFC 6962 Merkle root**, sealed by a detached **SHA-256 integrity digest** or, with `--attest-key` (`env:VAR` or a key file), a **HMAC-SHA256 keyed seal**. `--attest-verify` recomputes everything and localizes a single altered record. *(Honest naming: this is an integrity digest / keyed seal — not a digital signature; the stdlib has no PKI. When a key is supplied, verification refuses a downgraded keyless seal.)*
+- **Scope disclosure, not overclaim** — the pass rate's denominator is *the controls this tool evaluates*, the method is **Examine-only**, and the bundle states plainly it is **auditor evidence, not a compliance certification**. It never says "PCI compliant".
+- **OSCAL-1.1.2-aligned** — `--attest-oscal` writes a NIST OSCAL *assessment-results* projection (loosely conformant) so it drops into a GRC pipeline.
+
+Everything is stdlib-only and offline — the whole pack runs on an air-gapped OT jump box, and the on-disk pretty JSON is never what gets hashed (the seal is over a separate canonical serialization, so it verifies byte-for-byte anywhere).
 
 ---
 
@@ -680,6 +710,12 @@ usage: fortinet_scanner.py [-h] [--token TOKEN] [--verify-ssl] [--timeout SEC]
   --jira-project KEY      Jira project key for --jira (default: SEC)
   --jira-api-version {2,3}  Jira description format: 3=ADF (default), 2=plain string
   --soar-min-tier {P1,P2,P3,P4}  Only export findings at/above this tier (default: P4 = all)
+  --attest FILE           Emit a tamper-evident compliance attestation bundle (auditor evidence, not a certification)
+  --attest-key SPEC       Key for an HMAC-SHA256 integrity seal: 'env:VARNAME' or a key-file path (else SHA-256 digest)
+  --attest-html FILE      Also write a human-readable HTML attestation statement
+  --attest-oscal FILE     Also write an OSCAL-1.1.2-aligned assessment-results projection
+  --attest-org NAME       Attester organization recorded in the bundle
+  --attest-verify FILE    Verify an attestation bundle's integrity (with --attest-key if keyed), then exit
   --top [N]               Print the risk-prioritized fix-first queue (top N, default 10)
   --refresh-intel         Refresh the bundled KEV+EPSS threat-intel snapshot, then exit (needs internet)
   --export-intel FILE     Copy the current threat-intel snapshot to FILE (sneakernet), then exit
@@ -701,6 +737,8 @@ usage: fortinet_offline_scanner.py [-h] [--conf-dir DIR] [--fleet-inputs PATH ..
                                    [--jira FILE] [--servicenow FILE] [--splunk-soar FILE] [--webhook FILE]
                                    [--jira-project KEY] [--jira-api-version {2,3}]
                                    [--soar-min-tier {P1,P2,P3,P4}]
+                                   [--attest FILE] [--attest-key SPEC] [--attest-html FILE]
+                                   [--attest-oscal FILE] [--attest-org NAME] [--attest-verify FILE]
                                    [--top [N]] [--refresh-intel]
                                    [--export-intel FILE] [--import-intel FILE]
                                    [--severity {CRITICAL,HIGH,MEDIUM,LOW,INFO}]
@@ -770,6 +808,7 @@ Fortinet-Network-Security/
 ├── fortinet_pdf.py               # Paginated PDF report layout
 ├── pdf_writer.py                 # Minimal, dependency-free PDF 1.4 writer (stdlib only)
 ├── fortinet_export.py            # SARIF 2.1.0 + OCSF + SOAR/ticketing (Jira/ServiceNow/Splunk/webhook) export builders (stdlib only)
+├── attestation.py                # Compliance attestation pack: tamper-evident bundle (SHA-256 manifest + Merkle + HMAC seal) + OSCAL projection (stdlib only)
 ├── test_data/
 │   ├── test_offline_parser.py    # pytest cases for the .conf parser + end-to-end smoke
 │   ├── test_rulebase.py          # rule-base / exposure / drift / object-hygiene tests
@@ -783,6 +822,7 @@ Fortinet-Network-Security/
 │   ├── test_new_checks.py        # new config checks + MITRE techniques + legacy KEV CVEs
 │   ├── test_exports.py           # SARIF / OCSF / remediation-script generation
 │   ├── test_soar_export.py       # SOAR/ticketing (Jira/ServiceNow/Splunk/webhook): dedup key, lifecycle, min-tier
+│   ├── test_attestation.py       # Attestation: reproducibility, tamper localization, seal/downgrade, fail-open, OSCAL
 │   ├── test_reporting.py         # colour gating, compliance scorecard, enriched JSON, findings CSV
 │   ├── test_benchmark.py         # scored CIS/PCI/NIST/SOC2/HIPAA benchmark profile
 │   ├── test_hardening.py         # hardening check-pack (ADMIN-026/SSLVPN-016/SYS-019/NET-019/NET-020)

@@ -504,6 +504,18 @@ Examples:
                         help="Jira API version for --jira: 3=ADF description (default), 2=plain string")
     parser.add_argument("--soar-min-tier", choices=["P1", "P2", "P3", "P4"], default="P4",
                         help="Only export findings at/above this priority tier to SOAR/ticketing (default: P4 = all)")
+    parser.add_argument("--attest", metavar="FILE",
+                        help="Emit a tamper-evident compliance attestation bundle (JSON) — auditor evidence, NOT a compliance certification")
+    parser.add_argument("--attest-key", metavar="SPEC",
+                        help="Key for a keyed HMAC-SHA256 integrity seal: 'env:VARNAME' or a key-file path. Omit for a plain SHA-256 integrity digest. NOT a digital signature.")
+    parser.add_argument("--attest-html", metavar="FILE",
+                        help="Also write a human-readable HTML attestation statement (use with --attest)")
+    parser.add_argument("--attest-oscal", metavar="FILE",
+                        help="Also write an OSCAL-1.1.2-aligned assessment-results projection (loosely conformant)")
+    parser.add_argument("--attest-org", metavar="NAME", default="",
+                        help="Attester organization recorded in the attestation envelope")
+    parser.add_argument("--attest-verify", metavar="FILE",
+                        help="Verify an existing attestation bundle's integrity (with --attest-key if keyed), then exit")
     parser.add_argument("--fix-script", metavar="FILE",
                         help="Generate a fix-first FortiOS CLI remediation script from the knowledge base")
     parser.add_argument("--rollback-script", metavar="FILE",
@@ -565,6 +577,9 @@ Examples:
         if args.export_intel:
             return _transfer_intel("export", args.export_intel)
         return _transfer_intel("import", args.import_intel)
+    if args.attest_verify:
+        from fortinet_scanner import _attest_verify_action
+        return _attest_verify_action(args.attest_verify, args.attest_key)
 
     if args.conf_dir or args.fleet_inputs:
         return _fleet_mode(args)
@@ -639,6 +654,10 @@ Examples:
         scanner.save_splunk_soar(args.splunk_soar, min_tier=args.soar_min_tier)
     if args.webhook:
         scanner.save_webhook(args.webhook, min_tier=args.soar_min_tier)
+    if args.attest:
+        scanner.save_attestation(args.attest, key_spec=args.attest_key,
+                                 exceptions_path=args.exceptions, html_path=args.attest_html,
+                                 oscal_path=args.attest_oscal, org=args.attest_org)
     if args.fix_script:
         scanner.save_remediation_script(args.fix_script, args.rollback_script,
                                         tier_max=args.fix_tier, force=args.fix_script_force)

@@ -1830,6 +1830,106 @@ class _ReportMixin:
                         now_iso=datetime.now().isoformat(timespec="seconds"),
                         tool_version=VERSION)
 
+    # ---- Compliance attestation pack ----------------------------------------
+
+    def _source_artifact(self) -> dict:
+        """Provenance anchor for an attestation: hash the raw source config so the
+        sealed bundle is bound to a specific artifact (the fleet 'phantom-config'
+        lesson — never tamper-seal fiction). Live mode has no file; record the API
+        basis. The 'looks_truncated' heuristic flags a config missing its sentinels."""
+        import hashlib as _hl
+        import os
+        host = getattr(self, "host", "") or ""
+        try:
+            if host and os.path.isfile(host):
+                with open(host, "rb") as fh:
+                    raw = fh.read()
+                text = raw.decode("utf-8", "replace")
+                truncated = not (text.rstrip().endswith("end") or "config-version" in text[:400])
+                return {"kind": "fortios-config", "filename": os.path.basename(host),
+                        "sha256": _hl.sha256(raw).hexdigest(),
+                        "byte_length": len(raw), "line_count": text.count("\n") + 1,
+                        "looks_truncated": bool(truncated), "config_export_utc": None}
+        except OSError:
+            pass
+        return {"kind": ("live-readonly-api" if host else "unknown"),
+                "filename": None, "sha256": None, "byte_length": None,
+                "line_count": None, "looks_truncated": False, "config_export_utc": None}
+
+    @staticmethod
+    def _load_attest_key(spec):
+        """Resolve --attest-key into (key_bytes, key_id). 'env:NAME' reads an env var;
+        otherwise a key-file path. The key is NEVER embedded in the bundle (that would
+        defeat the seal). Returns (None, None) when no key was requested."""
+        if not spec:
+            return None, None
+        import os
+        if str(spec).startswith("env:"):
+            name = str(spec)[4:]
+            val = os.environ.get(name)
+            if not val:
+                raise ValueError(f"--attest-key env:{name} is not set")
+            return val.encode("utf-8"), f"env:{name}"
+        with open(spec, "rb") as fh:
+            return fh.read(), f"file:{os.path.basename(spec)}"
+
+    def save_attestation(self, output_path: str, *, key_spec=None, exceptions_path=None,
+                         html_path=None, oscal_path=None, org: str = "") -> None:
+        """Emit a tamper-evident compliance attestation bundle (auditor evidence, NOT
+        a compliance certification). Reuses benchmark_score() for control PASS/FAIL and
+        posture Exceptions for risk-acceptance, so it can never disagree with them."""
+        from attestation import (build_attestation, seal_attestation,
+                                 render_attestation_html, to_oscal)
+        from posture import Exceptions
+        fw_args = {"CIS": "cis", "PCI-DSS": "pci", "NIST": "nist", "SOC2": "soc2", "HIPAA": "hipaa"}
+        benchmarks = {}
+        for name, arg in fw_args.items():
+            try:
+                bm = self.benchmark_score(arg)
+            except Exception:  # pragma: no cover - defensive
+                continue
+            if bm.get("total_controls"):
+                benchmarks[name] = bm
+        meta = self._report_meta()
+        si = getattr(self, "_sys_info", {}) or {}
+        src = self._source_artifact()
+        try:
+            key, key_id = self._load_attest_key(key_spec)
+        except (OSError, ValueError) as exc:
+            print(f"[!] --attest-key: {exc}", file=sys.stderr)
+            raise SystemExit(2)
+        unsealed = build_attestation(
+            getattr(self, "_all_findings", None) or self.findings,   # unfiltered (anti-overclaim)
+            benchmarks=benchmarks,
+            host=self._posture_host(),
+            device={"hostname": si.get("hostname"),
+                    "model": si.get("model_name") or si.get("model"),
+                    "serial": si.get("serial"), "firmware": si.get("version")},
+            attester_org=org,
+            run_mode=("offline-config-parse" if src.get("kind") == "fortios-config"
+                      else "live-readonly-api"),
+            tool_version=VERSION,
+            intel={"snapshot_date": meta.get("intel_snapshot"),
+                   "kev_count": meta.get("intel_kev_count"),
+                   "age_days": meta.get("intel_age_days"),
+                   "stale": meta.get("intel_stale")},
+            source_artifact=src,
+            exceptions=Exceptions.load(exceptions_path))
+        bundle = seal_attestation(unsealed, key=key, key_id=key_id)
+        with open(output_path, "w", encoding="utf-8") as fh:
+            json.dump(bundle, fh, indent=2, ensure_ascii=False)  # pretty on disk; the seal
+            #  is over canonical_bytes(body), a separate serialization — verify re-canonicalizes.
+        print(f"[+] Attestation bundle saved to: {output_path} "
+              f"(seal: {bundle['seal']['alg']}, {bundle['body']['manifest']['record_count']} records)")
+        if html_path:
+            with open(html_path, "w", encoding="utf-8") as fh:
+                fh.write(render_attestation_html(bundle))
+            print(f"[+] Attestation statement (HTML) saved to: {html_path}")
+        if oscal_path:
+            with open(oscal_path, "w", encoding="utf-8") as fh:
+                json.dump(to_oscal(bundle["body"]), fh, indent=2, ensure_ascii=False)
+            print(f"[+] OSCAL-aligned assessment-results saved to: {oscal_path}")
+
     # ---- Remediation / rollback CLI script generation -----------------------
 
     # Only STRONG, data-plane-impacting signals mark a fix disruptive (so it is
@@ -7517,6 +7617,18 @@ Examples:
     parser.add_argument("--jira-api-version", type=int, choices=[2, 3], default=3, help="Jira API version for --jira: 3=ADF description (default), 2=plain string")
     parser.add_argument("--soar-min-tier", choices=["P1", "P2", "P3", "P4"], default="P4",
                         help="Only export findings at/above this priority tier to SOAR/ticketing (default: P4 = all)")
+    parser.add_argument("--attest", metavar="FILE",
+                        help="Emit a tamper-evident compliance attestation bundle (JSON) — auditor evidence, NOT a compliance certification")
+    parser.add_argument("--attest-key", metavar="SPEC",
+                        help="Key for a keyed HMAC-SHA256 integrity seal: 'env:VARNAME' or a key-file path. Omit for a plain SHA-256 integrity digest. NOT a digital signature.")
+    parser.add_argument("--attest-html", metavar="FILE",
+                        help="Also write a human-readable HTML attestation statement (use with --attest)")
+    parser.add_argument("--attest-oscal", metavar="FILE",
+                        help="Also write an OSCAL-1.1.2-aligned assessment-results projection (loosely conformant)")
+    parser.add_argument("--attest-org", metavar="NAME", default="",
+                        help="Attester organization recorded in the attestation envelope")
+    parser.add_argument("--attest-verify", metavar="FILE",
+                        help="Verify an existing attestation bundle's integrity (with --attest-key if keyed), then exit")
     parser.add_argument("--fix-script", metavar="FILE", help="Generate a fix-first FortiOS CLI remediation script from the knowledge base")
     parser.add_argument("--rollback-script", metavar="FILE", help="Also write the paired rollback script (use with --fix-script)")
     parser.add_argument("--fix-tier", choices=["P1", "P2", "P3", "P4"], default="P4",
@@ -7574,6 +7686,8 @@ Examples:
         sys.exit(_transfer_intel("export", args.export_intel))
     if args.import_intel:
         sys.exit(_transfer_intel("import", args.import_intel))
+    if args.attest_verify:
+        sys.exit(_attest_verify_action(args.attest_verify, args.attest_key))
 
     # ── Multi-device mode ──────────────────────────────────────────
     if args.inventory:
@@ -7683,6 +7797,10 @@ Examples:
         scanner.save_splunk_soar(args.splunk_soar, min_tier=args.soar_min_tier)
     if args.webhook:
         scanner.save_webhook(args.webhook, min_tier=args.soar_min_tier)
+    if args.attest:
+        scanner.save_attestation(args.attest, key_spec=args.attest_key,
+                                 exceptions_path=args.exceptions, html_path=args.attest_html,
+                                 oscal_path=args.attest_oscal, org=args.attest_org)
     if args.fix_script:
         scanner.save_remediation_script(args.fix_script, args.rollback_script,
                                         tier_max=args.fix_tier, force=args.fix_script_force)
@@ -7710,6 +7828,35 @@ def _refresh_intel() -> int:
     print(f"[+] Snapshot updated: {meta['cve_count']} CVE(s), {meta['kev_count']} KEV-listed "
           f"(snapshot {meta['snapshot_date']}).")
     return 0
+
+
+def _attest_verify_action(path: str, key_spec) -> int:
+    """Verify an attestation bundle's integrity standalone (no scan needed).
+    Exit 0 = intact, 2 = tampered/invalid. Shared by both scanners' --attest-verify."""
+    from attestation import verify_attestation
+    try:
+        with open(path, encoding="utf-8") as fh:
+            bundle = json.load(fh)
+    except (OSError, ValueError) as exc:
+        print(f"[!] Cannot read attestation bundle '{path}': {exc}", file=sys.stderr)
+        return 2
+    try:
+        key, _ = _ReportMixin._load_attest_key(key_spec)
+    except (OSError, ValueError) as exc:
+        print(f"[!] {exc}", file=sys.stderr)
+        return 2
+    try:
+        res = verify_attestation(bundle, key=key)
+    except Exception as exc:  # a structurally-malformed bundle must fail cleanly, not traceback
+        print(f"[!] Attestation verification error: {exc}", file=sys.stderr)
+        return 2
+    if res["ok"]:
+        print(f"[+] Attestation integrity OK — {res['record_count']} record(s), seal {res['alg']}.")
+        return 0
+    print(f"[!] Attestation integrity FAILED (seal {res.get('alg')}):", file=sys.stderr)
+    for p in res["problems"]:
+        print(f"      - {p}", file=sys.stderr)
+    return 2
 
 
 def _transfer_intel(action: str, path: str) -> int:
