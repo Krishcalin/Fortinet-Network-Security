@@ -12,10 +12,11 @@
   <img src="https://img.shields.io/badge/version-4.0.0-blue?style=flat-square" alt="Version"/>
   <img src="https://img.shields.io/badge/python-3.10%2B-blue?style=flat-square&logo=python&logoColor=white" alt="Python"/>
   <img src="https://img.shields.io/badge/FortiOS-6.x%20%7C%207.x-red?style=flat-square" alt="FortiOS"/>
-  <img src="https://img.shields.io/badge/rules-260%2B-orange?style=flat-square" alt="Rules"/>
-  <img src="https://img.shields.io/badge/MITRE_ATT%26CK-31_techniques-dc2626?style=flat-square" alt="MITRE"/>
+  <img src="https://img.shields.io/badge/rules-280%2B-orange?style=flat-square" alt="Rules"/>
+  <img src="https://img.shields.io/badge/MITRE_ATT%26CK-34_techniques-dc2626?style=flat-square" alt="MITRE"/>
   <img src="https://img.shields.io/badge/CVEs-93-critical?style=flat-square" alt="CVEs"/>
-  <img src="https://img.shields.io/badge/remediation_KB-226_entries-2ea043?style=flat-square" alt="Remediation KB"/>
+  <img src="https://img.shields.io/badge/remediation_KB-237_entries-2ea043?style=flat-square" alt="Remediation KB"/>
+  <img src="https://img.shields.io/badge/tests-324_passing-brightgreen?style=flat-square" alt="Tests"/>
   <img src="https://img.shields.io/badge/reports-HTML%20%7C%20PDF%20%7C%20JSON%20%7C%20CSV-8957e5?style=flat-square" alt="Reports"/>
   <img src="https://img.shields.io/badge/compliance-CIS%20%7C%20PCI--DSS%20%7C%20NIST%20%7C%20SOC2%20%7C%20HIPAA-blueviolet?style=flat-square" alt="Compliance"/>
   <img src="https://img.shields.io/badge/offline%20mode-OT%20%2F%20air--gapped-success?style=flat-square" alt="Offline"/>
@@ -32,15 +33,26 @@
 - [Key Capabilities](#key-capabilities)
 - [How It Works](#how-it-works)
 - [Detailed Remediation](#detailed-remediation)
+- [Risk-Prioritized Remediation Queue](#risk-prioritized-remediation-queue)
+- [Fleet Analysis Console](#fleet-analysis-console)
+- [Continuous Posture State](#continuous-posture-state)
+- [Traffic-Aware Policy Engine](#traffic-aware-policy-engine)
 - [Reports & Output Formats](#reports--output-formats)
+- [SOAR & Ticketing Export](#soar--ticketing-export)
+- [Compliance Attestation Pack](#compliance-attestation-pack)
+- [Remediation Verification](#remediation-verification)
 - [Detection Coverage](#detection-coverage)
   - [Check Categories](#check-categories)
+  - [Rule-Base Analysis & Policy Control Index](#rule-base-analysis--policy-control-index)
+  - [Configuration Drift](#configuration-drift---baseline)
   - [MITRE ATT&CK Resilience](#mitre-attck-resilience-testing)
   - [Known CVEs](#known-cves)
   - [Compliance Mapping](#compliance-mapping)
+- [Supported Targets](#supported-targets)
 - [Installation](#installation)
 - [API Token Setup](#api-token-setup)
 - [Usage](#usage)
+  - [Multi-Device (Fleet) Scanning](#multi-device-fleet-scanning)
 - [Offline Mode (OT / Air-Gapped)](#offline-mode-ot--air-gapped)
 - [CLI Reference](#cli-reference)
 - [CI/CD Integration](#cicd-integration)
@@ -81,6 +93,9 @@ Most config checkers stop at *"you have a problem."* This one is built around *"
 - 🧩 **Fleet-scale & pipeline-native.** Scan a JSON inventory of devices with a unified report, and gate CI/CD on the exit code. A [Fleet Analysis Console](#fleet-analysis-console) aggregates a whole folder of `.conf` backups into a **worst-device ranking** and **"one fix clears N firewalls"** campaigns — offline and stdlib-only.
 - 🧠 **It remembers.** A [Continuous Posture State](#continuous-posture-state) turns each run into a **system of record** — new/resolved since last scan, **risk-acceptance exceptions** that stop nagging until they expire, **SLA aging** against the P1–P4 windows, and **newly-weaponized** alerts — all keyed on a stable finding identity so a cosmetic config edit never corrupts the history.
 - 🚦 **It reasons about traffic, not just names.** A [Traffic-Aware Policy Engine](#traffic-aware-policy-engine) resolves objects to real IP/port intervals to answer *"is this flow permitted, by which rule?"* (`--query`), find **shadowed/redundant rules by true CIDR overlap**, and **simulate a change before deploy** — and it **fails to OPAQUE** rather than guess across a VIP/DNAT, FQDN, or IPv6 it can't resolve.
+- 🎟️ **The queue becomes action, not a report.** A [SOAR & Ticketing Export](#soar--ticketing-export) emits ready-to-POST **Jira / ServiceNow / Splunk SOAR / CloudEvents** payloads, each with a **stable dedup key** so a re-scan *updates* the ticket instead of duplicating it — and, with posture history, **closes** the tickets for findings that were fixed.
+- 🔏 **Auditor-grade, tamper-evident evidence.** A [Compliance Attestation Pack](#compliance-attestation-pack) produces a point-in-time evidence bundle — per-control PASS/FAIL/RISK-ACCEPTED with a SHA-256 hash manifest + Merkle root and an optional **HMAC seal you can verify** — framed honestly as *evidence, not a compliance certification*, and projectable to **OSCAL**.
+- ✅ **It proves the fix landed.** A [Remediation Verification](#remediation-verification) loop re-scans and classifies each finding you set out to fix as **REMEDIATED / PERSISTING / CHANGED** (plus regressions), with before→after evidence and a CI-gating exit code — closing the loop the runbook opens.
 
 ---
 
@@ -113,7 +128,7 @@ Open `report.html` in any browser, hand `report.pdf` to management, give `runboo
 
 | Capability | Details |
 |-----------|---------|
-| **280+ security rules** | 22 check methods covering every FortiGate security domain |
+| **280+ security rules** | 23 check methods covering every FortiGate security domain |
 | **Risk-prioritization engine** | **P1–P4 fix-first tiers** fusing severity × exploitability (**CISA KEV** + **FIRST.org EPSS**) × internet-reachability; bundled offline threat-intel snapshot, `--refresh-intel` to update, `--top N` fix-first queue, and a "Top Risks" section in every report |
 | **Rule-base analysis (FireMon-style)** | Shadowed & redundant rule detection, a 0–100 **Policy Control Index**, dormant-rule cleanup (live), orphaned object hygiene, **internet attack-surface** modelling, and **config-drift** diffing between scans |
 | **34 MITRE ATT&CK techniques** | Resilience testing across 11 tactics with a 0–100% score |
@@ -146,7 +161,7 @@ Open `report.html` in any browser, hand `report.pdf` to management, give `runboo
                                                        ▼
                                         ┌───────────────────────────────┐
                                         │  FortinetScanner engine        │
-                                        │  22 _check_* methods (270+)     │
+                                        │  23 _check_* methods (280+)     │
                                         │  + 93 CVE matches               │
                                         │  + 34 MITRE ATT&CK tests        │
                                         │  + compliance auto-mapping      │
